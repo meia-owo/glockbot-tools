@@ -36,9 +36,9 @@
   --sans: "Segoe UI", "Yu Gothic UI", "Hiragino Sans", "Meiryo", sans-serif;
 }
 * { box-sizing: border-box; }
-html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text); font-family: var(--sans); font-size: 13px; }
+html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text); font-family: var(--sans); font-size: clamp(14px, 1.05vw, 17px); }
 body { min-height: 100vh; }
-.app { max-width: 1440px; margin: 0 auto; padding: 12px 14px 28px; }
+.app { max-width: min(1600px, 100%); margin: 0 auto; padding: 12px clamp(24px, 2.5vw, 40px) 28px; width: 100%; box-sizing: border-box; }
 .header {
   background: var(--navy);
   color: #fff;
@@ -56,9 +56,9 @@ body { min-height: 100vh; }
   display: grid; place-items: center; font-weight: 700; letter-spacing: .04em;
   color: var(--copper); font-size: 11px; background: var(--navy-2);
 }
-.brand h1 { margin: 0; font-size: 16px; font-weight: 650; letter-spacing: .04em; }
-.brand p { margin: 2px 0 0; font-size: 11px; color: #c5d0dc; }
-.header-meta { text-align: right; font-size: 11px; color: #c5d0dc; line-height: 1.5; }
+.brand h1 { margin: 0; font-size: clamp(16px, 1.2vw, 20px); font-weight: 650; letter-spacing: .04em; }
+.brand p { margin: 2px 0 0; font-size: clamp(11px, 0.85vw, 13px); color: #c5d0dc; }
+.header-meta { text-align: right; font-size: clamp(11px, 0.85vw, 13px); color: #c5d0dc; line-height: 1.5; }
 .toolbar {
   margin-top: 10px;
   background: var(--card);
@@ -75,7 +75,7 @@ label.chk input, label.rad input { margin: 0; }
 .hint { color: var(--muted); font-size: 11px; }
 .actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 button {
-  font-family: inherit; font-size: 13px; border-radius: var(--radius); cursor: pointer;
+  font-family: inherit; font-size: clamp(13px, 0.95vw, 15px); border-radius: var(--radius); cursor: pointer;
   border: 1px solid transparent; padding: 7px 12px; font-weight: 650;
 }
 button:disabled { opacity: .45; cursor: not-allowed; }
@@ -86,8 +86,9 @@ button:disabled { opacity: .45; cursor: not-allowed; }
 .btn-ghost { background: #fff; border-color: var(--line); color: var(--navy); }
 .btn-ghost:not(:disabled):hover { background: #f4f7fa; }
 .btn-small { padding: 4px 8px; font-size: 12px; font-weight: 600; }
-.panes { margin-top: 10px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.panes { margin-top: 10px; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 @media (max-width: 900px) { .panes { grid-template-columns: 1fr; } }
+@media (max-width: 768px) { .app { padding: 10px 14px 24px; } body { font-size: 14px; } }
 .pane { background: var(--card); border: 1px solid var(--line); min-height: 240px; display: flex; flex-direction: column; }
 .pane-head {
   display: flex; align-items: center; justify-content: space-between; gap: 8px;
@@ -290,7 +291,7 @@ input[type="file"] { display: none; }
     同名衝突時は警告し先頭を採用。Excel は「サマリー」「差分詳細」「全文対照」の3シートです。
     差分なしファイルも「差分検出なし（N行比較済み）」を必ず出力します。
   </p>
-  <footer class="ver-footer">GlockBOT 0.1.0</footer>
+  <footer class="ver-footer">GlockBOT 0.2.0</footer>
 </div>
 <script>
 (function () {

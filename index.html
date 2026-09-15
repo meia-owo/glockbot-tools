@@ -7,13 +7,13 @@
   <style>
     :root { --bg:#0f1419; --card:#1a2332; --text:#e7ecf3; --muted:#9aa8bc; --acc:#3d8bfd; --border:#2a3648; --excel:#1d6f42; }
     * { box-sizing: border-box; }
-    body { margin:0; font-family: system-ui, sans-serif; background:var(--bg); color:var(--text); line-height:1.5; }
-    header { padding:28px 20px 12px; max-width:920px; margin:0 auto; }
+    body { margin:0; font-family: system-ui, sans-serif; background:var(--bg); color:var(--text); line-height:1.5; font-size:clamp(14px, 1.05vw, 17px); }
+    header { padding:28px clamp(24px, 3vw, 40px) 12px; max-width:min(1400px, 100%); margin:0 auto; }
     h1 { margin:0 0 8px; font-size:1.6rem; }
     h2 { margin:28px 0 10px; font-size:1.15rem; }
     .note { color:var(--muted); font-size:.95rem; }
     .warn { margin:16px 0; padding:12px 14px; border:1px solid #8a6d3b; background:#2a2318; border-radius:10px; color:#f0d9a8; font-size:.9rem; }
-    main { max-width:920px; margin:0 auto; padding:8px 20px 40px; }
+    main { max-width:min(1400px, 100%); margin:0 auto; padding:8px clamp(24px, 3vw, 40px) 40px; }
     .grid { display:grid; gap:14px; }
     a.card { display:block; text-decoration:none; color:inherit; background:var(--card); border:1px solid var(--border); border-radius:12px; padding:16px 18px; }
     a.card:hover { border-color:var(--acc); }
@@ -25,7 +25,7 @@
     .tag.excel { background:#1e3d2d; color:#9fd6b4; }
     .links { margin-top:10px; font-size:.9rem; }
     .links a { color:#8ec7ff; margin-right:12px; }
-    footer { max-width:920px; margin:0 auto; padding:0 20px 40px; color:var(--muted); font-size:.8rem; }
+    footer { max-width:min(1400px, 100%); margin:0 auto; padding:0 clamp(24px, 3vw, 40px) 40px; color:var(--muted); font-size:.8rem; }
   </style>
 </head>
 <body>
@@ -59,33 +59,33 @@
       <a class="card" href="apps/mail-task-explorer/">
         <div class="title">メールタスクエクスプローラー</div>
         <div class="meta">メールからタスク抽出→ボード／ICS（業務効率化ワークベンチ）</div>
-        <span class="tag">GlockBOT 0.1.0 · HTML</span>
+        <span class="tag">GlockBOT 0.2.0 · HTML</span>
       </a>
 
       <a class="card" href="apps/yaskawa-diff-check/">
         <div class="title">安川ロボット 差分チェック</div>
         <div class="meta">Before/After を比較して Excel 出力</div>
-        <span class="tag">GlockBOT 0.1.0 · HTML</span>
+        <span class="tag">GlockBOT 0.2.0 · HTML</span>
       </a>
       <a class="card" href="apps/quote-unitprice-db/">
         <div class="title">メーカー別見積単価DB</div>
         <div class="meta">検索・乖離判定・バックアップ</div>
-        <span class="tag">GlockBOT 0.1.0 · HTML</span>
+        <span class="tag">GlockBOT 0.2.0 · HTML</span>
       </a>
       <a class="card" href="apps/teams-heat-ambiguity/">
         <div class="title">Teams 熱量・曖昧度可視化</div>
         <div class="meta">VTT を色分けして確認</div>
-        <span class="tag">GlockBOT 0.1.0 · HTML</span>
+        <span class="tag">GlockBOT 0.2.0 · HTML</span>
       </a>
       <a class="card" href="apps/boss-report-assistant/">
         <div class="title">上司報告 攻略ツール</div>
         <div class="meta">メモから報告文・スライド構成（既定はオフライン）</div>
-        <span class="tag">GlockBOT 0.1.0 · HTML</span>
+        <span class="tag">GlockBOT 0.2.0 · HTML</span>
       </a>
       <a class="card" href="apps/kawasaki-bxp-load-screen/">
         <div class="title">川崎BXP 据付負荷スクリーニング</div>
         <div class="meta">一次評価のみ（構造保証ではありません）</div>
-        <span class="tag">GlockBOT 0.1.0 · HTML</span>
+        <span class="tag">GlockBOT 0.2.0 · HTML</span>
       </a>
     </div>
   </main>

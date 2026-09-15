@@ -3,31 +3,31 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>川崎BXP 据付負荷スクリーニング — GlockBOT 0.1.0</title>
+<title>川崎BXP 据付負荷スクリーニング — GlockBOT 0.2.0</title>
 <style>
 :root {
   --bg:#12141a; --panel:#1e2129; --accent:#4f8cff; --ng:#ff5c5c; --warn:#ffb84f; --ok:#4fd68c;
   --text:#e8eaed; --muted:#9aa0a6; --border:#2a2f3a; --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
 }
 *{box-sizing:border-box}
-html,body{margin:0;height:100%;background:var(--bg);color:var(--text);font:13px/1.45 system-ui,-apple-system,sans-serif}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--text);font:clamp(14px,1.05vw,17px)/1.45 system-ui,-apple-system,sans-serif}
 button,input,select,textarea{font:inherit;color:inherit}
 button{cursor:pointer;background:#2a3140;border:1px solid var(--border);border-radius:6px;padding:6px 10px;color:var(--text)}
 button:hover{border-color:var(--accent)}
 button.primary{background:var(--accent);border-color:var(--accent);color:#fff}
 button.danger{background:#3a2222;border-color:var(--ng)}
 input[type=number],input[type=text],select,textarea{background:#151820;border:1px solid var(--border);border-radius:4px;padding:4px 6px;width:100%}
-label{display:block;color:var(--muted);font-size:11px;margin-bottom:2px}
+label{display:block;color:var(--muted);font-size:clamp(11px,.85vw,13px);margin-bottom:2px}
 .row{display:flex;gap:8px;align-items:flex-end;margin-bottom:8px}
 .row>*{flex:1}
 .app{display:flex;flex-direction:column;height:100%}
-header{display:flex;align-items:center;gap:12px;padding:8px 12px;background:var(--panel);border-bottom:1px solid var(--border)}
-header h1{font-size:15px;margin:0;font-weight:600}
+header{display:flex;align-items:center;gap:12px;padding:8px clamp(12px,1.5vw,24px);background:var(--panel);border-bottom:1px solid var(--border)}
+header h1{font-size:clamp(15px,1.15vw,18px);margin:0;font-weight:600}
 header .ver{color:var(--accent);font-weight:700}
-.main{flex:1;display:grid;grid-template-columns:320px 1fr 340px;min-height:0}
+.main{flex:1;display:grid;grid-template-columns:minmax(260px,.85fr) minmax(0,1.5fr) minmax(280px,.95fr);min-height:0;width:100%}
 .pane{background:var(--panel);border-right:1px solid var(--border);overflow:auto;min-height:0}
 .pane:last-child{border-right:none;border-left:1px solid var(--border)}
-.pane h2{font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);margin:0;padding:10px 12px 6px}
+.pane h2{font-size:clamp(12px,.9vw,14px);text-transform:uppercase;letter-spacing:.04em;color:var(--muted);margin:0;padding:10px 12px 6px}
 .tabs{display:flex;gap:0;border-bottom:1px solid var(--border);padding:0 8px}
 .tabs button{flex:1;border:none;border-radius:0;background:transparent;padding:8px 4px;color:var(--muted);border-bottom:2px solid transparent}
 .tabs button.active{color:var(--accent);border-bottom-color:var(--accent)}
@@ -46,7 +46,7 @@ header .ver{color:var(--accent);font-weight:700}
 .right-body{padding:10px 12px}
 .kpi-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
 .kpi{background:#151820;border:1px solid var(--border);border-radius:8px;padding:8px}
-.kpi .v{font-family:var(--mono);font-size:16px;font-weight:700}
+.kpi .v{font-family:var(--mono);font-size:clamp(16px,1.2vw,20px);font-weight:700}
 .kpi .l{font-size:11px;color:var(--muted)}
 .chart-box{background:#151820;border:1px solid var(--border);border-radius:8px;padding:6px;margin-bottom:10px}
 .chart-box canvas{width:100%;height:160px;display:block}
@@ -62,7 +62,7 @@ table.steps input{width:52px;padding:2px;text-align:center}
 table.steps tr.peak{background:rgba(255,92,92,.15)}
 .anchor-list{display:flex;flex-direction:column;gap:4px;max-height:180px;overflow:auto}
 .anchor-item{display:flex;gap:6px;align-items:center;font-size:11px}
-.footer{padding:8px 12px;background:#0d0f14;border-top:1px solid var(--border);font-size:11px;color:var(--muted)}
+.footer{padding:8px clamp(12px,1.5vw,24px);background:#0d0f14;border-top:1px solid var(--border);font-size:clamp(11px,.8vw,13px);color:var(--muted)}
 .footer .disclaimer{color:var(--warn);margin-bottom:4px}
 .note{font-size:11px;color:var(--muted);margin:6px 0}
 .banner{display:none;background:#3a2a10;color:var(--warn);padding:6px 10px;font-size:12px;border-bottom:1px solid var(--warn)}
@@ -73,6 +73,17 @@ table.steps tr.peak{background:rgba(255,92,92,.15)}
 .modal-inner h2{margin-top:0}
 .modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:16px}
 .modal-actions button{color:#111;background:#eee}
+@media (max-width: 980px){
+  .main{grid-template-columns:minmax(220px,.8fr) minmax(0,1.3fr) minmax(240px,.85fr)}
+}
+@media (max-width: 768px){
+  body{font-size:14px}
+  .main{grid-template-columns:1fr;overflow:auto}
+  .app{height:auto;min-height:100%}
+  .pane{max-height:none;border-right:none;border-bottom:1px solid var(--border)}
+  .pane:last-child{border-left:none}
+  .viz-wrap{min-height:360px}
+}
 @media print{
   body *{visibility:hidden}
   #printReport,.modal-inner,#printReport *{visibility:visible}
@@ -95,13 +106,13 @@ window.__THREE_OK=false;
 <div class="app">
   <header>
     <h1>川崎BXP 据付負荷スクリーニング</h1>
-    <span class="ver">GlockBOT 0.1.0</span>
+    <span class="ver">GlockBOT 0.2.0</span>
     <span style="flex:1"></span>
     <button id="btnRecalc" class="primary">再計算</button>
     <button id="btnExport">CSV出力</button>
     <button id="btnReport">印刷レポート</button>
   </header>
-  <div id="lWarn" class="banner">LMOVE は 0.1.0 では J 補間へフォールバックします（未達: 逆キネマ）。</div>
+  <div id="lWarn" class="banner">LMOVE は 0.2.0 では J 補間へフォールバックします（未達: 逆キネマ）。</div>
   <div class="main">
     <!-- LEFT -->
     <aside class="pane" id="leftPane">
@@ -232,14 +243,14 @@ window.__THREE_OK=false;
   </div>
   <footer class="footer">
     <div class="disclaimer">本結果は簡易モデルによる推定値です。据付可否の最終判断は、川崎重工の据付・接続要領書および構造設計者による正式検討に基づいてください。</div>
-    <div>GlockBOT 0.1.0 · 架台剛体仮定 · DH/質量/カタログ値は近似 · Three.js r128 は任意（CDNブロック時は Canvas2D のみ）</div>
+    <div>GlockBOT 0.2.0 · 架台剛体仮定 · DH/質量/カタログ値は近似 · Three.js r128 は任意（CDNブロック時は Canvas2D のみ）</div>
   </footer>
 </div>
 
 <div class="modal" id="reportModal">
   <div class="modal-inner" id="printReport">
     <h2>据付負荷スクリーニング レポート</h2>
-    <p><strong>GlockBOT 0.1.0</strong></p>
+    <p><strong>GlockBOT 0.2.0</strong></p>
     <div id="reportBody"></div>
     <p style="margin-top:24px;border-top:1px solid #ccc;padding-top:12px;color:#666;font-size:12px">
       本結果は簡易モデルによる推定値です。据付可否の最終判断は、川崎重工の据付・接続要領書および構造設計者による正式検討に基づいてください。
@@ -264,7 +275,7 @@ window.BXPCore = (function(){
 const G = 9.80665;
 const DISCLAIMER =
   '本結果は簡易モデルによる推定値です。据付可否の最終判断は、川崎重工の据付・接続要領書および構造設計者による正式検討に基づいてください。';
-const VERSION = 'GlockBOT 0.1.0';
+const VERSION = 'GlockBOT 0.2.0';
 
 /** Illustrative DH (mm, deg) + mass split + catalog M_tip/T_rot placeholders */
 const MODELS = {
@@ -1246,7 +1257,7 @@ function exportCsv(){
   const model=$('modelSel').value;
   const lines=[];
   lines.push('項目,値');
-  lines.push('版,GlockBOT 0.1.0');
+  lines.push('版,GlockBOT 0.2.0');
   lines.push('型式,'+model);
   lines.push('ツールkg,'+$('toolKg').value);
   lines.push('ワークkg,'+$('workKg').value);

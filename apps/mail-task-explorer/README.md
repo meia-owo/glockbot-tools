@@ -1,6 +1,6 @@
 # 業務効率化ワークベンチ（メールタスクエクスプローラー）
 
-版: GlockBOT 0.1.0
+版: GlockBOT 0.2.0
 
 メール本文からタスク候補を抽出し、カンバン風ボード／ICS／Markdown で扱う単一 HTML ツールです。  
 あわせて Teams 議事録をコパイロット往復で構造化し、会議履歴・宿題を蓄積できます。
@@ -59,4 +59,8 @@ node _selfcheck/grep-features.js
 
 ## 原ファイル
 
-`/workspace/specs/inbox/09-mail-task-workbench.html`（title: 業務効率化ワークベンチ）をベースに移植。UI の作り直しはせず、GlockBOT 0.1.0 ブランディングと README／版管理を追加。
+`/workspace/specs/inbox/09-mail-task-workbench.html`（title: 業務効率化ワークベンチ）をベースに移植。UI の作り直しはせず、GlockBOT ブランディングと README／版管理を追加（初回 0.1.0）。
+
+## 変更履歴
+
+- 0.2.0: 共通UIルール（幅追従・PC文字拡大・余白削減）

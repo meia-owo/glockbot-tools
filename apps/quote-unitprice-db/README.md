@@ -1,6 +1,6 @@
 # メーカー別見積単価データベース化ツール v2
 
-版: GlockBOT 0.1.0
+版: GlockBOT 0.2.0
 
 古エクセルメモ帳を置き換える、検索・フィルタ・編集可能な見積単価DB（単一HTML + localStorage）。
 
@@ -52,3 +52,7 @@
 node _selfcheck/test.js
 node _selfcheck/grep-features.js
 ```
+
+## 変更履歴
+
+- 0.2.0: 共通UIルール（幅追従・PC文字拡大・余白削減）
