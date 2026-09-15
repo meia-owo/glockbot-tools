@@ -32,6 +32,7 @@ Pages 有効化後のトップ（例）:
 | `apps/teams-heat-ambiguity/` | Teams熱量・曖昧度 |
 | `apps/boss-report-assistant/` | 上司報告攻略 |
 | `apps/kawasaki-bxp-load-screen/` | 川崎BXP負荷スクリーニング |
+| `apps/mail-task-explorer/` | メールタスクエクスプローラー |
 | `apps/gantt-progress/` | ガント（Excelパッケージ） |
 
 版番号は各アプリの README / フッター（GlockBOT 0.1.0〜）。

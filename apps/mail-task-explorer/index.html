@@ -1,0 +1,1480 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>業務効率化ワークベンチ</title>
+<style>
+  :root {
+    --bg: #eceef1;
+    --panel: #ffffff;
+    --ink: #1f2937;
+    --muted: #6b7280;
+    --line: #dfe3e8;
+    --steel: #33597a;        /* 主アクセント: 鋼板ブルー */
+    --steel-soft: #e7eef5;
+    --amber: #c77b16;        /* 注意・期限系 */
+    --amber-soft: #fdf1de;
+    --green: #3f7d4e;
+    --green-soft: #e5f1e7;
+    --red: #b23b3b;
+    --red-soft: #fbe9e9;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0;
+    font-family: "Hiragino Kaku Gothic ProN", "Yu Gothic UI", "Yu Gothic", "Meiryo", sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    font-size: 13px;
+    overflow: hidden;
+  }
+
+  /* ===== 全体骨格: ヘッダー + 3カラム ===== */
+  .app {
+    display: grid;
+    grid-template-rows: 52px 1fr auto;
+    height: 100vh;
+  }
+  header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 0 16px;
+    background: var(--steel);
+    color: #fff;
+  }
+  header .logo {
+    font-size: 15px;
+    font-weight: bold;
+    letter-spacing: 0.05em;
+    white-space: nowrap;
+  }
+  header .logo-sub {
+    font-size: 10px;
+    font-weight: normal;
+    opacity: 0.75;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+    margin-left: -8px;
+  }
+  .app-footer {
+    padding: 4px 16px 6px;
+    font-size: 10px;
+    color: var(--muted);
+    text-align: right;
+    border-top: 1px solid var(--line);
+    background: #f7f8fa;
+  }
+  .tabnav { display: flex; gap: 4px; }
+  .tabnav button {
+    background: rgba(255,255,255,0.12);
+    color: rgba(255,255,255,0.75);
+    border: none;
+    border-radius: 6px 6px 0 0;
+    padding: 8px 18px;
+    font-size: 13px;
+    cursor: pointer;
+    font-weight: bold;
+  }
+  .tabnav button.active {
+    background: var(--bg);
+    color: var(--steel);
+  }
+  .statbar {
+    margin-left: auto;
+    display: flex;
+    gap: 14px;
+    font-size: 11px;
+  }
+  .statbar .stat {
+    display: flex;
+    align-items: baseline;
+    gap: 5px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 6px;
+    padding: 4px 10px;
+  }
+  .statbar .stat b {
+    font-size: 17px;
+    font-family: "Consolas", "Courier New", monospace;
+  }
+  .statbar .stat.warn b { color: #ffd27d; }
+
+  main {
+    display: grid;
+    grid-template-columns: 340px 1fr 1.25fr;
+    gap: 10px;
+    padding: 10px;
+    min-height: 0;
+  }
+  .col {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    min-height: 0;
+  }
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+  .panel.grow { flex: 1; }
+  .panel h2 {
+    font-size: 12px;
+    margin: 0 0 8px;
+    color: var(--steel);
+    letter-spacing: 0.04em;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+  .scrollarea { overflow-y: auto; min-height: 0; flex: 1; }
+
+  label { font-size: 11px; color: var(--muted); display: block; margin-bottom: 3px; }
+  input[type="text"], textarea {
+    width: 100%;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 7px 9px;
+    font-size: 12.5px;
+    font-family: inherit;
+    background: #fafbfc;
+    resize: none;
+  }
+  input[type="text"]:focus, textarea:focus {
+    outline: 2px solid var(--steel);
+    outline-offset: -1px;
+  }
+  .row { display: flex; gap: 8px; margin-bottom: 8px; }
+  .row > div { flex: 1; }
+
+  button {
+    background: var(--steel);
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    padding: 8px 14px;
+    font-size: 12.5px;
+    cursor: pointer;
+    font-weight: bold;
+  }
+  button.secondary {
+    background: #fff;
+    color: var(--steel);
+    border: 1px solid var(--steel);
+  }
+  button.small { padding: 4px 9px; font-size: 11.5px; font-weight: normal; }
+  button:hover { filter: brightness(1.08); }
+  .footer-actions { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+
+  .result-summary {
+    background: var(--steel-soft);
+    border-radius: 6px;
+    padding: 9px;
+    font-size: 12px;
+    line-height: 1.6;
+    margin-bottom: 8px;
+    white-space: pre-wrap;
+  }
+  .candidate-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 7px;
+    padding: 7px 8px;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    margin-bottom: 5px;
+    background: #fafbfc;
+    font-size: 12px;
+    line-height: 1.5;
+  }
+  .candidate-item .txt { flex: 1; }
+  .candidate-item .hl { background: #ffe9b8; border-radius: 2px; padding: 0 2px; }
+  .date-tag {
+    display: inline-block;
+    background: var(--amber-soft);
+    color: var(--amber);
+    font-size: 10.5px;
+    border-radius: 4px;
+    padding: 1px 6px;
+    margin-left: 4px;
+  }
+  .decision-tag {
+    display: inline-block;
+    background: var(--green-soft);
+    color: var(--green);
+    font-size: 10px;
+    border-radius: 4px;
+    padding: 1px 5px;
+    flex-shrink: 0;
+  }
+  .action-tag {
+    display: inline-block;
+    background: var(--red-soft);
+    color: var(--red);
+    font-size: 10px;
+    border-radius: 4px;
+    padding: 1px 5px;
+    flex-shrink: 0;
+  }
+
+  /* ===== タスクボード ===== */
+  .board {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 8px;
+    flex: 1;
+    min-height: 0;
+  }
+  .board-col {
+    background: #f5f6f8;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 8px;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+  .board-col h3 {
+    font-size: 11.5px;
+    margin: 0 0 6px;
+    display: flex;
+    justify-content: space-between;
+  }
+  .board-col.todo h3 { color: var(--red); }
+  .board-col.doing h3 { color: var(--amber); }
+  .board-col.done h3 { color: var(--green); }
+  .board-col .cards { overflow-y: auto; flex: 1; min-height: 0; }
+  .task-card {
+    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 7px;
+    margin-bottom: 5px;
+    font-size: 11.5px;
+    line-height: 1.45;
+  }
+  .task-card .meta {
+    font-size: 10.5px;
+    color: var(--muted);
+    margin-top: 4px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 4px;
+  }
+  .task-card .btns { display: flex; gap: 3px; }
+  .ctx-preview {
+    font-size: 10.5px;
+    color: var(--muted);
+    margin-top: 3px;
+    cursor: pointer;
+    border-top: 1px dashed var(--line);
+    padding-top: 3px;
+  }
+  .ctx-preview:hover { color: var(--steel); }
+  .ctx-full {
+    font-size: 11px;
+    color: var(--ink);
+    margin-top: 3px;
+    border-top: 1px dashed var(--line);
+    padding-top: 4px;
+    line-height: 1.5;
+    white-space: pre-wrap;
+    cursor: pointer;
+    max-height: 160px;
+    overflow-y: auto;
+  }
+  .empty-msg { color: var(--muted); font-size: 11.5px; text-align: center; padding: 14px 0; }
+
+  /* ===== Teamsダッシュボード ===== */
+  .meeting-entry {
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 8px;
+    margin-bottom: 6px;
+    background: #fafbfc;
+  }
+  .meeting-entry .m-title { font-size: 12px; font-weight: bold; display: flex; justify-content: space-between; }
+  .meeting-entry .m-meta { font-size: 10.5px; color: var(--muted); margin-bottom: 4px; }
+  .meeting-entry ul { margin: 3px 0; padding-left: 16px; font-size: 11.5px; line-height: 1.5; }
+
+  .toast {
+    position: fixed;
+    bottom: 14px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--ink);
+    color: #fff;
+    padding: 8px 16px;
+    border-radius: 18px;
+    font-size: 12px;
+    opacity: 0;
+    transition: opacity 0.3s;
+    pointer-events: none;
+    z-index: 99;
+  }
+  .toast.show { opacity: 1; }
+
+  .tabpanel { display: none; flex-direction: column; gap: 10px; min-height: 0; flex: 1; }
+  .tabpanel.active { display: flex; }
+
+  /* 小さい画面へのフォールバック(タブレット以下は縦積みスクロール許可) */
+  @media (max-width: 980px) {
+    body { overflow: auto; }
+    .app { height: auto; }
+    main { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+<header>
+  <span class="logo">⚙ 業務ワークベンチ</span>
+  <span class="logo-sub">GlockBOT 0.1.0</span>
+  <div class="tabnav">
+    <button id="tabbtn-mail" class="active" onclick="switchTab('mail')">📬 メール</button>
+    <button id="tabbtn-teams" onclick="switchTab('teams')">📝 Teams議事録</button>
+  </div>
+  <div class="statbar">
+    <div class="stat warn"><b id="dash-openactions-h">0</b>未対応</div>
+    <div class="stat"><b id="dash-meetings-h">0</b>会議</div>
+    <div class="stat"><b id="dash-decisions-h">0</b>決定</div>
+  </div>
+</header>
+
+<main>
+
+  <!-- 左カラム: 入力 -->
+  <div class="col">
+    <div id="tabpanel-mail" class="tabpanel active" data-tab="mail">
+      <div class="panel grow">
+        <h2>メール入力</h2>
+        <div class="row">
+          <div>
+            <label>件名(任意)</label>
+            <input type="text" id="subject" placeholder="〇〇の件">
+          </div>
+          <div>
+            <label>差出人(任意)</label>
+            <input type="text" id="sender" placeholder="田中さん">
+          </div>
+        </div>
+        <label>元メールへのリンク(任意・Outlookで右クリック→「メッセージへのリンクをコピー」)</label>
+        <input type="text" id="mailLink" placeholder="https://outlook.office.com/mail/deeplink/...">
+        <div style="height:6px;"></div>
+        <label>本文を貼り付け</label>
+        <textarea id="mailBody" style="flex:1;" placeholder="来たメールをそのまま貼り付け"></textarea>
+        <div class="footer-actions">
+          <button onclick="analyzeMail()">🔍 解析する</button>
+          <button class="secondary" onclick="clearInput()">クリア</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="tabpanel-teams" class="tabpanel" data-tab="teams">
+      <div class="panel" style="max-height: 44%;">
+        <h2>議事録入力</h2>
+        <div class="row">
+          <div>
+            <label>会議名(任意)</label>
+            <input type="text" id="meetingTitle" placeholder="週次進捗MTG">
+          </div>
+          <div>
+            <label>開催日(任意)</label>
+            <input type="text" id="meetingDate" placeholder="7/7">
+          </div>
+        </div>
+        <label>会議へのリンク(任意)</label>
+        <input type="text" id="meetingLink" placeholder="https://teams.microsoft.com/...">
+        <div style="height:6px;"></div>
+        <label>議事録・文字起こしを貼り付け</label>
+        <textarea id="meetingBody" style="min-height:54px; max-height:90px;" placeholder="Teamsの議事録をそのまま貼り付け"></textarea>
+        <div class="footer-actions">
+          <button onclick="copyMeetingAnalysisPrompt()">🤖 ① 解析用プロンプトをコピー</button>
+          <button class="secondary" onclick="clearMeetingInput()">クリア</button>
+        </div>
+      </div>
+      <div class="panel grow">
+        <h2>会議履歴
+          <span>
+            <button class="small" onclick="copyMeetingCopilotPrompt()">🤖 分析用コピー</button>
+            <button class="secondary small" onclick="exportMeetingsJSON()">保存</button>
+          </span>
+        </h2>
+        <div class="scrollarea" id="meetingHistory"><div class="empty-msg">まだ登録された会議はありません</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Teams分析レポート貼り戻し(メインでは中央カラムに配置するためここではプレースホルダのみ) -->
+
+  <!-- 中央カラム: 抽出結果 + コパイロット往復 -->
+  <div class="col">
+    <div class="panel" id="resultCard" style="display:none; max-height: 42%;">
+      <h2>抽出結果(メール)
+        <span>
+          <button class="secondary small" onclick="toggleAllCandidates(true)">全選択</button>
+          <button class="secondary small" onclick="toggleAllCandidates(false)">全解除</button>
+          <button class="small" onclick="sendAllToBoard()">✅ ボードへ</button>
+          <button class="secondary small" onclick="copyMarkdown()">📋 MD</button>
+          <button class="secondary small" onclick="exportICS()">📅 .ics</button>
+        </span>
+      </h2>
+      <div class="result-summary" id="summaryBox"></div>
+      <div class="scrollarea" id="candidateList"></div>
+    </div>
+
+    <div class="tabpanel active" data-tab="mail">
+      <div class="panel grow">
+        <h2>🔁 コパイロット往復(メール)</h2>
+        <div style="font-size:11px; color:var(--muted); line-height:1.6; margin-bottom:8px;">
+          ① 各パネルの「🤖コピー」ボタンでプロンプト取得<br>
+          ② コパイロットに貼って実行<br>
+          ③ 回答を下に貼り戻し → .ics生成
+        </div>
+        <label>コパイロットの回答を貼り付け</label>
+        <textarea id="copilotResult" style="flex:1;" placeholder="回答を丸ごと貼り付け(CALENDAR_START〜ENDを自動読み取り)"></textarea>
+        <div class="footer-actions">
+          <button onclick="parseCopilotResult()">📅 読み取って.ics生成</button>
+        </div>
+        <div id="parseResultBox" style="display:none; margin-top:8px; max-height:180px; overflow-y:auto;" class="result-summary"></div>
+      </div>
+    </div>
+
+    <div class="tabpanel" data-tab="teams">
+      <div class="panel grow">
+        <h2>🔁 ② コパイロット回答を貼り戻し</h2>
+        <label>コパイロットの解析結果を丸ごと貼り付け(Ctrl+Vでも自動読み取り)</label>
+        <textarea id="meetingAnalysisInput" style="flex:1; min-height:70px;" placeholder="MEETING_START〜ENDのブロックを自動読み取ります"></textarea>
+        <div class="footer-actions">
+          <button class="secondary" onclick="pasteFromClipboard()">📋 クリップボードから貼り付け</button>
+          <button onclick="previewMeetingAnalysis()">🔍 読み取りプレビュー</button>
+        </div>
+        <div id="meetingPreviewBox" style="display:none; margin-top:8px; flex:1; min-height:0; overflow-y:auto;" class="result-summary"></div>
+        <div class="footer-actions" id="meetingCommitActions" style="display:none;">
+          <button onclick="commitMeeting()">✅ ③ 会議として登録</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 右カラム: タスクボード -->
+  <div class="col">
+    <div class="panel grow">
+      <h2>タスクボード <span id="boardFilterChip" style="display:none; background:var(--amber-soft); color:var(--amber); font-size:11px; border-radius:10px; padding:2px 10px; cursor:pointer; font-weight:normal;" onclick="clearBoardFilter()"></span>
+        <span>
+          <button class="small" onclick="copyCopilotPrompt()">🤖 整理用コピー</button>
+          <button class="secondary small" onclick="exportJSON()">保存</button>
+          <button class="secondary small" onclick="document.getElementById('importFile').click()">読込</button>
+          <input type="file" id="importFile" accept="application/json" style="display:none" onchange="importJSON(event)">
+        </span>
+      </h2>
+      <div class="board">
+        <div class="board-col todo">
+          <h3>未対応 <span id="cnt-todo">0</span></h3>
+          <div class="cards" id="col-todo"><div class="empty-msg">なし</div></div>
+        </div>
+        <div class="board-col doing">
+          <h3>対応中 <span id="cnt-doing">0</span></h3>
+          <div class="cards" id="col-doing"><div class="empty-msg">なし</div></div>
+        </div>
+        <div class="board-col done">
+          <h3>完了 <span id="cnt-done">0</span></h3>
+          <div class="cards" id="col-done"><div class="empty-msg">なし</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</main>
+<footer class="app-footer">GlockBOT 0.1.0 · 業務効率化ワークベンチ（オフライン・秘密情報なし）</footer>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const VERSION = 'GlockBOT 0.1.0';
+let candidates = [];
+let tasks = [];
+let taskIdSeq = 1;
+let meetings = [];
+let meetingIdSeq = 1;
+let currentMeetingDraft = null;
+
+const ACTION_KEYWORDS = [
+  "ご確認", "ご対応", "お願いします", "お願いいたします", "至急", "急ぎ",
+  "ご提出", "提出して", "送付", "ご送付", "承認", "確認願います", "ご返信",
+  "回答願います", "ご検討", "修正", "調整", "手配", "共有してください",
+  "教えてください", "折り返し", "連絡ください", "納品", "対応願います",
+  "ご協力", "報告", "締切", "期限", "までに", "本日中", "今週中", "至急対応"
+];
+
+const WORK_KEYWORDS = [
+  "作業", "打ち合わせ", "会議", "MTG", "ミーティング", "実施", "訪問",
+  "点検", "工事", "搬入", "立会い", "現地", "予定", "施工", "設置",
+  "検査", "試験", "アンカー", "スケジュール", "日程"
+];
+
+function isTriggerLine(line) {
+  return ACTION_KEYWORDS.some(kw => line.includes(kw))
+      || WORK_KEYWORDS.some(kw => line.includes(kw))
+      || extractDates(line).length > 0;
+}
+
+const DECISION_KEYWORDS = [
+  "決定", "決まりました", "承認された", "合意", "ことになりました",
+  "採用する", "見送り", "中止", "継続する", "確定", "了承",
+  "することにした", "進めることに", "OKが出た", "GOが出た"
+];
+
+const NAME_ACTION_RE = /([一-龠ぁ-んァ-ヶー]{2,6}(?:さん|くん|氏|君))\s*(?:が|は)?\s*(対応|担当|実施|確認|作成|準備|進行|手配|報告|提出|調整)/;
+
+const DATE_PATTERNS = [
+  /\d{1,2}\s*[\/月]\s*\d{1,2}\s*日?/g,
+  /(今日|明日|明後日|今週中|来週|今週末|月末|週明け|本日中|至急)/g
+];
+
+function switchTab(name) {
+  document.querySelectorAll('[data-tab]').forEach(el => {
+    el.classList.toggle('active', el.getAttribute('data-tab') === name);
+  });
+  document.getElementById('tabbtn-mail').classList.toggle('active', name === 'mail');
+  document.getElementById('tabbtn-teams').classList.toggle('active', name === 'teams');
+}
+
+function escapeHtml(str) {
+  return str.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+}
+
+function highlightKeywords(line) {
+  let escaped = escapeHtml(line);
+  [...ACTION_KEYWORDS, ...WORK_KEYWORDS].forEach(kw => {
+    const re = new RegExp(kw, "g");
+    escaped = escaped.replace(re, `<span class="hl">${kw}</span>`);
+  });
+  return escaped;
+}
+
+function extractDates(line) {
+  let found = [];
+  DATE_PATTERNS.forEach(pat => {
+    const matches = line.match(pat);
+    if (matches) found = found.concat(matches);
+  });
+  return [...new Set(found)];
+}
+
+/* ===== メール解析 ===== */
+function analyzeMail() {
+  const subject = document.getElementById('subject').value.trim();
+  const sender = document.getElementById('sender').value.trim();
+  const mailLink = document.getElementById('mailLink').value.trim();
+  const body = document.getElementById('mailBody').value.trim();
+
+  if (!body) { showToast("本文を貼り付けてください"); return; }
+
+  const rawLines = body.split(/\n|。/).map(s => s.trim()).filter(s => s.length > 0);
+  const triggerLines = rawLines.filter(isTriggerLine);
+
+  candidates = [];
+  let mergedMode = false;
+
+  if (triggerLines.length <= 1) {
+    // 1メール1タスクとしてまとめる
+    mergedMode = true;
+    const titleLine = triggerLines[0] || rawLines[0] || (subject || 'メール本文');
+    candidates.push({
+      text: titleLine,
+      dates: extractDates(body),
+      source: subject || sender ? `${subject}${sender ? ' / ' + sender : ''}` : '',
+      context: body,
+      link: mailLink,
+      merged: true
+    });
+  } else {
+    // 複数の作業候補があるので個別に分割
+    triggerLines.forEach(line => {
+      candidates.push({
+        text: line,
+        dates: extractDates(line),
+        source: subject || sender ? `${subject}${sender ? ' / ' + sender : ''}` : '',
+        context: body,
+        link: mailLink
+      });
+    });
+  }
+
+  const box = document.getElementById('summaryBox');
+  let summary = '';
+  if (subject) summary += `件名: ${subject}\n`;
+  if (sender) summary += `差出人: ${sender}\n`;
+  if (mergedMode) {
+    if (triggerLines.length === 0) {
+      summary += `明確なトリガーは見つからんかったけど、1メール1タスクとして候補に入れました(内容を見て判断してな)。`;
+    } else {
+      summary += `作業トリガーは${triggerLines.length}件だったので、1メール1タスクとしてまとめました。`;
+    }
+  } else {
+    summary += `複数の作業候補(${candidates.length}件)を検出しました。必要なものだけチェックしてボードへ送ってな。`;
+  }
+  box.textContent = summary;
+
+  const list = document.getElementById('candidateList');
+  list.innerHTML = candidates.length === 0
+    ? '<div class="empty-msg">アクション候補なし</div>'
+    : candidates.map((c, idx) => `
+      <div class="candidate-item">
+        <input type="checkbox" id="cand-${idx}">
+        <div class="txt">
+          ${c.merged ? '<span class="decision-tag" style="background:var(--steel-soft);color:var(--steel);">まとめ</span> ' : ''}
+          ${highlightKeywords(c.text)}
+          ${c.dates.map(d => `<span class="date-tag">📅 ${d}</span>`).join('')}
+        </div>
+      </div>
+    `).join('');
+  document.getElementById('resultCard').style.display = 'flex';
+}
+
+function toggleAllCandidates(state) {
+  candidates.forEach((c, idx) => {
+    const cb = document.getElementById(`cand-${idx}`);
+    if (cb) cb.checked = state;
+  });
+}
+
+function sendAllToBoard() {
+  let added = 0;
+  candidates.forEach((c, idx) => {
+    const checkbox = document.getElementById(`cand-${idx}`);
+    if (checkbox && checkbox.checked) {
+      tasks.push({
+        id: taskIdSeq++,
+        text: c.text,
+        source: c.source,
+        deadline: c.dates.join(', '),
+        status: 'todo',
+        context: c.context || '',
+        link: c.link || ''
+      });
+      added++;
+    }
+  });
+  renderBoard();
+  showToast(`${added}件をタスクボードへ追加`);
+}
+
+let boardFilter = null; // 会議名でボードを絞り込むフィルター
+
+function setBoardFilter(meetingTitle) {
+  boardFilter = meetingTitle;
+  renderBoard();
+  const chip = document.getElementById('boardFilterChip');
+  chip.textContent = `🔎 ${meetingTitle} ✕`;
+  chip.style.display = 'inline-block';
+  showToast(`「${meetingTitle}」のタスクだけ表示中。チップをクリックで解除`);
+}
+
+function clearBoardFilter() {
+  boardFilter = null;
+  document.getElementById('boardFilterChip').style.display = 'none';
+  renderBoard();
+}
+
+function renderBoard() {
+  ['todo', 'doing', 'done'].forEach(status => {
+    const col = document.getElementById(`col-${status}`);
+    let filtered = tasks.filter(t => t.status === status);
+    if (boardFilter) filtered = filtered.filter(t => t.source === boardFilter);
+    document.getElementById(`cnt-${status}`).textContent = filtered.length;
+    if (filtered.length === 0) {
+      col.innerHTML = '<div class="empty-msg">なし</div>';
+      return;
+    }
+    col.innerHTML = filtered.map(t => {
+      const preview = (t.context || '').replace(/\s+/g, ' ').trim();
+      const previewShort = preview.length > 45 ? preview.slice(0, 45) + '…' : preview;
+      return `
+      <div class="task-card">
+        <div>${escapeHtml(t.text)}</div>
+        ${t.deadline ? `<div class="date-tag">📅 ${escapeHtml(t.deadline)}</div>` : ''}
+        ${preview ? `
+          <div class="ctx-preview" id="ctx-prev-${t.id}" onclick="toggleCtx(${t.id})">📄 ${escapeHtml(previewShort)}</div>
+          <div class="ctx-full" id="ctx-full-${t.id}" style="display:none;" onclick="toggleCtx(${t.id})">${escapeHtml(preview)}</div>
+        ` : ''}
+        <div class="meta">
+          <span>${escapeHtml(t.source || '')}</span>
+          <div class="btns">
+            ${t.link ? `<button class="secondary small" onclick="window.open('${t.link.replace(/'/g, "\\'")}', '_blank')" title="元メールを開く">🔗</button>` : ''}
+            ${status !== 'todo' ? `<button class="secondary small" onclick="moveTask(${t.id}, '${prevStatus(status)}')">←</button>` : ''}
+            ${status !== 'done' ? `<button class="small" onclick="moveTask(${t.id}, '${nextStatus(status)}')">→</button>` : ''}
+            <button class="secondary small" onclick="deleteTask(${t.id})">✕</button>
+          </div>
+        </div>
+      </div>
+    `;
+    }).join('');
+  });
+  updateHeaderStats();
+}
+
+function toggleCtx(id) {
+  const prev = document.getElementById(`ctx-prev-${id}`);
+  const full = document.getElementById(`ctx-full-${id}`);
+  if (!prev || !full) return;
+  const showing = full.style.display !== 'none';
+  full.style.display = showing ? 'none' : 'block';
+  prev.style.display = showing ? 'block' : 'none';
+}
+
+function nextStatus(s) { return s === 'todo' ? 'doing' : 'done'; }
+function prevStatus(s) { return s === 'done' ? 'doing' : 'todo'; }
+function moveTask(id, ns) { const t = tasks.find(t => t.id === id); if (t) t.status = ns; renderBoard(); }
+function deleteTask(id) { tasks = tasks.filter(t => t.id !== id); renderBoard(); }
+
+function clearInput() {
+  document.getElementById('subject').value = '';
+  document.getElementById('sender').value = '';
+  document.getElementById('mailLink').value = '';
+  document.getElementById('mailBody').value = '';
+  document.getElementById('resultCard').style.display = 'none';
+}
+
+function copyMarkdown() {
+  let md = '';
+  const subject = document.getElementById('subject').value.trim();
+  if (subject) md += `## ${subject}\n\n`;
+  candidates.forEach(c => {
+    md += `- [ ] ${c.text}${c.dates.length ? ' (期限: ' + c.dates.join(', ') + ')' : ''}\n`;
+  });
+  navigator.clipboard.writeText(md).then(() => showToast("Markdownをコピーしました"))
+    .catch(() => showToast("コピー失敗。手動で選択してな"));
+}
+
+/* ===== コパイロット用プロンプト(タスク整理) ===== */
+function copyCopilotPrompt() {
+  if (tasks.length === 0) { showToast("タスクがありません"); return; }
+  const now = new Date();
+  const pad = n => String(n).padStart(2, '0');
+  const todayStr = `${now.getFullYear()}/${pad(now.getMonth()+1)}/${pad(now.getDate())}`;
+
+  const statusLabel = { todo: '未対応', doing: '対応中', done: '完了' };
+  let taskLines = '';
+  ['todo', 'doing'].forEach(status => {
+    const filtered = tasks.filter(t => t.status === status);
+    if (filtered.length === 0) return;
+    taskLines += `\n### ${statusLabel[status]} (${filtered.length}件)\n`;
+    filtered.forEach(t => {
+      taskLines += `- ${t.text}`;
+      if (t.deadline) taskLines += ` [期限表現: ${t.deadline}]`;
+      if (t.source) taskLines += ` (出典: ${t.source})`;
+      taskLines += '\n';
+    });
+  });
+  const doneCount = tasks.filter(t => t.status === 'done').length;
+
+  const prompt = `# 役割
+あなたは製造業の企画・調査部門で働く担当者の優秀なタスク管理アシスタントです。
+
+# 前提
+- 本日の日付: ${todayStr}
+- 以下はメール・会議から抽出したタスクの一覧です(完了済み${doneCount}件は除外済み)
+- 「期限表現」は元の表現をそのまま記載しているため、本日の日付を基準に実際の日付へ変換して解釈してください
+
+# タスク一覧
+${taskLines}
+# 依頼
+以下の形式で回答してください:
+
+1. **今日中に着手すべきタスク**: 期限切れ・本日期限・至急表現のものを優先度順に。それぞれ推定所要時間(15分/30分/1時間の粒度)を付ける
+2. **今週中に対応すべきタスク**: 期限順に並べる
+3. **期限不明のタスク**: 内容から緊急度を推定し、「確認が必要」なものには何を確認すべきか一言添える
+4. **返信が必要なもの**: タスクの中で相手への返信・連絡が発生するものを抽出し、それぞれ1行の返信文案を添える
+
+# 制約
+- 推測で期限を断定しない。不明なものは不明と明記する
+- 各項目は簡潔に。前置きや締めの挨拶は不要
+
+# 重要: 回答の最後に必ず以下の形式のブロックを付けてください
+カレンダー登録用に、期限が確定しているタスクだけを以下の形式で列挙します。
+1行1タスク、区切り文字は「|」、日付はYYYY/MM/DD形式です。
+
+\`\`\`
+CALENDAR_START
+2026/07/07|タスクのタイトル(30字以内)
+2026/07/10|別のタスクのタイトル
+CALENDAR_END
+\`\`\``;
+
+  navigator.clipboard.writeText(prompt).then(() => showToast("コパイロット用プロンプトをコピーしました"))
+    .catch(() => showToast("コピー失敗。ブラウザの権限を確認してな"));
+}
+
+/* ===== JSON入出力 ===== */
+function exportJSON() {
+  const blob = new Blob([JSON.stringify(tasks, null, 2)], {type: 'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'mail_tasks_export.json';
+  a.click();
+  showToast("エクスポートしました");
+}
+
+function importJSON(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      const imported = JSON.parse(e.target.result);
+      const maxId = Math.max(0, ...imported.map(t => t.id || 0));
+      taskIdSeq = maxId + 1;
+      tasks = tasks.concat(imported);
+      renderBoard();
+      showToast("インポートしました");
+    } catch (err) {
+      showToast("読み込み失敗: JSON形式を確認してな");
+    }
+  };
+  reader.readAsText(file);
+}
+
+/* ===== 日付処理・ICS ===== */
+function parseJapaneseDate(str) {
+  const now = new Date();
+  const year = now.getFullYear();
+  let m = str.match(/(\d{1,2})\s*[\/月]\s*(\d{1,2})/);
+  if (m) {
+    let d = new Date(year, parseInt(m[1]) - 1, parseInt(m[2]));
+    if (d < now && (now - d) > 1000*60*60*24*30) d.setFullYear(year + 1);
+    return d;
+  }
+  const addDays = (n) => { const d = new Date(now); d.setDate(d.getDate() + n); return d; };
+  if (/今日|本日中|至急/.test(str)) return addDays(0);
+  if (/明日/.test(str)) return addDays(1);
+  if (/明後日/.test(str)) return addDays(2);
+  if (/今週中|今週末/.test(str)) {
+    const d = new Date(now);
+    d.setDate(d.getDate() + (5 - d.getDay() + 7) % 7);
+    return d;
+  }
+  if (/来週|週明け/.test(str)) {
+    const d = new Date(now);
+    d.setDate(d.getDate() + ((8 - d.getDay()) % 7 || 7));
+    return d;
+  }
+  if (/月末/.test(str)) return new Date(year, now.getMonth() + 1, 0);
+  return null;
+}
+
+function fmtICSDate(d) {
+  const pad = n => String(n).padStart(2, '0');
+  return `${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}`;
+}
+
+function icsEscape(str) {
+  return str.replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\n/g, '\\n');
+}
+
+function downloadICS(events, filename) {
+  const ics = [
+    'BEGIN:VCALENDAR',
+    'VERSION:2.0',
+    'PRODID:-//WorkBench//JP',
+    'CALSCALE:GREGORIAN',
+    events.trimEnd(),
+    'END:VCALENDAR'
+  ].join('\r\n');
+  const blob = new Blob([ics], {type: 'text/calendar;charset=utf-8'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  a.click();
+}
+
+function exportICS() {
+  try {
+    const subject = document.getElementById('subject').value.trim();
+    const selected = [];
+    candidates.forEach((c, idx) => {
+      const checkbox = document.getElementById(`cand-${idx}`);
+      if (checkbox && checkbox.checked) selected.push(c);
+    });
+    if (selected.length === 0) { showToast("チェック済みの候補がありません"); return; }
+
+    const now = new Date();
+    const pad = n => String(n).padStart(2, '0');
+    const dtstamp = `${now.getFullYear()}${pad(now.getMonth()+1)}${pad(now.getDate())}T${pad(now.getHours())}${pad(now.getMinutes())}00`;
+
+    let events = '';
+    let noDateCount = 0;
+    selected.forEach((c, i) => {
+      let due = null;
+      for (const ds of c.dates) {
+        try { due = parseJapaneseDate(ds); } catch (e) { due = null; }
+        if (due && !isNaN(due.getTime())) break;
+        due = null;
+      }
+      if (!due || isNaN(due.getTime())) {
+        due = new Date(now);
+        due.setDate(due.getDate() + 1);
+        noDateCount++;
+      }
+      const dateStr = fmtICSDate(due);
+      const title = (subject ? `【${subject}】` : '【メールタスク】') + c.text.slice(0, 40);
+      events += [
+        'BEGIN:VEVENT',
+        `UID:mailtask-${Date.now()}-${i}@localtool`,
+        `DTSTAMP:${dtstamp}`,
+        `DTSTART;VALUE=DATE:${dateStr}`,
+        `DTEND;VALUE=DATE:${dateStr}`,
+        `SUMMARY:${icsEscape(title)}`,
+        `DESCRIPTION:${icsEscape(c.text + (c.source ? '\n出典: ' + c.source : ''))}`,
+        'END:VEVENT'
+      ].join('\r\n') + '\r\n';
+    });
+
+    downloadICS(events, 'mail_tasks.ics');
+    let msg = `${selected.length}件を.icsで出力しました`;
+    if (noDateCount > 0) msg += `(${noDateCount}件は日付不明のため明日を仮設定)`;
+    showToast(msg);
+  } catch (err) {
+    showToast("ICS生成でエラー: " + err.message);
+  }
+}
+
+/* ===== コパイロット回答の貼り戻し ===== */
+function parseCopilotResult() {
+  try {
+    const raw = document.getElementById('copilotResult').value;
+    if (!raw.trim()) { showToast("回答を貼り付けてください"); return; }
+
+    let block = '';
+    const m = raw.match(/CALENDAR_START([\s\S]*?)CALENDAR_END/);
+    block = m ? m[1] : raw;
+
+    const lines = block.split('\n').map(s => s.trim()).filter(s => s.length > 0);
+    const parsed = [];
+    const lineRe = /^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})\s*\|\s*(.+)$/;
+    lines.forEach(line => {
+      const lm = line.match(lineRe);
+      if (lm) {
+        const d = new Date(parseInt(lm[1]), parseInt(lm[2]) - 1, parseInt(lm[3]));
+        if (!isNaN(d.getTime())) parsed.push({ date: d, title: lm[4].trim() });
+      }
+    });
+
+    const box = document.getElementById('parseResultBox');
+    box.style.display = 'block';
+
+    if (parsed.length === 0) {
+      box.textContent = "読み取れる日付付きの行が見つかりませんでした。\n「YYYY/MM/DD|タイトル」形式の行があるか確認してな。\nブロックが省略された場合は「CALENDAR_STARTのブロックも出して」と追加で頼むとええで。\n(日付が確定してないタスクはカレンダー化できひんので、そのままタスクボードで管理してな)";
+      return;
+    }
+
+    const pad = n => String(n).padStart(2, '0');
+    box.textContent = `${parsed.length}件読み取りました:\n` +
+      parsed.map(p => `📅 ${p.date.getFullYear()}/${pad(p.date.getMonth()+1)}/${pad(p.date.getDate())} ${p.title}`).join('\n');
+
+    const now = new Date();
+    const dtstamp = `${now.getFullYear()}${pad(now.getMonth()+1)}${pad(now.getDate())}T${pad(now.getHours())}${pad(now.getMinutes())}00`;
+
+    let events = '';
+    parsed.forEach((p, i) => {
+      const dateStr = fmtICSDate(p.date);
+      events += [
+        'BEGIN:VEVENT',
+        `UID:copilot-task-${Date.now()}-${i}@localtool`,
+        `DTSTAMP:${dtstamp}`,
+        `DTSTART;VALUE=DATE:${dateStr}`,
+        `DTEND;VALUE=DATE:${dateStr}`,
+        `SUMMARY:${icsEscape(p.title)}`,
+        `DESCRIPTION:${icsEscape('コパイロット整理タスク(' + dtstamp.slice(0,8) + '取込)')}`,
+        'END:VEVENT'
+      ].join('\r\n') + '\r\n';
+    });
+
+    downloadICS(events, 'copilot_tasks.ics');
+    showToast(`${parsed.length}件を.icsで出力しました`);
+  } catch (err) {
+    showToast("読み取りでエラー: " + err.message);
+  }
+}
+
+/* ===== Teams議事録: AIフロー ===== */
+function copyMeetingAnalysisPrompt() {
+  const title = document.getElementById('meetingTitle').value.trim();
+  const date = document.getElementById('meetingDate').value.trim();
+  const meetingLink = document.getElementById('meetingLink').value.trim();
+  const body = document.getElementById('meetingBody').value.trim();
+
+  if (!body) { showToast("議事録を貼り付けてください"); return; }
+
+  // 貼り戻し時に使うためドラフト保持
+  currentMeetingDraft = { title, date, link: meetingLink, fullBody: body, decisions: [], actions: [] };
+
+  const prompt = `# 役割
+あなたは製造業の企画・調査部門の優秀な議事録解析アシスタントです。
+
+# 対象の議事録
+会議名: ${title || '(未記入)'}
+開催日: ${date || '(未記入)'}
+
+\`\`\`
+${body}
+\`\`\`
+
+# 依頼
+上記の議事録から以下を抽出してください:
+1. **決定事項**: 会議で確定した事項。検討中・保留は含めない
+2. **宿題(アクションアイテム)**: 誰かが対応すべきタスク。可能なら担当者と期限も特定する
+
+# 制約
+- 議事録に書かれていないことを推測で補わない
+- 担当者・期限が不明な場合は「不明」と記載する
+- 前置きや締めの挨拶は不要
+
+# 重要: 回答の最後に必ず以下の形式のブロックを付けてください
+1行1項目、区切り文字は「|」です。
+
+\`\`\`
+MEETING_START
+決定|決定事項の内容
+決定|別の決定事項
+宿題|担当者名または不明|期限または不明|宿題の内容
+宿題|田中さん|7/15|〇〇の資料を作成する
+MEETING_END
+\`\`\``;
+
+  navigator.clipboard.writeText(prompt).then(() => showToast("解析用プロンプトをコピーしました。コパイロットで実行してな"))
+    .catch(() => showToast("コピー失敗。ブラウザの権限を確認してな"));
+}
+
+function pasteFromClipboard() {
+  navigator.clipboard.readText().then(text => {
+    if (!text.trim()) { showToast("クリップボードが空です"); return; }
+    document.getElementById('meetingAnalysisInput').value = text;
+    previewMeetingAnalysis();
+  }).catch(() => {
+    showToast("クリップボード読み取りが許可されてへん。手動で貼り付けてな");
+  });
+}
+
+function previewMeetingAnalysis() {
+  try {
+    const raw = document.getElementById('meetingAnalysisInput').value.trim();
+    if (!raw) { showToast("コパイロットの回答を貼り付けてください"); return; }
+    if (!currentMeetingDraft) {
+      // プロンプトコピーを経由してない場合でも動くように空ドラフトを作る
+      currentMeetingDraft = { title: '', date: '', link: '', fullBody: '', decisions: [], actions: [] };
+    }
+
+    let block = '';
+    const m = raw.match(/MEETING_START([\s\S]*?)MEETING_END/);
+    block = m ? m[1] : raw;
+
+    const lines = block.split('\n').map(s => s.trim()).filter(s => s.length > 0);
+    const decisions = [];
+    const actions = [];
+
+    lines.forEach(line => {
+      const parts = line.split('|').map(p => p.trim());
+      if (parts[0] === '決定' && parts[1]) {
+        decisions.push(parts[1]);
+      } else if (parts[0] === '宿題' && parts.length >= 4) {
+        const owner = parts[1] === '不明' ? '' : parts[1];
+        const deadline = parts[2] === '不明' ? '' : parts[2];
+        actions.push({ text: parts[3], owner: owner, dates: deadline ? [deadline] : [] });
+      } else if (parts[0] === '宿題' && parts[1]) {
+        // 形式が崩れてても内容だけは拾う
+        actions.push({ text: parts.slice(1).join(' '), owner: '', dates: [] });
+      }
+    });
+
+    currentMeetingDraft.decisions = decisions;
+    currentMeetingDraft.actions = actions;
+
+    const box = document.getElementById('meetingPreviewBox');
+    box.style.display = 'block';
+
+    if (decisions.length === 0 && actions.length === 0) {
+      box.textContent = "読み取れる行が見つかりませんでした。\n「決定|内容」「宿題|担当|期限|内容」形式の行があるか確認してな。\nブロックが省略された場合は「MEETING_STARTのブロックも出して」と追加で頼むとええで。";
+      document.getElementById('meetingCommitActions').style.display = 'none';
+      return;
+    }
+
+    let preview = `会議名: ${currentMeetingDraft.title || '(未記入)'}\n開催日: ${currentMeetingDraft.date || '(未記入)'}\n\n`;
+    preview += `✅ 決定事項 ${decisions.length}件\n`;
+    decisions.forEach(d => { preview += `・${d}\n`; });
+    preview += `\n📌 宿題 ${actions.length}件\n`;
+    actions.forEach(a => {
+      preview += `・${a.text}`;
+      if (a.owner) preview += ` [担当: ${a.owner}]`;
+      if (a.dates.length) preview += ` [期限: ${a.dates.join(', ')}]`;
+      preview += '\n';
+    });
+    box.textContent = preview;
+    document.getElementById('meetingCommitActions').style.display = 'flex';
+  } catch (err) {
+    showToast("読み取りでエラー: " + err.message);
+  }
+}
+
+function commitMeeting() {
+  if (!currentMeetingDraft) return;
+  const d = currentMeetingDraft;
+  const now = new Date();
+  const pad = n => String(n).padStart(2, '0');
+  const registeredAt = `${now.getFullYear()}/${pad(now.getMonth()+1)}/${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}`;
+  const meeting = {
+    id: meetingIdSeq++,
+    title: d.title || '(無題の会議)',
+    date: d.date || '',
+    registeredAt: registeredAt,
+    decisions: d.decisions,
+    actions: d.actions
+  };
+  meetings.push(meeting);
+
+  d.actions.forEach(a => {
+    tasks.push({
+      id: taskIdSeq++,
+      text: a.text,
+      source: meeting.title,
+      deadline: a.dates.join(', ') + (a.owner ? ` / 担当: ${a.owner}` : ''),
+      status: 'todo',
+      context: d.fullBody || '',
+      link: d.link || ''
+    });
+  });
+  renderBoard();
+  renderMeetingDashboard();
+  document.getElementById('meetingPreviewBox').style.display = 'none';
+  document.getElementById('meetingCommitActions').style.display = 'none';
+  document.getElementById('meetingAnalysisInput').value = '';
+  clearMeetingInput();
+  showToast("登録しました。宿題はタスクボードへも追加済み。履歴の「📄 PDF出力」でレポートも作れるで");
+}
+
+function renderMeetingDashboard() {
+  const totalDecisions = meetings.reduce((sum, m) => sum + m.decisions.length, 0);
+  document.getElementById('dash-meetings-h').textContent = meetings.length;
+  document.getElementById('dash-decisions-h').textContent = totalDecisions;
+
+  const historyBox = document.getElementById('meetingHistory');
+  if (meetings.length === 0) {
+    historyBox.innerHTML = '<div class="empty-msg">まだ登録された会議はありません</div>';
+    return;
+  }
+  historyBox.innerHTML = meetings.slice().reverse().map(m => `
+    <div class="meeting-entry">
+      <div class="m-title" id="m-title-view-${m.id}" style="cursor:pointer;" onclick="toggleMeetingPreview(${m.id})">
+        <span>${escapeHtml(m.title)}</span><span>${escapeHtml(m.date)}</span>
+      </div>
+      <div class="m-title-edit" id="m-title-edit-${m.id}" style="display:none; gap:6px; align-items:center;">
+        <input type="text" id="m-title-input-${m.id}" value="${escapeHtml(m.title)}" style="flex:1;">
+        <button class="small" onclick="saveMeetingTitle(${m.id})">保存</button>
+      </div>
+      <div class="m-meta">決定${m.decisions.length}件 / 宿題${m.actions.length}件 ・ 登録: ${escapeHtml(m.registeredAt || '')}</div>
+      <div class="footer-actions" style="margin:2px 0 4px;">
+        <button class="secondary small" onclick="toggleMeetingPreview(${m.id})">👁 プレビュー</button>
+        <button class="secondary small" onclick="setBoardFilter('${escapeHtml(m.title).replace(/'/g, "\\'")}')">📋 タスク</button>
+        <button class="secondary small" onclick="toggleTitleEdit(${m.id})">✏️ タイトル編集</button>
+        <button class="secondary small" onclick="copySingleMeetingPrompt(${m.id})">🤖 この会議のみ</button>
+        <button class="secondary small" onclick="exportMeetingPDF(${m.id})">📄 PDF出力</button>
+        <button class="secondary small" onclick="deleteMeeting(${m.id})">✕ 削除</button>
+      </div>
+      <div id="meeting-preview-${m.id}" style="display:none;">
+        ${m.decisions.length > 0 ? `
+          <div style="font-size:11px; font-weight:bold; color:var(--green); margin-top:4px;">✅ 決定事項</div>
+          <ul>${m.decisions.map(d => `<li>${escapeHtml(d)}</li>`).join('')}</ul>
+        ` : ''}
+        ${m.actions.length > 0 ? `
+          <div style="font-size:11px; font-weight:bold; color:var(--red); margin-top:4px;">📌 宿題</div>
+          <ul>${m.actions.map(a => `<li>${escapeHtml(a.text)}${a.owner ? ' <span class="date-tag" style="background:var(--steel-soft);color:var(--steel);">👤 ' + escapeHtml(a.owner) + '</span>' : ''}</li>`).join('')}</ul>
+        ` : ''}
+        ${m.decisions.length === 0 && m.actions.length === 0 ? '<div class="empty-msg">抽出された項目はありません</div>' : ''}
+      </div>
+    </div>
+  `).join('');
+}
+
+function toggleTitleEdit(id) {
+  const view = document.getElementById(`m-title-view-${id}`);
+  const edit = document.getElementById(`m-title-edit-${id}`);
+  if (!view || !edit) return;
+  const showingEdit = edit.style.display !== 'none';
+  edit.style.display = showingEdit ? 'none' : 'flex';
+  view.style.display = showingEdit ? 'flex' : 'none';
+  if (!showingEdit) document.getElementById(`m-title-input-${id}`).focus();
+}
+
+function saveMeetingTitle(id) {
+  const input = document.getElementById(`m-title-input-${id}`);
+  if (!input) return;
+  const newTitle = input.value.trim() || '(無題の会議)';
+  const m = meetings.find(m => m.id === id);
+  if (!m) return;
+  const oldTitle = m.title;
+  m.title = newTitle;
+  // 紐付いているタスクのsourceも更新して紐付けを維持
+  tasks.forEach(t => { if (t.source === oldTitle) t.source = newTitle; });
+  if (boardFilter === oldTitle) boardFilter = newTitle;
+  renderMeetingDashboard();
+  renderBoard();
+  showToast("会議タイトルを更新しました(紐付くタスクにも反映)");
+}
+
+function toggleMeetingPreview(id) {
+  const el = document.getElementById(`meeting-preview-${id}`);
+  if (!el) return;
+  el.style.display = el.style.display === 'none' ? 'block' : 'none';
+}
+
+function deleteMeeting(id) {
+  meetings = meetings.filter(m => m.id !== id);
+  renderMeetingDashboard();
+  showToast("会議履歴から削除しました");
+}
+
+function copySingleMeetingPrompt(id) {
+  const m = meetings.find(m => m.id === id);
+  if (!m) return;
+  const now = new Date();
+  const pad = n => String(n).padStart(2, '0');
+  const todayStr = `${now.getFullYear()}/${pad(now.getMonth()+1)}/${pad(now.getDate())}`;
+
+  let body = `## ${m.title}${m.date ? '(' + m.date + ')' : ''}\n`;
+  if (m.decisions.length > 0) body += '決定事項:\n' + m.decisions.map(d => `- ${d}`).join('\n') + '\n';
+  if (m.actions.length > 0) body += '宿題:\n' + m.actions.map(a => `- ${a.text}${a.owner ? ' (担当: ' + a.owner + ')' : ''}`).join('\n') + '\n';
+
+  const prompt = `# 役割
+あなたは製造業の企画・調査部門のプロジェクト管理アシスタントです。
+
+# 前提
+- 本日の日付: ${todayStr}
+- 以下は1回分のTeams会議から抽出した決定事項と宿題です
+
+# 会議データ
+${body}
+# 依頼
+1. **決定事項の要点整理**: 簡潔に3行以内で
+2. **宿題の優先順位**: 担当者未定のものを最優先で洗い出し、次に期限が近いものを並べてください
+3. **懸念点**: この会議内容から見て気になる点があれば指摘してください
+
+# 制約
+- 推測で断定しない。不明な点は不明と明記する
+- 前置きや締めの挨拶は不要`;
+
+  navigator.clipboard.writeText(prompt).then(() => showToast("この会議のみの分析プロンプトをコピーしました"))
+    .catch(() => showToast("コピー失敗。ブラウザの権限を確認してな"));
+}
+
+function updateHeaderStats() {
+  const open = tasks.filter(t => t.status !== 'done').length;
+  document.getElementById('dash-openactions-h').textContent = open;
+}
+
+function exportMeetingPDF(id) {
+  const m = meetings.find(m => m.id === id);
+  if (!m) { showToast("会議データが見つかりません"); return; }
+
+  const now = new Date();
+  const pad = n => String(n).padStart(2, '0');
+  const generatedAt = `${now.getFullYear()}/${pad(now.getMonth()+1)}/${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}`;
+
+  const decisionCards = m.decisions.length > 0
+    ? m.decisions.map(d => `<div class="rp-card rp-decision"><span class="rp-tag">決定</span>${escapeHtml(d)}</div>`).join('')
+    : '<div class="rp-empty">決定事項なし</div>';
+
+  const actionCards = m.actions.length > 0
+    ? m.actions.map(a => `
+        <div class="rp-card rp-action">
+          <span class="rp-tag">宿題</span>${escapeHtml(a.text)}
+          <div class="rp-meta">
+            ${a.owner ? `<span class="rp-pill rp-owner">👤 ${escapeHtml(a.owner)}</span>` : ''}
+            ${a.dates.map(dt => `<span class="rp-pill rp-date">📅 ${escapeHtml(dt)}</span>`).join('')}
+          </div>
+        </div>`).join('')
+    : '<div class="rp-empty">宿題なし</div>';
+
+  const totalItems = m.decisions.length + m.actions.length;
+  let densityClass = 'rp-normal';
+  if (totalItems > 16) densityClass = 'rp-ultra';
+  else if (totalItems > 10) densityClass = 'rp-dense';
+  else if (totalItems > 6) densityClass = 'rp-cozy';
+
+  const html = `<!DOCTYPE html>
+<html lang="ja"><head><meta charset="UTF-8"><title>${escapeHtml(m.title)} - 会議レポート</title>
+<style>
+  @page { size: A4 landscape; margin: 6mm; }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    font-family: "Hiragino Kaku Gothic ProN","Yu Gothic UI","Yu Gothic","Meiryo",sans-serif;
+    color: #1f2937; margin: 0; padding: 8mm; background: #fff;
+    display: flex; flex-direction: column;
+  }
+  .rp-header {
+    display: flex; justify-content: space-between; align-items: flex-end;
+    border-bottom: 4px solid #33597a; padding-bottom: 8px; margin-bottom: 12px;
+    flex-shrink: 0;
+  }
+  .rp-header h1 { font-size: 26px; margin: 0 0 4px; color: #33597a; }
+  .rp-header .rp-date { font-size: 13px; color: #6b7280; line-height: 1.6; }
+  .rp-stats { display: flex; gap: 12px; margin-bottom: 14px; flex-shrink: 0; }
+  .rp-stat {
+    flex: 1; background: #e7eef5; border-radius: 8px; padding: 8px 10px; text-align: center;
+  }
+  .rp-stat .n { font-size: 24px; font-weight: bold; color: #33597a; line-height: 1.2; }
+  .rp-stat .l { font-size: 12px; color: #6b7280; }
+  .rp-columns { display: flex; gap: 20px; flex: 1; min-height: 0; }
+  .rp-col { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+  .rp-section-title {
+    font-size: 16px; font-weight: bold; margin: 0 0 8px;
+    display: flex; align-items: center; gap: 6px; flex-shrink: 0;
+  }
+  .rp-card {
+    border-radius: 8px; padding: 9px 12px; margin-bottom: 7px; line-height: 1.5;
+    border: 1px solid #e1e4e8; page-break-inside: avoid;
+  }
+  /* 密度に応じたフォント・余白の自動スケール(横幅を最大限使う前提でベースを大きめに) */
+  .rp-normal .rp-card { font-size: 15px; }
+  .rp-cozy .rp-card { font-size: 13.5px; padding: 8px 11px; margin-bottom: 6px; }
+  .rp-dense .rp-card { font-size: 12px; padding: 7px 10px; margin-bottom: 5px; line-height: 1.4; }
+  .rp-ultra .rp-card { font-size: 11px; padding: 6px 9px; margin-bottom: 4px; line-height: 1.35; }
+  .rp-dense .rp-section-title, .rp-ultra .rp-section-title { font-size: 14px; margin-bottom: 6px; }
+  .rp-decision { background: #e5f1e7; border-color: #bfe0c6; }
+  .rp-action { background: #fbe9e9; border-color: #f0c2c2; }
+  .rp-tag {
+    display: inline-block; font-size: 11px; font-weight: bold; border-radius: 4px;
+    padding: 2px 8px; margin-right: 7px; color: #fff;
+  }
+  .rp-ultra .rp-tag { font-size: 9.5px; padding: 1px 6px; margin-right: 5px; }
+  .rp-decision .rp-tag { background: #3f7d4e; }
+  .rp-action .rp-tag { background: #b23b3b; }
+  .rp-meta { margin-top: 4px; }
+  .rp-pill {
+    display: inline-block; font-size: 11.5px; border-radius: 4px; padding: 2px 8px; margin-right: 5px;
+  }
+  .rp-ultra .rp-pill { font-size: 10px; padding: 1px 6px; }
+  .rp-owner { background: #e7eef5; color: #33597a; }
+  .rp-date { background: #fdf1de; color: #c77b16; }
+  .rp-empty { font-size: 13px; color: #9ca3af; }
+  .rp-footer { margin-top: 10px; font-size: 10px; color: #9ca3af; text-align: right; flex-shrink: 0; }
+  @media print { body { padding: 8mm; } }
+</style></head>
+<body class="${densityClass}">
+  <div class="rp-header">
+    <div>
+      <h1>${escapeHtml(m.title)}</h1>
+      <div class="rp-date">開催日: ${escapeHtml(m.date || '未記入')} ／ 登録日時: ${escapeHtml(m.registeredAt || '不明')}</div>
+    </div>
+    <div class="rp-date">レポート生成: ${generatedAt}</div>
+  </div>
+  <div class="rp-stats">
+    <div class="rp-stat"><div class="n">${m.decisions.length}</div><div class="l">決定事項</div></div>
+    <div class="rp-stat"><div class="n">${m.actions.length}</div><div class="l">宿題</div></div>
+    <div class="rp-stat"><div class="n">${m.actions.filter(a => a.owner).length}</div><div class="l">担当者確定済み</div></div>
+  </div>
+  <div class="rp-columns">
+    <div class="rp-col">
+      <div class="rp-section-title">✅ 決定事項</div>
+      ${decisionCards}
+    </div>
+    <div class="rp-col">
+      <div class="rp-section-title">📌 宿題・タスク</div>
+      ${actionCards}
+    </div>
+  </div>
+  <div class="rp-footer">業務ワークベンチ 自動生成レポート · GlockBOT 0.1.0</div>
+</body></html>`;
+
+  const win = window.open('', '_blank');
+  if (!win) { showToast("ポップアップがブロックされました。ブラウザの設定を確認してな"); return; }
+  win.document.write(html);
+  win.document.close();
+  setTimeout(() => { win.focus(); win.print(); }, 300);
+  showToast("レポートを新しいタブで開きました。印刷ダイアログで「PDFに保存」を選んでな");
+}
+
+function clearMeetingInput() {
+  document.getElementById('meetingTitle').value = '';
+  document.getElementById('meetingDate').value = '';
+  document.getElementById('meetingLink').value = '';
+  document.getElementById('meetingBody').value = '';
+  currentMeetingDraft = null;
+}
+
+function copyMeetingCopilotPrompt() {
+  if (meetings.length === 0) { showToast("登録された会議がありません"); return; }
+  const now = new Date();
+  const pad = n => String(n).padStart(2, '0');
+  const todayStr = `${now.getFullYear()}/${pad(now.getMonth()+1)}/${pad(now.getDate())}`;
+
+  let body = '';
+  meetings.forEach(m => {
+    body += `\n## ${m.title}${m.date ? '(' + m.date + ')' : ''}\n`;
+    if (m.decisions.length > 0) body += '決定事項:\n' + m.decisions.map(d => `- ${d}`).join('\n') + '\n';
+    if (m.actions.length > 0) body += '宿題:\n' + m.actions.map(a => `- ${a.text}${a.owner ? ' (担当: ' + a.owner + ')' : ''}`).join('\n') + '\n';
+  });
+
+  const prompt = `# 役割
+あなたは製造業の企画・調査部門のプロジェクト管理アシスタントです。
+
+# 前提
+- 本日の日付: ${todayStr}
+- 以下は複数回のTeams会議から抽出した決定事項と宿題の累積です
+
+# 会議データ
+${body}
+# 依頼
+1. **決定事項のサマリー**: 会議をまたいで矛盾している決定や、後の会議で覆った決定があれば指摘してください
+2. **宿題の優先順位**: 担当者未定のものを最優先で洗い出し、次に期限が近いものを並べてください
+3. **属人化リスク**: 特定の担当者に宿題が偏っていないか指摘してください
+
+# 制約
+- 推測で断定しない。不明な点は不明と明記する
+- 前置きや締めの挨拶は不要`;
+
+  navigator.clipboard.writeText(prompt).then(() => showToast("コパイロット用プロンプトをコピーしました"))
+    .catch(() => showToast("コピー失敗。ブラウザの権限を確認してな"));
+}
+
+function exportMeetingsJSON() {
+  const blob = new Blob([JSON.stringify(meetings, null, 2)], {type: 'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'meetings_export.json';
+  a.click();
+  showToast("エクスポートしました");
+}
+
+function showToast(msg) {
+  const toast = document.getElementById('toast');
+  toast.textContent = msg;
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), 2200);
+}
+
+// Ctrl+V 直接貼り付けでも自動プレビュー
+document.getElementById('meetingAnalysisInput').addEventListener('paste', () => {
+  setTimeout(() => previewMeetingAnalysis(), 50);
+});
+
+renderBoard();
+renderMeetingDashboard();
+switchTab('teams');
+</script>
+
+</body>
+</html>
