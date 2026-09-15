@@ -1,0 +1,1243 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Teams文字起こし 熱量・曖昧度可視化</title>
+<style>
+:root {
+  --navy: #0a2540;
+  --navy-2: #143656;
+  --copper: #c45c26;
+  --copper-d: #9a451b;
+  --bg: #eef1f5;
+  --card: #ffffff;
+  --line: #cfd6de;
+  --muted: #5b6775;
+  --text: #1c2430;
+  --warn: #8a5a00;
+  --warn-bg: #fff6d9;
+  --radius: 4px;
+  --mono: "Cascadia Mono", "Consolas", "Yu Gothic UI", monospace;
+  --sans: "Segoe UI", "Yu Gothic UI", "Hiragino Sans", "Meiryo", sans-serif;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text); font-family: var(--sans); font-size: 13px; }
+body { min-height: 100vh; }
+.app { max-width: 1440px; margin: 0 auto; padding: 12px 14px 36px; }
+.header {
+  background: var(--navy); color: #fff; padding: 12px 16px;
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  border-radius: var(--radius); border-bottom: 3px solid var(--copper);
+}
+.brand { display: flex; align-items: center; gap: 12px; }
+.mark {
+  width: 38px; height: 38px; border: 1px solid rgba(255,255,255,.25);
+  display: grid; place-items: center; font-weight: 700; letter-spacing: .04em;
+  color: var(--copper); font-size: 10px; background: var(--navy-2); text-align: center; line-height: 1.15;
+}
+.brand h1 { margin: 0; font-size: 16px; font-weight: 650; letter-spacing: .04em; }
+.brand p { margin: 2px 0 0; font-size: 11px; color: #c5d0dc; }
+.header-meta { text-align: right; font-size: 11px; color: #c5d0dc; line-height: 1.5; }
+.banner {
+  margin-top: 10px; background: var(--warn-bg); color: var(--warn);
+  border: 1px solid #ead7a0; padding: 8px 12px; font-size: 12px; line-height: 1.55;
+}
+.banner strong { color: #6a4300; }
+.panel {
+  margin-top: 10px; background: var(--card); border: 1px solid var(--line); padding: 12px;
+}
+.panel h2 { margin: 0 0 10px; font-size: 13px; color: var(--navy); letter-spacing: .04em; }
+.dropzone {
+  border: 1.5px dashed #9aa8b7; min-height: 88px; padding: 14px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
+  color: var(--muted); text-align: center; background: #fbfcfd; cursor: pointer;
+}
+.dropzone.dragover { border-color: var(--copper); background: #fff1e6; color: var(--navy); }
+.drop-title { font-weight: 700; color: var(--navy); font-size: 13px; }
+textarea {
+  width: 100%; min-height: 120px; margin-top: 10px; padding: 8px 10px;
+  font-family: var(--mono); font-size: 12px; border: 1px solid var(--line);
+  resize: vertical; background: #fbfcfd; color: var(--text);
+}
+.row-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 10px; }
+button, .file-btn {
+  font-family: inherit; font-size: 13px; border-radius: var(--radius); cursor: pointer;
+  border: 1px solid transparent; padding: 7px 12px; font-weight: 650;
+}
+button:disabled { opacity: .45; cursor: not-allowed; }
+.btn-primary { background: var(--copper); color: #fff; border-color: var(--copper-d); }
+.btn-primary:not(:disabled):hover { filter: brightness(1.05); }
+.btn-navy { background: var(--navy); color: #fff; }
+.btn-navy:not(:disabled):hover { background: var(--navy-2); }
+.btn-ghost { background: #fff; border-color: var(--line); color: var(--navy); }
+.btn-ghost:not(:disabled):hover { background: #f4f7fa; }
+.file-btn { display: inline-block; background: #fff; border: 1px solid var(--line); color: var(--navy); }
+.hint { color: var(--muted); font-size: 11px; }
+.kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+@media (max-width: 800px) { .kpis { grid-template-columns: 1fr 1fr; } }
+.kpi { background: #f7f9fb; border: 1px solid var(--line); padding: 10px 12px; }
+.kpi .n { font-size: 22px; font-weight: 700; color: var(--navy); font-variant-numeric: tabular-nums; }
+.kpi .l { font-size: 11px; color: var(--muted); margin-top: 2px; }
+.layout { display: grid; grid-template-columns: 320px 1fr; gap: 10px; margin-top: 10px; }
+@media (max-width: 1020px) { .layout { grid-template-columns: 1fr; } }
+.summary-side { display: flex; flex-direction: column; gap: 10px; }
+.list-block { max-height: 180px; overflow: auto; }
+.list-block ol { margin: 0; padding-left: 18px; }
+.list-block li { margin: 4px 0; line-height: 1.4; }
+.spk-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.spk-table th, .spk-table td { border-bottom: 1px solid #e8edf2; padding: 4px 6px; text-align: left; }
+.spk-table th { color: var(--muted); font-weight: 600; }
+.filters {
+  display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: flex-end;
+  padding-bottom: 10px; border-bottom: 1px solid var(--line); margin-bottom: 10px;
+}
+.fg { display: flex; flex-direction: column; gap: 4px; min-width: 140px; }
+.fg label { font-size: 11px; font-weight: 700; color: var(--navy); }
+.fg input[type="number"] { width: 64px; padding: 4px 6px; border: 1px solid var(--line); }
+.chips { display: flex; flex-wrap: wrap; gap: 4px; }
+.chip {
+  border: 1px solid var(--line); background: #fff; color: var(--navy);
+  padding: 3px 8px; font-size: 11px; font-weight: 650; border-radius: 12px; cursor: pointer;
+}
+.chip.on { background: var(--navy); color: #fff; border-color: var(--navy); }
+.spk-checks { display: flex; flex-wrap: wrap; gap: 8px 12px; max-width: 520px; }
+.spk-checks label { display: inline-flex; align-items: center; gap: 4px; cursor: pointer; }
+.table-wrap { overflow: auto; max-height: min(70vh, 760px); border: 1px solid var(--line); }
+table.grid { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+table.grid th, table.grid td { border-bottom: 1px solid #e8edf2; padding: 6px 8px; vertical-align: top; }
+table.grid th {
+  position: sticky; top: 0; background: var(--navy); color: #fff; font-weight: 650;
+  text-align: left; cursor: pointer; user-select: none; z-index: 1;
+}
+table.grid th:hover { background: var(--navy-2); }
+table.grid tbody tr:hover { background: #f6f8fb; }
+.col-n { width: 42px; font-variant-numeric: tabular-nums; color: var(--muted); }
+.col-t { width: 88px; font-variant-numeric: tabular-nums; font-family: var(--mono); font-size: 11px; white-space: nowrap; }
+.col-s { width: 92px; font-weight: 650; color: var(--navy); }
+.col-score { width: 72px; text-align: center; font-weight: 700; font-variant-numeric: tabular-nums; }
+td.body { line-height: 1.45; }
+.score-cell { text-align: center; font-weight: 700; font-variant-numeric: tabular-nums; }
+.rename-grid { display: grid; grid-template-columns: 160px 1fr; gap: 6px 10px; align-items: center; }
+.rename-grid input { padding: 5px 8px; border: 1px solid var(--line); }
+.legend { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; font-size: 11px; color: var(--muted); margin-top: 8px; }
+.sw { display: inline-block; width: 52px; height: 10px; vertical-align: middle; border: 1px solid var(--line); }
+.status { margin-top: 8px; font-size: 12px; color: var(--muted); }
+.count-pill {
+  font-variant-numeric: tabular-nums; background: var(--navy); color: #fff;
+  padding: 1px 8px; border-radius: 10px; font-size: 11px; margin-left: 6px;
+}
+.hidden { display: none !important; }
+.warn-list { color: var(--warn); font-size: 11px; margin: 6px 0 0; padding-left: 16px; }
+.ver-footer { margin: 8px 0 4px; text-align: right; color: var(--muted); font-size: 11px; opacity: .85; }
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="header">
+    <div class="brand">
+      <div class="mark">熱<br>曖</div>
+      <div>
+        <h1>Teams文字起こし 熱量・曖昧度可視化</h1>
+        <p>発言単位のサーモグラフィー（辞書ルール・完全オフライン）</p>
+      </div>
+    </div>
+    <div class="header-meta">MVP / ローカル完結<br>VTT・TXT・貼り付け</div>
+  </header>
+
+  <div class="banner">
+    <strong>スコアは辞書ルールの近似です。人事評価用途禁止。</strong>
+    熱量・曖昧度はヘッジ／決断語の密度から機械的に算出します。皮肉・文脈・本音は取りこぼします。議事録下書きもヒューリスティックです。必ず人が確認してください。
+  </div>
+
+  <section class="panel" id="inputPanel">
+    <h2>1. 入力 <span class="hint">.vtt / .txt をドロップまたは選択。貼り付けでも可。</span></h2>
+    <div class="dropzone" id="dropzone" tabindex="0">
+      <div class="drop-title">ここにファイルをドロップ</div>
+      <div class="hint">Teams Recap の WEBVTT、または「話者名: 本文」形式のテキスト</div>
+      <div class="row-actions" style="margin-top:8px;justify-content:center">
+        <label class="file-btn">ファイルを選択
+          <input type="file" id="fileInput" accept=".vtt,.txt,.text,text/vtt,text/plain" hidden>
+        </label>
+      </div>
+    </div>
+    <textarea id="paste" placeholder="WEBVTT または 話者名: 本文 を貼り付け…"></textarea>
+    <div class="row-actions">
+      <button type="button" class="btn-primary" id="btnAnalyze">解析</button>
+      <button type="button" class="btn-ghost" id="btnSample">サンプル読込</button>
+      <button type="button" class="btn-ghost" id="btnClear">クリア</button>
+      <span class="hint" id="fileHint">ファイル未選択</span>
+    </div>
+  </section>
+
+  <section class="panel hidden" id="renamePanel">
+    <h2>話者名の修正 <span class="hint">Speaker 1 など汎用名がある場合はここで実名に置換できます。</span></h2>
+    <div id="renameGrid" class="rename-grid"></div>
+    <div class="row-actions">
+      <button type="button" class="btn-navy" id="btnApplyRename">名前を適用して再表示</button>
+    </div>
+  </section>
+
+  <section class="panel hidden" id="resultPanel">
+    <h2>2. サマリーとフィルタ <span class="count-pill" id="rowCount">0</span></h2>
+    <div class="kpis" id="kpis"></div>
+    <div class="legend">
+      熱量 <span class="sw" style="background:linear-gradient(90deg,#fff6e6,#ffb74d,#c62828)"></span>
+      低→高（暖色）　
+      曖昧度 <span class="sw" style="background:linear-gradient(90deg,#f5f7fa,#90caf9,#1565c0)"></span>
+      低→高（寒色）　セルにマウスで根拠語
+    </div>
+    <div class="layout">
+      <aside class="summary-side">
+        <div class="panel" style="margin:0;padding:10px">
+          <h2>話者別平均</h2>
+          <table class="spk-table" id="spkTable"></table>
+        </div>
+        <div class="panel" style="margin:0;padding:10px">
+          <h2>熱量の高い発言</h2>
+          <div class="list-block"><ol id="topHeat"></ol></div>
+        </div>
+        <div class="panel" style="margin:0;padding:10px">
+          <h2>曖昧発言トップ</h2>
+          <div class="list-block"><ol id="topAmb"></ol></div>
+        </div>
+      </aside>
+      <div>
+        <div class="filters">
+          <div class="fg" style="min-width:220px">
+            <label>話者</label>
+            <div class="spk-checks" id="spkFilters"></div>
+          </div>
+          <div class="fg">
+            <label>熱量バンド</label>
+            <div class="chips" id="heatChips"></div>
+            <div class="hint">min <input type="number" id="heatMin" min="0" max="100" value="0">
+              — max <input type="number" id="heatMax" min="0" max="100" value="100"></div>
+          </div>
+          <div class="fg">
+            <label>曖昧度バンド</label>
+            <div class="chips" id="ambChips"></div>
+            <div class="hint">min <input type="number" id="ambMin" min="0" max="100" value="0">
+              — max <input type="number" id="ambMax" min="0" max="100" value="100"></div>
+          </div>
+        </div>
+        <div class="row-actions" style="margin-top:0;margin-bottom:8px">
+          <button type="button" class="btn-navy" id="btnExportHtml">HTMLエクスポート</button>
+          <button type="button" class="btn-ghost" id="btnCopyMinutes">議事録下書きコピー</button>
+          <button type="button" class="btn-ghost" id="btnDlMinutes">議事録下書きDL</button>
+        </div>
+        <div class="status" id="filterStatus"></div>
+        <div class="table-wrap">
+          <table class="grid" id="grid">
+            <thead>
+              <tr>
+                <th data-sort="id">#</th>
+                <th data-sort="startMs">時刻</th>
+                <th data-sort="speaker">話者</th>
+                <th data-sort="text">本文</th>
+                <th data-sort="heat">熱量</th>
+                <th data-sort="ambiguity">曖昧度</th>
+              </tr>
+            </thead>
+            <tbody id="tbody"></tbody>
+          </table>
+        </div>
+        <ul class="warn-list" id="warnings"></ul>
+      </div>
+    </div>
+  </section>
+  <footer class="ver-footer">GlockBOT 0.1.0</footer>
+</div>
+<script>
+/* === CORE_BEGIN === */
+/**
+ * Teams heat/ambiguity scoring + transcript parse (pure, no DOM).
+ * Used by Node self-check and mirrored inline in index.html.
+ */
+'use strict';
+
+function clamp(n, lo, hi) {
+  n = Number(n);
+  if (!Number.isFinite(n)) return lo;
+  return Math.max(lo, Math.min(hi, n));
+}
+
+function uniquePreserve(arr) {
+  const seen = Object.create(null);
+  const out = [];
+  for (let i = 0; i < arr.length; i++) {
+    const k = arr[i];
+    if (seen[k]) continue;
+    seen[k] = 1;
+    out.push(k);
+  }
+  return out;
+}
+
+function tallyLabels(arr) {
+  const m = Object.create(null);
+  const order = [];
+  for (let i = 0; i < arr.length; i++) {
+    const k = arr[i];
+    if (!m[k]) {
+      m[k] = 0;
+      order.push(k);
+    }
+    m[k]++;
+  }
+  return order.map(function (k) { return m[k] > 1 ? k + '×' + m[k] : k; });
+}
+
+/** Longest-first, non-overlapping substring matches. Returns every hit (duplicates if repeated). */
+function collectMatches(text, termsLongestFirst) {
+  const s = String(text || '');
+  const used = new Array(s.length);
+  for (let i = 0; i < s.length; i++) used[i] = 0;
+  const hits = [];
+  for (let t = 0; t < termsLongestFirst.length; t++) {
+    const term = termsLongestFirst[t];
+    if (!term) continue;
+    let start = 0;
+    while (start <= s.length - term.length) {
+      const i = s.indexOf(term, start);
+      if (i < 0) break;
+      let overlap = 0;
+      for (let k = i; k < i + term.length; k++) {
+        if (used[k]) { overlap = 1; break; }
+      }
+      if (!overlap) {
+        hits.push(term);
+        for (let k = i; k < i + term.length; k++) used[k] = 1;
+      }
+      start = i + term.length;
+    }
+  }
+  return hits;
+}
+
+function sortLongest(terms) {
+  return terms.slice().sort(function (a, b) {
+    return b.length - a.length || a.localeCompare(b, 'ja');
+  });
+}
+
+const HEDGE_TERMS = sortLongest([
+  'ではないでしょうか', 'かもしれないですね', 'かもしれません', 'かもしれない',
+  'ではないか', 'どうでしょうか', 'どうでしょう', '様子を見る', '様子をみて',
+  '様子を見', '場合による', '場合により', '検討します', '検討する', '要検討',
+  '思っています', '思います', '思われる', '思う', 'たぶん', '多分',
+  'けっこう', '結構', 'ちょっと', '一応', '的な', 'ようです', 'ようだ',
+  'ような', 'らしい', 'かな', 'けれども', 'けれど', 'けど', 'できれば',
+  'できたら', '改めて', 'おそらく', '恐らく', 'まあ', 'まだ', 'みたい',
+  'っぽい', 'どうか', 'いかが', '保留', '未定', '様子見', '持ち帰',
+  '要確認', '確認してから', 'なんとなく', '何となく', 'そのうち',
+  '可能であれば', '可能なら', 'なるべく', 'でしょうか', 'ですかね',
+  '気がする', 'ペンディング', '難しいかも', '分からない', 'わからない',
+  '言い切れ', '断言でき', '微妙', 'とりあえず', '一応は', '相談して',
+  '調整して', 'すり合わせ', 'もし', '仮に', '後日', '追って', 'また今度',
+  'かも', '検討'
+]);
+
+const HEAT_TERMS = sortLongest([
+  '完了させる', '完了します', '担当します', '進めましょう', '進めます',
+  '決めましょう', '必ずやります', 'これで行きましょう', 'これでいきましょう',
+  'しなければならない', 'やるしかない', '責任を持って', '責任を持',
+  '決定しました', '実施します', '着手します', '対応します', 'やりましょう',
+  'やります', '絶対に', '絶対', '必ず', '決めた', '決めます', '決定',
+  '期限', 'までに', 'すぐに', 'すぐ', '今日中', '今週中', '今月中',
+  '明日まで', '必須です', '必須', '重要です', '重要', 'ぜひ', '是非',
+  'すごく', 'コミット', '完了', '至急', '今すぐ', '最優先', '必達',
+  '厳守', '確定', '合意', '承認', '結論', '着手', 'やり遂げる', 'やりきる',
+  '間違いなく', '確実に', '断言', '全力', '徹底', '推進', 'フィックス',
+  'クローズ', '決着', '急いで', '急ぎ', 'ASAP', 'asap', 'デッドライン',
+  '締切り', '締切', 'アサイン', 'いきましょう', '行きましょう', 'すべき',
+  '必要がある', '必要です', '必要だ', 'やる', 'オーナー'
+]);
+
+const GENERIC_SPEAKER_RE = /^(speaker|スピーカー|話者|spk)\s*[-_]?\s*\d+$/i;
+
+function scoreAmbiguity(text) {
+  const t = String(text == null ? '' : text);
+  const compact = t.replace(/\s+/g, '');
+  if (!compact) return { score: 0, matches: [] };
+
+  const hits = collectMatches(t, HEDGE_TERMS);
+  const extras = [];
+  if (/[？?]/.test(t)) extras.push('疑問符');
+  if (/(?:でしょうか|ですか|ますか|ませんか|ないですか|どうですか)/.test(t)) {
+    extras.push('問いかけ');
+  }
+  if (/(?:です|ます|だ|る|た)[がけ](?:ど)?[。．…⋯.]*$/.test(compact) ||
+      /が[。．…⋯]+$/.test(compact) || /が$/.test(compact)) {
+    extras.push('言いさし');
+  }
+
+  const all = hits.concat(extras);
+  if (!all.length) return { score: 0, matches: [] };
+
+  const n = all.length;
+  const density = n / Math.max(compact.length / 12, 1);
+  const raw = n * 1.08 + density * 1.4 + (extras.indexOf('疑問符') >= 0 ? 0.3 : 0);
+  const score = clamp(Math.round(100 * (1 - Math.exp(-raw / 3.7))), 0, 100);
+  return { score: score, matches: tallyLabels(all) };
+}
+
+function scoreHeat(text) {
+  const t = String(text == null ? '' : text);
+  const compact = t.replace(/\s+/g, '');
+  if (!compact) return { score: 0, matches: [] };
+
+  const hits = collectMatches(t, HEAT_TERMS);
+  const extras = [];
+  const bangs = (t.match(/[！!]/g) || []).length;
+  if (bangs) extras.push('感嘆符×' + bangs);
+
+  const n = hits.length;
+  let raw = n * 1.55 + Math.min(bangs, 3) * 0.75;
+  if (compact.length >= 16) raw += Math.min(1.15, compact.length / 48);
+  if (n >= 2 && compact.length < 55) raw += 0.75;
+  if (n === 0 && bangs === 0) {
+    raw = Math.min(1.35, compact.length / 52);
+  }
+
+  const all = hits.concat(extras);
+  if (n === 0 && bangs === 0 && raw < 0.08) {
+    return { score: 0, matches: [] };
+  }
+  const score = clamp(Math.round(100 * (1 - Math.exp(-raw / 3.15))), 0, 100);
+  return { score: score, matches: tallyLabels(all) };
+}
+
+function stripTags(s) {
+  return String(s || '')
+    .replace(/<[^>]+>/g, '')
+    .replace(/&nbsp;/gi, ' ')
+    .replace(/&lt;/gi, '<')
+    .replace(/&gt;/gi, '>')
+    .replace(/&amp;/gi, '&')
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;/g, "'");
+}
+
+function extractVoice(payload) {
+  const raw = String(payload || '');
+  const m = raw.match(/<v\s+([^>]+)>/i);
+  let speaker = '';
+  let text = raw;
+  if (m) {
+    speaker = m[1].replace(/\s+/g, ' ').trim();
+    text = raw.replace(/<\/?v[^>]*>/gi, '');
+  }
+  text = stripTags(text).replace(/\s+/g, ' ').trim();
+  return { speaker: speaker, text: text };
+}
+
+function parseTimestampToMs(ts) {
+  if (!ts) return 0;
+  const p = String(ts).trim().replace(',', '.').split(':');
+  if (p.length === 3) {
+    return (+p[0]) * 3600000 + (+p[1]) * 60000 + parseFloat(p[2]) * 1000;
+  }
+  if (p.length === 2) {
+    return (+p[0]) * 60000 + parseFloat(p[1]) * 1000;
+  }
+  return 0;
+}
+
+function formatClock(ts) {
+  if (!ts) return '';
+  const ms = parseTimestampToMs(ts);
+  if (!Number.isFinite(ms) || ms < 0) return String(ts);
+  const tot = Math.floor(ms / 1000);
+  const h = Math.floor(tot / 3600);
+  const m = Math.floor((tot % 3600) / 60);
+  const s = tot % 60;
+  const pad = function (n) { return n < 10 ? '0' + n : String(n); };
+  return h > 0 ? h + ':' + pad(m) + ':' + pad(s) : pad(m) + ':' + pad(s);
+}
+
+const TS_RE = /^((?:\d{1,2}:)?\d{1,2}:\d{2}(?:[.,]\d{1,3})?)\s+-->\s+((?:\d{1,2}:)?\d{1,2}:\d{2}(?:[.,]\d{1,3})?)(.*)$/;
+
+function parseVtt(text) {
+  const lines = String(text || '').replace(/^\uFEFF/, '').replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n');
+  const utterances = [];
+  const warnings = [];
+  let i = 0;
+  if (lines[0] && /^\s*WEBVTT/i.test(lines[0])) {
+    i = 1;
+    while (i < lines.length && lines[i].trim() !== '') i++;
+  }
+  let prevSpeaker = '';
+  while (i < lines.length) {
+    let line = lines[i];
+    const trimmed = line.trim();
+    if (!trimmed) { i++; continue; }
+    if (/^(NOTE|STYLE|REGION)\b/i.test(trimmed)) {
+      i++;
+      while (i < lines.length && lines[i].trim() !== '') i++;
+      continue;
+    }
+    let start = '';
+    let end = '';
+    let rest = '';
+    let m = trimmed.match(TS_RE);
+    if (!m && i + 1 < lines.length) {
+      const next = lines[i + 1].trim();
+      const m2 = next.match(TS_RE);
+      if (m2) {
+        i++;
+        m = m2;
+      }
+    }
+    if (!m) {
+      warnings.push('スキップ: ' + trimmed.slice(0, 80));
+      i++;
+      continue;
+    }
+    start = m[1];
+    end = m[2];
+    rest = (m[3] || '').trim();
+    i++;
+    const payloadLines = [];
+    if (rest) payloadLines.push(rest);
+    while (i < lines.length && lines[i].trim() !== '') {
+      payloadLines.push(lines[i]);
+      i++;
+    }
+    const payload = payloadLines.join(' ');
+    const v = extractVoice(payload);
+    if (!v.text) continue;
+    const speaker = v.speaker || prevSpeaker || '（不明）';
+    if (v.speaker) prevSpeaker = v.speaker;
+    utterances.push({
+      start: start,
+      end: end,
+      startMs: parseTimestampToMs(start),
+      endMs: parseTimestampToMs(end),
+      speaker: speaker,
+      text: v.text
+    });
+  }
+  return { utterances: utterances, format: 'vtt', warnings: warnings };
+}
+
+function parsePlain(text) {
+  const lines = String(text || '').replace(/^\uFEFF/, '').replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n');
+  const utterances = [];
+  const warnings = [];
+  let prev = '（不明）';
+  for (let li = 0; li < lines.length; li++) {
+    let line = lines[li].trim();
+    if (!line) continue;
+    if (/^WEBVTT/i.test(line) || /^(NOTE|STYLE|REGION)\b/i.test(line)) continue;
+    if (TS_RE.test(line) && !/[<：:]/.test(line.replace(TS_RE, '$3'))) {
+      warnings.push('タイムスタンプのみ: ' + line.slice(0, 60));
+      continue;
+    }
+
+    let start = '';
+    let end = '';
+    const tsBoth = line.match(/^((?:\d{1,2}:)?\d{1,2}:\d{2}(?:[.,]\d{1,3})?)\s+-->\s+((?:\d{1,2}:)?\d{1,2}:\d{2}(?:[.,]\d{1,3})?)\s+(.*)$/);
+    const tsOne = line.match(/^\[?((?:\d{1,2}:)?\d{1,2}:\d{2}(?:[.,]\d{1,3})?)\]?\s+(.*)$/);
+    if (tsBoth) {
+      start = tsBoth[1];
+      end = tsBoth[2];
+      line = tsBoth[3];
+    } else if (tsOne && /[:：]|<v/i.test(tsOne[2])) {
+      start = tsOne[1];
+      line = tsOne[2];
+    }
+
+    let speaker = '';
+    let body = '';
+    const v = line.match(/^<v\s+([^>]+)>\s*(.*?)\s*(?:<\/v>)?\s*$/i);
+    if (v) {
+      speaker = v[1].replace(/\s+/g, ' ').trim();
+      body = stripTags(v[2]);
+    } else {
+      const br = line.match(/^【([^】]+)】\s*(.*)$/);
+      const sc = line.match(/^([^:：]{1,40})[:：]\s*(.*)$/);
+      if (br && String(br[2]).length) {
+        speaker = br[1].trim();
+        body = stripTags(br[2]);
+      } else if (sc && String(sc[2]).length && !/^\d+$/.test(sc[1].trim()) &&
+                 !/^(https?|ftp|file)$/i.test(sc[1].trim())) {
+        speaker = sc[1].trim();
+        body = stripTags(sc[2]);
+      } else {
+        speaker = prev;
+        body = stripTags(line);
+      }
+    }
+    body = body.replace(/\s+/g, ' ').trim();
+    if (!body) continue;
+    if (speaker) prev = speaker;
+    utterances.push({
+      start: start,
+      end: end,
+      startMs: parseTimestampToMs(start),
+      endMs: parseTimestampToMs(end),
+      speaker: speaker || '（不明）',
+      text: body
+    });
+  }
+  return { utterances: utterances, format: 'plain', warnings: warnings };
+}
+
+function parseTranscript(raw) {
+  const text = String(raw == null ? '' : raw);
+  const looksVtt = /^\s*WEBVTT/im.test(text) ||
+    (/\d{1,2}:\d{2}(?:\d{2})?[.,]\d{1,3}\s+-->/.test(text) && (/<v\s+/i.test(text) || /^\s*WEBVTT/im.test(text))) ||
+    /\d{2}:\d{2}:\d{2}[.,]\d{3}\s+-->\s+\d{2}:\d{2}:\d{2}/.test(text);
+  if (looksVtt) {
+    const r = parseVtt(text);
+    if (r.utterances.length) return r;
+  }
+  return parsePlain(text);
+}
+
+function isGenericSpeaker(name) {
+  return GENERIC_SPEAKER_RE.test(String(name || '').trim());
+}
+
+function applySpeakerMap(utterances, map) {
+  map = map || {};
+  return utterances.map(function (u) {
+    const next = Object.assign({}, u);
+    if (map[u.speaker] && String(map[u.speaker]).trim()) {
+      next.speaker = String(map[u.speaker]).trim();
+    }
+    return next;
+  });
+}
+
+function scoreUtterance(u, index) {
+  const amb = scoreAmbiguity(u.text);
+  const heat = scoreHeat(u.text);
+  return {
+    id: index + 1,
+    start: u.start || '',
+    end: u.end || '',
+    startMs: u.startMs || 0,
+    endMs: u.endMs || 0,
+    speaker: u.speaker || '（不明）',
+    text: u.text || '',
+    heat: heat.score,
+    ambiguity: amb.score,
+    heatMatches: heat.matches,
+    ambMatches: amb.matches
+  };
+}
+
+function analyzeTranscript(raw, speakerMap) {
+  const parsed = parseTranscript(raw);
+  const mapped = applySpeakerMap(parsed.utterances, speakerMap);
+  const rows = mapped.map(scoreUtterance);
+  return {
+    format: parsed.format,
+    warnings: parsed.warnings || [],
+    rows: rows
+  };
+}
+
+function summarize(rows) {
+  const list = rows || [];
+  const bySp = Object.create(null);
+  list.forEach(function (r) {
+    const k = r.speaker || '（不明）';
+    if (!bySp[k]) bySp[k] = { speaker: k, count: 0, heatSum: 0, ambSum: 0, chars: 0 };
+    bySp[k].count++;
+    bySp[k].heatSum += r.heat;
+    bySp[k].ambSum += r.ambiguity;
+    bySp[k].chars += (r.text || '').length;
+  });
+  const speakers = Object.keys(bySp).map(function (k) {
+    const s = bySp[k];
+    return {
+      speaker: s.speaker,
+      count: s.count,
+      avgHeat: s.count ? Math.round(s.heatSum / s.count) : 0,
+      avgAmbiguity: s.count ? Math.round(s.ambSum / s.count) : 0,
+      chars: s.chars
+    };
+  }).sort(function (a, b) { return b.count - a.count; });
+
+  const avg = function (key) {
+    if (!list.length) return 0;
+    let s = 0;
+    for (let i = 0; i < list.length; i++) s += list[i][key];
+    return Math.round(s / list.length);
+  };
+
+  const topAmbiguous = list.slice().sort(function (a, b) {
+    return b.ambiguity - a.ambiguity || a.id - b.id;
+  }).slice(0, 5);
+
+  const topHeat = list.slice().sort(function (a, b) {
+    return b.heat - a.heat || a.id - b.id;
+  }).slice(0, 5);
+
+  return {
+    count: list.length,
+    speakerCount: speakers.length,
+    avgHeat: avg('heat'),
+    avgAmbiguity: avg('ambiguity'),
+    speakers: speakers,
+    topAmbiguous: topAmbiguous,
+    topHeat: topHeat
+  };
+}
+
+const DECISION_RE = /決(めた|めます|定|めましょう)|合意|確定|これで(行き|いき)ましょう|結論|承認|決定しました/;
+const TODO_RE = /担当|やります|進めます|までに|期限|今日中|今週中|完了|宿題|対応します|着手|実施します|TODO|ToDo|todo/;
+const OPEN_RE = /検討|様子を見|改めて|場合による|保留|未定|確認して|どうでしょう|かもしれない/;
+
+function extractMinutesDraft(rows) {
+  const decisions = [];
+  const todos = [];
+  const opens = [];
+  (rows || []).forEach(function (r) {
+    const t = r.text || '';
+    const clock = formatClock(r.start);
+    const prefix = (clock ? '[' + clock + '] ' : '') + r.speaker + ': ' + t;
+    const decisionLike = (DECISION_RE.test(t) && r.ambiguity < 52) || (r.heat >= 70 && r.ambiguity <= 35 && DECISION_RE.test(t));
+    const todoLike = TODO_RE.test(t) && r.ambiguity < 58 && r.heat >= 35;
+    const openLike = r.ambiguity >= 55 || (OPEN_RE.test(t) && r.heat < 55);
+
+    if (decisionLike) decisions.push(prefix);
+    else if (todoLike) todos.push(prefix);
+    if (openLike && !decisionLike) opens.push(prefix);
+  });
+  return { decisions: decisions, todos: todos, opens: opens };
+}
+
+function formatMinutesText(rows, meta) {
+  const d = extractMinutesDraft(rows);
+  const s = summarize(rows);
+  const lines = [];
+  lines.push('【議事録下書き】');
+  lines.push('※辞書ヒューリスティックによる下書きです。必ず人が確認してください。スコアは近似であり人事評価用途には使えません。');
+  lines.push('');
+  if (meta && meta.title) lines.push('会議: ' + meta.title);
+  if (meta && meta.exportedAt) lines.push('出力: ' + meta.exportedAt);
+  lines.push('発言数: ' + s.count + ' / 話者数: ' + s.speakerCount + ' / 平均熱量: ' + s.avgHeat + ' / 平均曖昧度: ' + s.avgAmbiguity);
+  lines.push('');
+  lines.push('■ 決定事項っぽい行');
+  if (d.decisions.length) d.decisions.forEach(function (x) { lines.push('- ' + x); });
+  else lines.push('- （抽出なし）');
+  lines.push('');
+  lines.push('■ ToDoっぽい行');
+  if (d.todos.length) d.todos.forEach(function (x) { lines.push('- ' + x); });
+  else lines.push('- （抽出なし）');
+  lines.push('');
+  lines.push('■ 曖昧のままの論点');
+  if (d.opens.length) d.opens.forEach(function (x) { lines.push('- ' + x); });
+  else lines.push('- （抽出なし）');
+  lines.push('');
+  lines.push('■ 話者別平均');
+  s.speakers.forEach(function (sp) {
+    lines.push('- ' + sp.speaker + ': 発言' + sp.count + ' / 熱量' + sp.avgHeat + ' / 曖昧度' + sp.avgAmbiguity);
+  });
+  return lines.join('\n');
+}
+
+function lerp(a, b, t) { return a + (b - a) * t; }
+
+function rgb(r, g, b) {
+  return 'rgb(' + Math.round(r) + ',' + Math.round(g) + ',' + Math.round(b) + ')';
+}
+
+function heatColors(score) {
+  const t = clamp(score, 0, 100) / 100;
+  let bg;
+  if (t < 0.33) {
+    const u = t / 0.33;
+    bg = rgb(lerp(255, 255, u), lerp(246, 183, u), lerp(230, 77, u));
+  } else if (t < 0.66) {
+    const u = (t - 0.33) / 0.33;
+    bg = rgb(lerp(255, 230, u), lerp(183, 74, u), lerp(77, 25, u));
+  } else {
+    const u = (t - 0.66) / 0.34;
+    bg = rgb(lerp(230, 136, u), lerp(74, 14, u), lerp(25, 14, u));
+  }
+  const fg = score >= 52 ? '#fff' : '#3a1600';
+  return { bg: bg, fg: fg };
+}
+
+function ambColors(score) {
+  const t = clamp(score, 0, 100) / 100;
+  let bg;
+  if (t < 0.33) {
+    const u = t / 0.33;
+    bg = rgb(lerp(245, 186, u), lerp(247, 210, u), lerp(250, 227, u));
+  } else if (t < 0.66) {
+    const u = (t - 0.33) / 0.33;
+    bg = rgb(lerp(186, 84, u), lerp(210, 144, u), lerp(227, 201, u));
+  } else {
+    const u = (t - 0.66) / 0.34;
+    bg = rgb(lerp(84, 13, u), lerp(144, 71, u), lerp(201, 161, u));
+  }
+  const fg = score >= 52 ? '#fff' : '#102038';
+  return { bg: bg, fg: fg };
+}
+
+const api = {
+  clamp: clamp,
+  collectMatches: collectMatches,
+  HEDGE_TERMS: HEDGE_TERMS,
+  HEAT_TERMS: HEAT_TERMS,
+  GENERIC_SPEAKER_RE: GENERIC_SPEAKER_RE,
+  scoreAmbiguity: scoreAmbiguity,
+  scoreHeat: scoreHeat,
+  stripTags: stripTags,
+  extractVoice: extractVoice,
+  parseTimestampToMs: parseTimestampToMs,
+  formatClock: formatClock,
+  parseVtt: parseVtt,
+  parsePlain: parsePlain,
+  parseTranscript: parseTranscript,
+  isGenericSpeaker: isGenericSpeaker,
+  applySpeakerMap: applySpeakerMap,
+  scoreUtterance: scoreUtterance,
+  analyzeTranscript: analyzeTranscript,
+  summarize: summarize,
+  extractMinutesDraft: extractMinutesDraft,
+  formatMinutesText: formatMinutesText,
+  heatColors: heatColors,
+  ambColors: ambColors
+};
+
+if (typeof module === 'object' && module.exports) {
+  module.exports = api;
+} else if (typeof window !== 'undefined') {
+  window.HeatAmbiguityCore = api;
+}
+
+/* === CORE_END === */
+</script>
+<script>
+(function () {
+  'use strict';
+  const C = window.HeatAmbiguityCore;
+  const SAMPLE_VTT = `WEBVTT
+Kind: captions
+Language: ja
+
+00:00:01.000 --> 00:00:05.400
+<v 田中>絶対に今週中に決めましょう。必ずやります。</v>
+
+00:00:06.200 --> 00:00:12.800
+<v 佐藤>まあ、ちょっと検討が必要かもしれないですね。一応様子を見てはどうでしょう。</v>
+
+1
+00:00:13.100 --> 00:00:18.500
+<v 鈴木>期限は金曜日までです。私が担当します。すぐ進めます。</v>
+
+00:00:19.000 --> 00:00:25.200
+<v 高橋>たぶん大丈夫だと思いますが、場合によるかなと。改めて確認した方がよいかもしれません。</v>
+
+00:00:26.000 --> 00:00:31.000
+<v 田中>必須です。今日中に方針を確定させましょう！すごく重要です。</v>
+
+00:00:32.400 --> 00:00:38.900
+<v 佐藤>できれば来週まで延期できないでしょうか。確認してからでいいですか？</v>
+
+00:00:39.200 --> 00:00:44.000 <v 鈴木>決定しました。これで行きましょう。コミットします。</v>
+
+00:00:45.000 --> 00:00:51.600
+<v 高橋>ようですね、けっこう難しいかもしれません。様子を見る必要があると思います。</v>
+
+00:00:52.000 --> 00:00:56.300
+<v 田中>絶対に完了させる。やります。期限は明日まで。</v>
+
+00:00:57.000 --> 00:01:03.400
+<v 佐藤>検討する必要がまだあるのではないでしょうか。ちょっと保留で、一応持ち帰ります。</v>
+
+00:01:04.000 --> 00:01:09.200
+<v 鈴木>すぐ着手します。今週中に完了させます。責任を持って対応します。</v>
+
+00:01:10.000 --> 00:01:15.800
+<v Speaker 1>一応確認してからでいいですか？たぶん問題ないと思うんですけど。</v>
+
+00:01:16.200 --> 00:01:21.000
+<v 高橋>的な感じで、なんとなく大丈夫らしいです。まだ未定ですが。</v>
+
+00:01:22.000 --> 00:01:27.500
+<v 田中>決めた。合意です。これでいきましょう。必ず金曜日までに完了させます。</v>
+`;
+
+  const state = {
+    sourceName: '',
+    rawText: '',
+    speakerMap: {},
+    origUtterances: [],
+    rows: [],
+    warnings: [],
+    format: '',
+    sortKey: 'id',
+    sortDir: 1,
+    heatBand: 'all',
+    ambBand: 'all'
+  };
+
+  const $ = function (id) { return document.getElementById(id); };
+
+  function esc(s) {
+    return String(s == null ? '' : s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
+  function nowStamp() {
+    const d = new Date();
+    const p = function (n) { return n < 10 ? '0' + n : '' + n; };
+    return d.getFullYear() + p(d.getMonth() + 1) + p(d.getDate()) + '_' +
+      p(d.getHours()) + p(d.getMinutes()) + p(d.getSeconds());
+  }
+
+  function nowLabel() {
+    const d = new Date();
+    const p = function (n) { return n < 10 ? '0' + n : '' + n; };
+    return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()) +
+      ' ' + p(d.getHours()) + ':' + p(d.getMinutes()) + ' JST';
+  }
+
+  function uniqueSpeakers(rows) {
+    const seen = Object.create(null);
+    const out = [];
+    rows.forEach(function (r) {
+      if (!seen[r.speaker]) { seen[r.speaker] = 1; out.push(r.speaker); }
+    });
+    return out;
+  }
+
+  function bandRange(band) {
+    if (band === 'low') return [0, 33];
+    if (band === 'mid') return [34, 66];
+    if (band === 'high') return [67, 100];
+    return [0, 100];
+  }
+
+  function selectedSpeakers() {
+    const boxes = document.querySelectorAll('#spkFilters input[type=checkbox]');
+    if (!boxes.length) return null;
+    const set = {};
+    let n = 0;
+    boxes.forEach(function (b) { if (b.checked) { set[b.value] = 1; n++; } });
+    return n ? set : {};
+  }
+
+  function filteredRows() {
+    const sp = selectedSpeakers();
+    const hMin = +$('heatMin').value || 0;
+    const hMax = $('heatMax').value === '' ? 100 : +$('heatMax').value;
+    const aMin = +$('ambMin').value || 0;
+    const aMax = $('ambMax').value === '' ? 100 : +$('ambMax').value;
+    let rows = state.rows.filter(function (r) {
+      if (sp && !sp[r.speaker]) return false;
+      if (r.heat < hMin || r.heat > hMax) return false;
+      if (r.ambiguity < aMin || r.ambiguity > aMax) return false;
+      return true;
+    });
+    const k = state.sortKey;
+    const dir = state.sortDir;
+    rows = rows.slice().sort(function (a, b) {
+      let va = a[k], vb = b[k];
+      if (typeof va === 'string') {
+        const c = va.localeCompare(vb, 'ja');
+        return c * dir;
+      }
+      return (va - vb) * dir;
+    });
+    return rows;
+  }
+
+  function renderChips(el, key) {
+    const items = [
+      ['all', 'すべて'],
+      ['low', '低 0–33'],
+      ['mid', '中 34–66'],
+      ['high', '高 67–100']
+    ];
+    el.innerHTML = items.map(function (it) {
+      const on = state[key] === it[0] ? ' on' : '';
+      return '<button type="button" class="chip' + on + '" data-band="' + it[0] + '">' + it[1] + '</button>';
+    }).join('');
+    el.querySelectorAll('.chip').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        state[key] = btn.getAttribute('data-band');
+        const range = bandRange(state[key]);
+        if (key === 'heatBand') { $('heatMin').value = range[0]; $('heatMax').value = range[1]; }
+        else { $('ambMin').value = range[0]; $('ambMax').value = range[1]; }
+        renderChips(el, key);
+        renderTable();
+      });
+    });
+  }
+
+  function clip(s, n) {
+    s = String(s || '');
+    return s.length > n ? s.slice(0, n) + '…' : s;
+  }
+
+  function renderSummary(allRows) {
+    const sum = C.summarize(allRows);
+    $('rowCount').textContent = String(sum.count);
+    $('kpis').innerHTML =
+      '<div class="kpi"><div class="n">' + sum.count + '</div><div class="l">発言数</div></div>' +
+      '<div class="kpi"><div class="n">' + sum.speakerCount + '</div><div class="l">話者数</div></div>' +
+      '<div class="kpi"><div class="n">' + sum.avgHeat + '</div><div class="l">平均熱量</div></div>' +
+      '<div class="kpi"><div class="n">' + sum.avgAmbiguity + '</div><div class="l">平均曖昧度</div></div>';
+    $('spkTable').innerHTML = '<tr><th>話者</th><th>件数</th><th>熱量</th><th>曖昧</th></tr>' +
+      sum.speakers.map(function (s) {
+        return '<tr><td>' + esc(s.speaker) + '</td><td>' + s.count + '</td><td>' + s.avgHeat + '</td><td>' + s.avgAmbiguity + '</td></tr>';
+      }).join('');
+    function lis(list, key) {
+      return list.map(function (r) {
+        return '<li><strong>' + esc(r.speaker) + '</strong> ' + key + ' ' + r[key === '熱量' ? 'heat' : 'ambiguity'] +
+          ' — ' + esc(clip(r.text, 72)) + '</li>';
+      }).join('');
+    }
+    $('topHeat').innerHTML = lis(sum.topHeat, '熱量');
+    $('topAmb').innerHTML = lis(sum.topAmbiguous, '曖昧度');
+  }
+
+  function renderRename(origList) {
+    const names = uniqueSpeakers(origList || []);
+    if (!names.length) { $('renamePanel').classList.add('hidden'); return; }
+    $('renamePanel').classList.remove('hidden');
+    $('renameGrid').innerHTML = names.map(function (n) {
+      const cur = state.speakerMap[n] || n;
+      const mark = C.isGenericSpeaker(n) ? ' <span class="hint">汎用名</span>' : '';
+      return '<div>' + esc(n) + mark + '</div><input data-from="' + esc(n) + '" value="' + esc(cur) + '">';
+    }).join('');
+  }
+
+  function renderSpeakerFilters(rows) {
+    const names = uniqueSpeakers(rows);
+    $('spkFilters').innerHTML = names.map(function (n) {
+      return '<label><input type="checkbox" value="' + esc(n) + '" checked> ' + esc(n) + '</label>';
+    }).join('');
+    $('spkFilters').querySelectorAll('input').forEach(function (b) {
+      b.addEventListener('change', renderTable);
+    });
+  }
+
+  function renderTable() {
+    const rows = filteredRows();
+    $('filterStatus').textContent = '表示 ' + rows.length + ' / ' + state.rows.length + ' 発言' +
+      (state.sourceName ? '　出典: ' + state.sourceName : '');
+    $('tbody').innerHTML = rows.map(function (r) {
+      const hc = C.heatColors(r.heat);
+      const ac = C.ambColors(r.ambiguity);
+      const ht = r.heatMatches.length ? '根拠: ' + r.heatMatches.join('、') : '根拠語なし';
+      const at = r.ambMatches.length ? '根拠: ' + r.ambMatches.join('、') : '根拠語なし';
+      const clock = C.formatClock(r.start) + (r.end ? '–' + C.formatClock(r.end) : '');
+      return '<tr>' +
+        '<td class="col-n">' + r.id + '</td>' +
+        '<td class="col-t">' + esc(clock) + '</td>' +
+        '<td class="col-s">' + esc(r.speaker) + '</td>' +
+        '<td class="body">' + esc(r.text) + '</td>' +
+        '<td class="score-cell" style="background:' + hc.bg + ';color:' + hc.fg + '" title="' + esc(ht) + '">' + r.heat + '</td>' +
+        '<td class="score-cell" style="background:' + ac.bg + ';color:' + ac.fg + '" title="' + esc(at) + '">' + r.ambiguity + '</td>' +
+        '</tr>';
+    }).join('');
+    $('warnings').innerHTML = (state.warnings || []).slice(0, 8).map(function (w) {
+      return '<li>' + esc(w) + '</li>';
+    }).join('');
+  }
+
+  function analyze() {
+    const raw = $('paste').value;
+    state.rawText = raw;
+    const parsed = C.parseTranscript(raw);
+    state.origUtterances = parsed.utterances || [];
+    state.warnings = parsed.warnings || [];
+    state.format = parsed.format;
+    const mapped = C.applySpeakerMap(state.origUtterances, state.speakerMap);
+    state.rows = mapped.map(C.scoreUtterance);
+    if (!state.rows.length) {
+      $('resultPanel').classList.add('hidden');
+      $('renamePanel').classList.add('hidden');
+      alert('発言を抽出できませんでした。VTT（<v 話者>本文</v>）または「話者名: 本文」形式を確認してください。');
+      return;
+    }
+    $('resultPanel').classList.remove('hidden');
+    renderSummary(state.rows);
+    renderRename(state.origUtterances);
+    renderSpeakerFilters(state.rows);
+    renderChips($('heatChips'), 'heatBand');
+    renderChips($('ambChips'), 'ambBand');
+    renderTable();
+  }
+
+  function readFile(file) {
+    const reader = new FileReader();
+    reader.onload = function () {
+      state.sourceName = file.name;
+      state.speakerMap = {};
+      $('fileHint').textContent = file.name + '（' + file.size + ' bytes）';
+      $('paste').value = String(reader.result || '').replace(/^\uFEFF/, '');
+      analyze();
+    };
+    reader.readAsText(file, 'UTF-8');
+  }
+
+  $('dropzone').addEventListener('click', function (e) {
+    if (e.target.closest('label')) return;
+    $('fileInput').click();
+  });
+  ['dragenter', 'dragover'].forEach(function (ev) {
+    $('dropzone').addEventListener(ev, function (e) {
+      e.preventDefault(); e.stopPropagation();
+      $('dropzone').classList.add('dragover');
+    });
+  });
+  ['dragleave', 'drop'].forEach(function (ev) {
+    $('dropzone').addEventListener(ev, function (e) {
+      e.preventDefault(); e.stopPropagation();
+      $('dropzone').classList.remove('dragover');
+    });
+  });
+  $('dropzone').addEventListener('drop', function (e) {
+    const f = e.dataTransfer.files && e.dataTransfer.files[0];
+    if (f) readFile(f);
+  });
+  $('fileInput').addEventListener('change', function () {
+    const f = this.files && this.files[0];
+    if (f) readFile(f);
+  });
+  $('btnAnalyze').addEventListener('click', function () {
+    if (!$('paste').value.trim()) { alert('テキストを貼り付けるか、ファイルを選んでください。'); return; }
+    if (!state.sourceName) state.sourceName = '貼り付け';
+    analyze();
+  });
+  $('btnSample').addEventListener('click', function () {
+    state.sourceName = 'sample.vtt（埋め込み）';
+    state.speakerMap = {};
+    $('fileHint').textContent = '埋め込みサンプルを読込';
+    $('paste').value = SAMPLE_VTT;
+    analyze();
+  });
+  $('btnClear').addEventListener('click', function () {
+    state.sourceName = '';
+    state.speakerMap = {};
+    state.origUtterances = [];
+    state.rows = [];
+    $('paste').value = '';
+    $('fileHint').textContent = 'ファイル未選択';
+    $('fileInput').value = '';
+    $('resultPanel').classList.add('hidden');
+    $('renamePanel').classList.add('hidden');
+  });
+  $('btnApplyRename').addEventListener('click', function () {
+    const inputs = document.querySelectorAll('#renameGrid input[data-from]');
+    const map = {};
+    inputs.forEach(function (inp) {
+      const from = inp.getAttribute('data-from');
+      const to = inp.value.trim();
+      if (to && to !== from) map[from] = to;
+    });
+    state.speakerMap = map;
+    analyze();
+  });
+  $('heatMin').addEventListener('input', function () { state.heatBand = 'custom'; renderTable(); });
+  $('heatMax').addEventListener('input', function () { state.heatBand = 'custom'; renderTable(); });
+  $('ambMin').addEventListener('input', function () { state.ambBand = 'custom'; renderTable(); });
+  $('ambMax').addEventListener('input', function () { state.ambBand = 'custom'; renderTable(); });
+  document.querySelectorAll('#grid thead th[data-sort]').forEach(function (th) {
+    th.addEventListener('click', function () {
+      const k = th.getAttribute('data-sort');
+      if (state.sortKey === k) state.sortDir *= -1;
+      else { state.sortKey = k; state.sortDir = k === 'id' || k === 'startMs' ? 1 : -1; }
+      renderTable();
+    });
+  });
+
+  function minutesText() {
+    return C.formatMinutesText(state.rows, {
+      title: state.sourceName || '貼り付け',
+      exportedAt: nowLabel()
+    });
+  }
+
+  $('btnCopyMinutes').addEventListener('click', function () {
+    if (!state.rows.length) return;
+    const txt = minutesText();
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(txt).then(function () {
+        alert('議事録下書きをコピーしました。');
+      }).catch(function () { downloadText(txt, '議事録下書き_' + nowStamp() + '.txt'); });
+    } else {
+      downloadText(txt, '議事録下書き_' + nowStamp() + '.txt');
+    }
+  });
+  $('btnDlMinutes').addEventListener('click', function () {
+    if (!state.rows.length) return;
+    downloadText(minutesText(), '議事録下書き_' + nowStamp() + '.txt');
+  });
+
+  function downloadText(text, name) {
+    const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = name;
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 500);
+  }
+
+  $('btnExportHtml').addEventListener('click', function () {
+    if (!state.rows.length) return;
+    const html = buildReportHtml(state.rows);
+    downloadText(html, '熱量曖昧度レポート_' + nowStamp() + '.html');
+  });
+
+  function buildReportHtml(rows) {
+    const sum = C.summarize(rows);
+    const vis = filteredRows();
+    function scoreTd(val, matches, kind) {
+      const c = kind === 'heat' ? C.heatColors(val) : C.ambColors(val);
+      const t = matches.length ? '根拠: ' + matches.join('、') : '根拠語なし';
+      return '<td style="text-align:center;font-weight:700;background:' + c.bg + ';color:' + c.fg + '" title="' + esc(t) + '">' + val + '</td>';
+    }
+    const bodyRows = vis.map(function (r) {
+      const clock = C.formatClock(r.start) + (r.end ? '–' + C.formatClock(r.end) : '');
+      return '<tr>' +
+        '<td>' + r.id + '</td><td>' + esc(clock) + '</td><td>' + esc(r.speaker) + '</td>' +
+        '<td>' + esc(r.text) + '</td>' +
+        scoreTd(r.heat, r.heatMatches, 'heat') +
+        scoreTd(r.ambiguity, r.ambMatches, 'amb') +
+        '</tr>';
+    }).join('');
+    const spRows = sum.speakers.map(function (s) {
+      return '<tr><td>' + esc(s.speaker) + '</td><td>' + s.count + '</td><td>' + s.avgHeat + '</td><td>' + s.avgAmbiguity + '</td></tr>';
+    }).join('');
+    const topH = sum.topHeat.map(function (r) {
+      return '<li>' + esc(r.speaker) + ' 熱量' + r.heat + ' — ' + esc(clip(r.text, 80)) + '</li>';
+    }).join('');
+    const topA = sum.topAmbiguous.map(function (r) {
+      return '<li>' + esc(r.speaker) + ' 曖昧度' + r.ambiguity + ' — ' + esc(clip(r.text, 80)) + '</li>';
+    }).join('');
+    return '<!DOCTYPE html><html lang="ja"><head><meta charset="UTF-8"><title>熱量・曖昧度レポート</title>' +
+      '<style>body{font-family:"Yu Gothic UI","Meiryo",sans-serif;font-size:13px;color:#1c2430;margin:24px}' +
+      'h1{font-size:18px;color:#0a2540}h2{font-size:14px;color:#0a2540}' +
+      'table{border-collapse:collapse;width:100%}th,td{border:1px solid #cfd6de;padding:6px 8px;vertical-align:top}' +
+      'th{background:#0a2540;color:#fff} .note{background:#fff6d9;border:1px solid #ead7a0;padding:8px 12px;margin:12px 0}' +
+      '@media print{body{margin:12px} th,td{-webkit-print-color-adjust:exact;print-color-adjust:exact}}</style></head><body>' +
+      '<h1>Teams文字起こし 熱量・曖昧度レポート</h1>' +
+      '<p>出典: ' + esc(state.sourceName || '貼り付け') + '　出力: ' + esc(nowLabel()) + '</p>' +
+      '<div class="note"><strong>スコアは辞書ルールの近似です。人事評価用途禁止。</strong> 印刷用の静的レポートです。</div>' +
+      '<p>発言 ' + sum.count + ' / 話者 ' + sum.speakerCount + ' / 平均熱量 ' + sum.avgHeat + ' / 平均曖昧度 ' + sum.avgAmbiguity +
+      '　（表はフィルタ後 ' + vis.length + ' 件）</p>' +
+      '<h2>話者別平均</h2><table><tr><th>話者</th><th>件数</th><th>平均熱量</th><th>平均曖昧度</th></tr>' + spRows + '</table>' +
+      '<h2>熱量の高い発言</h2><ol>' + topH + '</ol>' +
+      '<h2>曖昧発言トップ</h2><ol>' + topA + '</ol>' +
+      '<h2>発言テーブル</h2>' +
+      '<table><tr><th>#</th><th>時刻</th><th>話者</th><th>本文</th><th>熱量</th><th>曖昧度</th></tr>' +
+      bodyRows + '</table></body></html>';
+  }
+})();
+</script>
+</body>
+</html>

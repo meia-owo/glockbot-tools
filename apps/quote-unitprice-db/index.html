@@ -1,0 +1,1266 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>メーカー別見積単価データベース化ツール — GlockBOT 0.1.0</title>
+<!--
+  Excel出力は SheetJS を CDN から読み込みます。
+  オフラインまたは CDN ブロック時は Excel 出力できません。
+  見積データ自体は外部へ送信しません（localStorageのみ）。
+-->
+<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+<style>
+:root{--navy:#18324a;--blue:#176b87;--paper:#f4f7f8;--line:#d6e0e4;--ink:#17242d;--muted:#687982;--danger:#b33a3a;--ok:#17724b;--shadow:0 8px 28px #18324a18}
+*{box-sizing:border-box}html,body{height:100%;margin:0}body{font-family:"Yu Gothic UI","Meiryo",system-ui,sans-serif;color:var(--ink);background:var(--paper);font-size:14px;overflow:hidden}
+button,input,select,textarea{font:inherit}button{cursor:pointer}
+.app{height:100vh;display:flex;flex-direction:column;min-width:960px}
+.top{background:var(--navy);color:#fff;padding:11px 18px 0;box-shadow:0 2px 10px #0003;z-index:5}
+.brandrow{display:flex;align-items:center;gap:12px;margin-bottom:10px}
+.brand{font-size:18px;font-weight:800}.brand small{font-size:11px;background:#ffffff22;padding:3px 6px;border-radius:99px;margin-left:6px}
+.status{margin-left:auto;color:#cde1ea;font-size:12px}
+.tabs{display:flex;gap:4px}.tab{border:0;background:transparent;color:#d7e6ec;padding:9px 15px;border-radius:7px 7px 0 0}
+.tab.active{background:var(--paper);color:var(--navy);font-weight:800}
+.badge{display:inline-grid;place-items:center;min-width:20px;height:20px;padding:0 6px;border-radius:10px;background:#d86d35;color:#fff;font-size:11px;margin-left:5px}
+.toolbar{height:55px;flex:0 0 55px;background:#fff;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:9px;padding:8px 15px}
+.toolbar .spacer{flex:1}
+.btn{border:1px solid #b9c8ce;background:#fff;color:var(--navy);padding:8px 11px;border-radius:6px;font-weight:650}
+.btn:hover{background:#edf6f7}.btn.primary{background:var(--blue);color:#fff;border-color:var(--blue)}
+.btn.danger{color:var(--danger);border-color:#e3b7b7}.btn.small{padding:5px 8px;font-size:12px}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.seg{display:inline-flex;border:1px solid #b9c8ce;border-radius:6px;overflow:hidden}
+.seg button{border:0;border-right:1px solid #b9c8ce;background:#fff;padding:7px 10px}.seg button:last-child{border:0}
+.seg button.active{background:var(--navy);color:#fff}
+.range{display:flex;align-items:center;gap:6px}.range input[type=range]{width:120px}.threshold-number{width:64px}
+.workspace{flex:1;min-height:0}.view{display:none;height:100%}.view.active{display:block}
+.compare-layout{display:grid;grid-template-columns:220px minmax(440px,1fr) 330px;height:100%}
+.panel{background:#fff;border-right:1px solid var(--line);min-height:0}
+.filters{padding:14px;overflow:auto}
+.filters h2,.detail h2,.section-title{font-size:14px;color:var(--navy);margin:0 0 13px}
+.field{display:block;margin-bottom:11px}.field>span{display:block;font-weight:700;font-size:12px;margin-bottom:4px;color:#445760}
+.field input,.field select,.field textarea,.fullinput{width:100%;border:1px solid #b9c8ce;border-radius:5px;padding:7px 8px;background:#fff}
+.field textarea{min-height:54px;resize:vertical}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.check{display:flex;gap:7px;align-items:center;margin:9px 0}
+.filter-actions{display:flex;gap:7px}
+.center{display:flex;flex-direction:column;min-width:0;background:#fff}
+.table-meta{height:38px;flex:0 0 38px;display:flex;align-items:center;padding:0 10px;color:var(--muted);font-size:12px;border-bottom:1px solid var(--line)}
+.table-meta .spacer{flex:1}
+.scroll{overflow:auto;flex:1;min-height:0}
+.data-table{border-collapse:separate;border-spacing:0;width:100%;font-size:12px}
+.data-table th{position:sticky;top:0;z-index:2;background:#e9f0f2;color:#304752;text-align:left;padding:8px;white-space:nowrap;border-bottom:1px solid #bdcbd0}
+.data-table td{padding:8px;border-bottom:1px solid #e4ebee;vertical-align:top}
+.data-table tbody tr{cursor:pointer}.data-table tbody tr:hover,.data-table tr.selected{background:#e9f7f8}
+.data-table tr.deleted{opacity:.55;text-decoration:line-through}
+.num{text-align:right;white-space:nowrap}.sub{display:block;color:var(--muted);font-size:10px;margin-top:2px}
+.pill{display:inline-block;border-radius:999px;padding:3px 7px;font-size:10px;font-weight:800;white-space:nowrap}
+.pill.ok{background:#ddf2e8;color:var(--ok)}.pill.warn{background:#fff0d5;color:#8c5400}
+.pill.bad{background:#fae0e0;color:#9b2727}.pill.gray{background:#e8ecee;color:#64747b}
+.dev-high{color:#a22222;font-weight:800}
+.paging{height:42px;flex:0 0 42px;border-top:1px solid var(--line);display:flex;justify-content:center;gap:8px;align-items:center}
+.detail{padding:14px;overflow:auto;border-right:0}
+.detail-head{display:flex;align-items:center;gap:8px}.detail-head h2{flex:1}
+.form-actions{display:flex;flex-wrap:wrap;gap:7px;margin:13px 0}
+.history{border-top:1px solid var(--line);padding-top:11px;margin-top:12px}
+.history-item{font-size:11px;padding:7px 0;border-bottom:1px solid #edf1f2}
+.empty{height:100%;display:grid;place-items:center;text-align:center;color:var(--muted);padding:20px}
+.wide-view{padding:18px;height:100%;overflow:auto}
+.card{background:#fff;border:1px solid var(--line);border-radius:9px;box-shadow:var(--shadow);padding:16px;margin-bottom:14px}
+.card h2{font-size:16px;color:var(--navy);margin:0 0 13px}
+.queue-grid{display:grid;grid-template-columns:160px 1fr 70px 250px 90px;gap:8px;align-items:center;padding:9px;border-bottom:1px solid var(--line)}
+.queue-grid.head{font-size:12px;color:var(--muted);font-weight:800;background:#edf3f4}
+.suggest{font-size:11px;color:var(--blue);margin-top:3px}
+.aliases-grid{display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:8px;align-items:end}
+.settings-grid{display:grid;grid-template-columns:repeat(2,minmax(320px,1fr));gap:14px;max-width:1000px}
+.hint{color:var(--muted);font-size:12px;line-height:1.6}.danger-zone{border-color:#e8c5c5}
+.crosstab td:first-child{position:sticky;left:0;background:#fff;font-weight:800;z-index:1}
+.cross-cell{min-width:160px}.old{font-size:10px;color:var(--muted);margin-top:3px}
+.modal{border:0;border-radius:10px;padding:0;box-shadow:0 20px 70px #0007;width:min(720px,90vw);max-height:88vh}
+.modal::backdrop{background:#152a38aa}
+.modal-head{background:var(--navy);color:#fff;padding:14px 18px;font-size:16px;font-weight:800}
+.modal-body{padding:18px;max-height:65vh;overflow:auto}
+.modal-foot{padding:12px 18px;border-top:1px solid var(--line);display:flex;justify-content:flex-end;gap:8px}
+.date-fill{display:grid;grid-template-columns:1fr 170px;gap:9px;align-items:center;margin:6px 0}
+.summary{padding:10px;border-radius:6px;background:#edf6f7;margin:10px 0}
+.error-list{max-height:110px;overflow:auto;color:var(--danger);font-size:11px}
+.toastbox{position:fixed;right:16px;bottom:16px;z-index:50;display:flex;flex-direction:column;gap:7px}
+.toast{background:#17324a;color:#fff;padding:10px 14px;border-radius:7px;box-shadow:var(--shadow);max-width:430px}
+.toast.error{background:#8e2b2b}
+@media(max-width:1150px){.compare-layout{grid-template-columns:190px minmax(400px,1fr) 290px}}
+@media(max-width:980px){.app{min-width:720px}.compare-layout{grid-template-columns:190px 1fr}
+.detail{position:fixed;right:0;top:100px;bottom:0;width:350px;z-index:8;box-shadow:-10px 0 30px #0003;transform:translateX(105%);transition:.2s}
+.detail.open{transform:none}.settings-grid{grid-template-columns:1fr}}
+.ver-footer{padding:4px 14px 8px;text-align:right;color:#6b7785;font-size:11px;opacity:.9;flex-shrink:0}
+</style>
+</head>
+<body>
+<div class="app">
+<header class="top">
+  <div class="brandrow">
+    <div class="brand">メーカー別見積単価データベース化ツール <small>GlockBOT 0.1.0</small></div>
+    <div class="status" id="storageStatus">ローカル保存</div>
+  </div>
+  <nav class="tabs" aria-label="メインタブ">
+    <button type="button" class="tab active" data-tab="compare">一覧・比較</button>
+    <button type="button" class="tab" data-tab="queue">未正規化キュー <span class="badge" id="queueBadge">0</span></button>
+    <button type="button" class="tab" data-tab="aliases">エイリアス辞書</button>
+    <button type="button" class="tab" data-tab="settings">設定・バックアップ</button>
+  </nav>
+</header>
+<div class="toolbar" id="mainToolbar">
+  <button type="button" class="btn primary" id="newBtn">＋ 新規登録</button>
+  <button type="button" class="btn" id="importBtn">CSV / JSON取込み</button>
+  <button type="button" class="btn" id="excelFilteredBtn">Excel（絞り込み）</button>
+  <div class="spacer"></div>
+  <span>比較モード:</span>
+  <div class="seg" id="modeSeg">
+    <button type="button" data-mode="単価">単価</button>
+    <button type="button" data-mode="原単位">原単位</button>
+  </div>
+  <div class="range">
+    <span>乖離閾値</span>
+    <input id="thresholdRange" type="range" min="1" max="100" step="1">
+    <input id="thresholdNum" class="threshold-number" type="number" min="1" max="999" step="1">
+    <span>%</span>
+  </div>
+  <div class="seg" id="viewSeg">
+    <button type="button" class="active" data-listview="list">一覧</button>
+    <button type="button" data-listview="cross">メーカー比較</button>
+  </div>
+</div>
+<main class="workspace">
+  <section class="view active" id="view-compare">
+    <div class="compare-layout">
+      <aside class="panel filters">
+        <h2>絞り込み</h2>
+        <label class="field"><span>メーカー</span><select id="fManufacturer"><option value="">すべて</option></select></label>
+        <label class="field"><span>標準作業名</span><select id="fTask"><option value="">すべて</option></select></label>
+        <label class="field"><span>妥当性判定</span>
+          <select id="fValidity">
+            <option value="">すべて</option>
+            <option>妥当</option>
+            <option>要確認</option>
+            <option>アカン</option>
+            <option value="判定不可">判定不可</option>
+          </select>
+        </label>
+        <div class="row2">
+          <label class="field"><span>見積日 From</span><input type="date" id="fFrom"></label>
+          <label class="field"><span>To</span><input type="date" id="fTo"></label>
+        </div>
+        <label class="field"><span>キーワード</span><input id="fKeyword" placeholder="作業名・コメント・元ファイル"></label>
+        <label class="field"><span>並び替え</span>
+          <select id="fSort">
+            <option value="quote_date_desc">見積日（新しい順）</option>
+            <option value="quote_date_asc">見積日（古い順）</option>
+            <option value="unit_price_desc">単価（高い順）</option>
+            <option value="unit_price_asc">単価（低い順）</option>
+          </select>
+        </label>
+        <label class="check"><input type="checkbox" id="fDeleted"> 削除済みを表示</label>
+        <div class="filter-actions"><button type="button" class="btn small" id="filterClear">クリア</button></div>
+        <p class="hint">データはこのブラウザーの localStorage のみに保存され、外部へ送信されません。</p>
+      </aside>
+      <section class="center">
+        <div class="table-meta">
+          <span id="resultCount">0件</span>
+          <div class="spacer"></div>
+          <span id="evaluationNote">中央値比較・グループ3件以上で乖離判定</span>
+        </div>
+        <div class="scroll" id="tableScroll"></div>
+        <div class="paging" id="paging"></div>
+      </section>
+      <aside class="panel detail" id="detailPanel"><div id="detailContent"></div></aside>
+    </div>
+  </section>
+  <section class="view" id="view-queue"><div class="wide-view" id="queueContent"></div></section>
+  <section class="view" id="view-aliases"><div class="wide-view" id="aliasContent"></div></section>
+  <section class="view" id="view-settings"><div class="wide-view" id="settingsContent"></div></section>
+</main>
+<footer class="ver-footer">GlockBOT 0.1.0</footer>
+</div>
+
+<dialog class="modal" id="nameDialog">
+  <form method="dialog" id="nameForm">
+    <div class="modal-head">利用者名を設定</div>
+    <div class="modal-body">
+      <p>更新履歴（updated_by / changed_by）に使う名前を入力してください。</p>
+      <label class="field"><span>利用者名 *</span><input id="firstUserName" required maxlength="60" autocomplete="name"></label>
+    </div>
+    <div class="modal-foot"><button class="btn primary" value="save">保存して開始</button></div>
+  </form>
+</dialog>
+
+<dialog class="modal" id="importDialog">
+  <div class="modal-head">CSV / JSON取込み</div>
+  <div class="modal-body">
+    <label class="field"><span>ファイル</span><input type="file" id="importFile" accept=".csv,.json,text/csv,application/json"></label>
+    <label class="field"><span>重複時の処理（source_file + task_raw + unit_price + quote_date）</span>
+      <select id="duplicatePolicy">
+        <option value="skip">スキップ（既定）</option>
+        <option value="overwrite">上書き</option>
+        <option value="add">別レコードとして追加</option>
+      </select>
+    </label>
+    <div id="importPreview" class="hint">UTF-8 CSV（BOM可）または JSON 配列を選択してください。</div>
+  </div>
+  <div class="modal-foot">
+    <button type="button" class="btn" id="skipDownloadBtn" disabled>スキップ行CSV</button>
+    <button type="button" class="btn" id="importCancelBtn">キャンセル</button>
+    <button type="button" class="btn primary" id="importCommitBtn" disabled>取込み実行</button>
+  </div>
+</dialog>
+
+<dialog class="modal" id="restoreDialog">
+  <div class="modal-head">JSONバックアップを復元</div>
+  <div class="modal-body">
+    <label class="field"><span>バックアップJSON</span><input type="file" id="restoreFile" accept=".json,application/json"></label>
+    <label class="field"><span>復元方法</span>
+      <select id="restoreMode">
+        <option value="merge">マージ（ID重複はスキップ）</option>
+        <option value="replace">全置換</option>
+      </select>
+    </label>
+    <div class="hint">全置換は現在のデータをバックアップ内容で置き換えます。</div>
+  </div>
+  <div class="modal-foot">
+    <button type="button" class="btn" id="restoreCancelBtn">キャンセル</button>
+    <button type="button" class="btn primary" id="restoreCommitBtn">復元</button>
+  </div>
+</dialog>
+
+<div class="toastbox" id="toasts" aria-live="polite"></div>
+<script>
+(function () {
+'use strict';
+
+const CSV_FIELDS = ['manufacturer','task_raw','workforce_type','crew_size','unit_price','days','quote_date','default_assumption','judgment_comment','reference_note','source_type','source_file'];
+const ENTRY_FIELDS = ['manufacturer','task_raw','task_normalized','workforce_type','crew_size','unit_price','days','quote_date','default_assumption','validity_judgment','judgment_comment','reference_note','source_type','source_file'];
+const LS = {
+  entries: 'quoteUnitPriceDb_v2_entries',
+  history: 'quoteUnitPriceDb_v2_history',
+  aliases: 'quoteUnitPriceDb_v2_task_alias',
+  settings: 'quoteUnitPriceDb_v2_settings'
+};
+const DEFAULT_SETTINGS = {
+  deviation_threshold_percent: 15,
+  comparison_mode: '単価',
+  user_name: '',
+  show_deleted: false
+};
+const SOURCE_TYPES_ALL = ['見積書PDF', '古エクセル', '手動入力'];
+const SOURCE_TYPES_IMPORT = ['見積書PDF', '古エクセル'];
+
+const $ = (s) => document.querySelector(s);
+const $$ = (s) => Array.from(document.querySelectorAll(s));
+
+function load(key, fallback) {
+  try {
+    const x = JSON.parse(localStorage.getItem(key));
+    return x == null ? fallback : x;
+  } catch (e) {
+    return fallback;
+  }
+}
+
+let state = {
+  entries: load(LS.entries, []),
+  history: load(LS.history, []),
+  aliases: load(LS.aliases, []),
+  settings: Object.assign({}, DEFAULT_SETTINGS, load(LS.settings, {})),
+  selectedId: null,
+  draft: null,
+  page: 1,
+  listView: 'list',
+  importRows: [],
+  importErrors: [],
+  activeTab: 'compare'
+};
+
+function uid() {
+  if (crypto.randomUUID) return crypto.randomUUID();
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+    const r = Math.random() * 16 | 0;
+    const v = c === 'x' ? r : (r & 3 | 8);
+    return v.toString(16);
+  });
+}
+function now() { return new Date().toISOString(); }
+
+function saveAll() {
+  try {
+    localStorage.setItem(LS.entries, JSON.stringify(state.entries));
+    localStorage.setItem(LS.history, JSON.stringify(state.history));
+    localStorage.setItem(LS.aliases, JSON.stringify(state.aliases));
+    localStorage.setItem(LS.settings, JSON.stringify(state.settings));
+    updateStorageStatus();
+  } catch (e) {
+    toast('保存に失敗しました。localStorage 容量（約5MB）を確認してください。', 'error');
+  }
+}
+
+function updateStorageStatus() {
+  const bytes = Object.values(LS).reduce((n, k) => n + ((localStorage.getItem(k) || '').length * 2), 0);
+  $('#storageStatus').textContent = 'ローカル保存 ' + (bytes / 1024).toFixed(1) + ' KB';
+}
+
+function esc(v) {
+  return String(v ?? '').replace(/[&<>'"]/g, (c) => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'
+  }[c]));
+}
+function money(v) {
+  return v == null || !Number.isFinite(Number(v)) ? '—' : '¥' + Math.round(Number(v)).toLocaleString('ja-JP');
+}
+function num(v, d) {
+  if (d == null) d = 1;
+  return v == null || !Number.isFinite(Number(v)) ? '—' : Number(v).toLocaleString('ja-JP', { maximumFractionDigits: d });
+}
+
+function median(values) {
+  const a = values.filter(Number.isFinite).slice().sort((x, y) => x - y);
+  if (!a.length) return null;
+  const m = Math.floor(a.length / 2);
+  return a.length % 2 ? a[m] : (a[m - 1] + a[m]) / 2;
+}
+function unitCost(price, crew, days) {
+  return Number.isFinite(price) && Number.isFinite(crew) && crew > 0 && Number.isFinite(days) && days > 0
+    ? price / crew / days : null;
+}
+function duplicateKey(r) {
+  return [r.source_file, r.task_raw, r.unit_price, r.quote_date].map((v) => String(v ?? '')).join('\u001f');
+}
+function validDate(s) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(s)) return false;
+  const d = new Date(s + 'T00:00:00');
+  return !Number.isNaN(d.getTime()) && d.toISOString().slice(0, 10) === s;
+}
+function finiteNumber(v, optional) {
+  if (v == null || String(v).trim() === '') return optional ? null : NaN;
+  if (!/^(?:\d+\.?\d*|\.\d+)$/.test(String(v).trim())) return NaN;
+  const n = Number(v);
+  return Number.isFinite(n) ? n : NaN;
+}
+
+function normalizeEntry(e) {
+  e.crew_size = e.crew_size === '' || e.crew_size == null ? null : Number(e.crew_size);
+  e.days = e.days === '' || e.days == null ? null : Number(e.days);
+  e.unit_price = Number(e.unit_price);
+  e.unit_cost = unitCost(e.unit_price, e.crew_size, e.days);
+  e.task_normalized = e.task_normalized || '';
+  e.validity_judgment = e.validity_judgment || '';
+  e.deleted = !!e.deleted;
+  return e;
+}
+state.entries = state.entries.map(normalizeEntry);
+
+function recalculate() {
+  const field = state.settings.comparison_mode === '原単位' ? 'unit_cost' : 'unit_price';
+  const groups = {};
+  state.entries.forEach((e) => {
+    e.unit_cost = unitCost(e.unit_price, e.crew_size, e.days);
+    e.deviation_rate = null;
+    e._eval = 'unnormalized';
+    if (!e.deleted && e.task_normalized) {
+      (groups[e.task_normalized] || (groups[e.task_normalized] = [])).push(e);
+    }
+  });
+  Object.values(groups).forEach((g) => {
+    const evaluable = g.filter((e) => Number.isFinite(e[field]));
+    if (evaluable.length < 3) {
+      g.forEach((e) => { e._eval = Number.isFinite(e[field]) ? 'shortage' : 'no-value'; });
+      return;
+    }
+    const med = median(evaluable.map((e) => e[field]));
+    evaluable.forEach((e) => {
+      if (med === 0) {
+        e.deviation_rate = null;
+        e._eval = 'zero';
+      } else {
+        e.deviation_rate = (e[field] - med) / med * 100;
+        e._eval = 'ok';
+      }
+    });
+    g.filter((e) => !Number.isFinite(e[field])).forEach((e) => { e._eval = 'no-value'; });
+  });
+}
+
+function autoJudgment(e) {
+  if (e.validity_judgment) return e.validity_judgment;
+  if (e._eval === 'ok' && Math.abs(e.deviation_rate) > Number(state.settings.deviation_threshold_percent)) return '要確認';
+  return '';
+}
+
+function evaluationLabel(e) {
+  if (e.validity_judgment) {
+    const m = e.validity_judgment;
+    return { text: m, cls: m === '妥当' ? 'ok' : m === '要確認' ? 'warn' : 'bad', title: '手動判定' };
+  }
+  if (e._eval === 'shortage') return { text: '判定不可（サンプル不足）', cls: 'gray' };
+  if (e._eval === 'no-value') return { text: '判定対象外', cls: 'gray' };
+  if (e._eval === 'zero') return { text: '判定不可（中央値0）', cls: 'gray' };
+  if (e._eval === 'unnormalized') return { text: '未正規化', cls: 'gray' };
+  if (Math.abs(e.deviation_rate) > Number(state.settings.deviation_threshold_percent)) {
+    return { text: '要確認（自動）', cls: 'warn' };
+  }
+  return { text: '範囲内', cls: 'ok' };
+}
+
+function toast(text, type) {
+  const n = document.createElement('div');
+  n.className = 'toast ' + (type || '');
+  n.textContent = text;
+  $('#toasts').appendChild(n);
+  setTimeout(() => n.remove(), 4200);
+}
+function debounce(fn, ms) {
+  let t;
+  return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); };
+}
+
+function recordHistory(entryId, field, oldVal, newVal, reason) {
+  state.history.push({
+    id: uid(),
+    entry_id: entryId,
+    field_changed: field,
+    old_value: oldVal == null ? '' : String(oldVal),
+    new_value: newVal == null ? '' : String(newVal),
+    changed_at: now(),
+    changed_by: state.settings.user_name,
+    reason: reason || ''
+  });
+}
+
+function optionList(values, current) {
+  return '<option value="">すべて</option>' + values.map((v) =>
+    `<option ${v === current ? 'selected' : ''}>${esc(v)}</option>`
+  ).join('');
+}
+
+function refreshFilterOptions() {
+  const mf = [...new Set(state.entries.map((e) => e.manufacturer).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'ja'));
+  const ts = [...new Set(state.entries.map((e) => e.task_normalized).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'ja'));
+  const a = $('#fManufacturer').value, b = $('#fTask').value;
+  $('#fManufacturer').innerHTML = optionList(mf, a);
+  $('#fTask').innerHTML = optionList(ts, b);
+  if (mf.includes(a)) $('#fManufacturer').value = a;
+  if (ts.includes(b)) $('#fTask').value = b;
+}
+
+function filteredEntries() {
+  const mf = $('#fManufacturer').value;
+  const t = $('#fTask').value;
+  const v = $('#fValidity').value;
+  const from = $('#fFrom').value;
+  const to = $('#fTo').value;
+  const q = $('#fKeyword').value.trim().toLowerCase();
+  const show = $('#fDeleted').checked;
+  let a = state.entries.filter((e) =>
+    (show || !e.deleted) &&
+    (!mf || e.manufacturer === mf) &&
+    (!t || e.task_normalized === t) &&
+    (!from || e.quote_date >= from) &&
+    (!to || e.quote_date <= to)
+  );
+  if (v) {
+    a = a.filter((e) => v === '判定不可'
+      ? evaluationLabel(e).text.startsWith('判定不可')
+      : autoJudgment(e) === v);
+  }
+  if (q) {
+    a = a.filter((e) => [e.manufacturer, e.task_raw, e.task_normalized, e.workforce_type,
+      e.default_assumption, e.judgment_comment, e.reference_note, e.source_file]
+      .some((x) => String(x || '').toLowerCase().includes(q)));
+  }
+  const sort = $('#fSort').value;
+  const field = sort.replace(/_(asc|desc)$/, '');
+  const dir = /_desc$/.test(sort) ? 'desc' : 'asc';
+  a.sort((x, y) => {
+    const av = x[field] ?? '', bv = y[field] ?? '';
+    return (av > bv ? 1 : av < bv ? -1 : 0) * (dir === 'asc' ? 1 : -1);
+  });
+  return a;
+}
+
+function currentEntry() {
+  if (state.draft && state.selectedId === state.draft.id) return state.draft;
+  return state.entries.find((x) => x.id === state.selectedId) || null;
+}
+
+function renderAll() {
+  recalculate();
+  refreshFilterOptions();
+  renderCompare();
+  renderQueue();
+  if (state.activeTab === 'aliases') renderAliases();
+  if (state.activeTab === 'settings') renderSettings();
+  $('#queueBadge').textContent = String(state.entries.filter((e) => !e.deleted && !e.task_normalized).length);
+  syncControls();
+  updateStorageStatus();
+}
+
+function renderCompare() {
+  const data = filteredEntries();
+  $('#resultCount').textContent = data.length.toLocaleString() + '件';
+  if (state.listView === 'cross') renderCross(data);
+  else renderList(data);
+  renderDetail();
+}
+
+function renderList(data) {
+  const pages = Math.max(1, Math.ceil(data.length / 100));
+  state.page = Math.min(state.page, pages);
+  const pageData = data.slice((state.page - 1) * 100, state.page * 100);
+  $('#tableScroll').innerHTML = `<table class="data-table"><thead><tr>
+    <th>見積日</th><th>メーカー / 作業名</th><th class="num">単価</th><th class="num">原単位</th>
+    <th>乖離</th><th>判定</th><th>元ファイル</th></tr></thead><tbody>` +
+    pageData.map((e) => {
+      const lab = evaluationLabel(e);
+      const dev = e.deviation_rate == null ? '—' : (e.deviation_rate >= 0 ? '+' : '') + num(e.deviation_rate, 1) + '%';
+      const hi = e.deviation_rate != null && Math.abs(e.deviation_rate) > state.settings.deviation_threshold_percent ? 'dev-high' : '';
+      return `<tr data-id="${e.id}" class="${e.id === state.selectedId ? 'selected ' : ''}${e.deleted ? 'deleted' : ''}">
+        <td>${esc(e.quote_date)}</td>
+        <td><b>${esc(e.manufacturer)}</b><span class="sub">${esc(e.task_normalized || '未正規化')} / ${esc(e.task_raw)}</span></td>
+        <td class="num">${money(e.unit_price)}</td>
+        <td class="num">${money(e.unit_cost)}</td>
+        <td class="${hi}">${dev}</td>
+        <td><span class="pill ${lab.cls}" title="${esc(lab.title || '')}">${esc(lab.text)}</span></td>
+        <td>${esc(e.source_file || '—')}</td></tr>`;
+    }).join('') + '</tbody></table>';
+  $$('#tableScroll tr[data-id]').forEach((r) => {
+    r.onclick = () => {
+      state.selectedId = r.dataset.id;
+      if (state.draft && state.selectedId !== state.draft.id) state.draft = null;
+      renderCompare();
+      $('#detailPanel').classList.add('open');
+    };
+  });
+  $('#paging').innerHTML = `<button type="button" class="btn small" id="prevPage" ${state.page <= 1 ? 'disabled' : ''}>前へ</button>
+    <span>${state.page} / ${pages}（100件/頁）</span>
+    <button type="button" class="btn small" id="nextPage" ${state.page >= pages ? 'disabled' : ''}>次へ</button>`;
+  const prev = $('#prevPage'), next = $('#nextPage');
+  if (prev) prev.onclick = () => { state.page--; renderCompare(); };
+  if (next) next.onclick = () => { state.page++; renderCompare(); };
+}
+
+function renderCross(data) {
+  const usable = data.filter((e) => e.task_normalized);
+  const tasks = [...new Set(usable.map((e) => e.task_normalized))].sort((a, b) => a.localeCompare(b, 'ja'));
+  const makers = [...new Set(usable.map((e) => e.manufacturer))].sort((a, b) => a.localeCompare(b, 'ja'));
+  const field = state.settings.comparison_mode === '原単位' ? 'unit_cost' : 'unit_price';
+  let html = `<table class="data-table crosstab"><thead><tr><th>標準作業名</th>${makers.map((m) => `<th>${esc(m)}</th>`).join('')}</tr></thead><tbody>`;
+  tasks.forEach((t) => {
+    html += `<tr><td>${esc(t)}</td>`;
+    makers.forEach((m) => {
+      const all = usable.filter((e) => e.task_normalized === t && e.manufacturer === m)
+        .sort((a, b) => b.quote_date.localeCompare(a.quote_date));
+      if (!all.length) { html += '<td class="cross-cell">—</td>'; return; }
+      const e = all[0];
+      const rate = e.deviation_rate;
+      const dev = rate == null ? '' : ` <span class="${Math.abs(rate) > state.settings.deviation_threshold_percent ? 'dev-high' : ''}">${rate >= 0 ? '+' : ''}${num(rate, 1)}%</span>`;
+      const old = all[1] ? `<div class="old">(旧: ${money(all[1][field])} ${esc(all[1].quote_date.slice(0, 7))})</div>` : '';
+      html += `<td class="cross-cell" data-id="${e.id}"><b>${money(e[field])}</b>${dev}<span class="sub">${esc(e.quote_date)}</span>${old}</td>`;
+    });
+    html += '</tr>';
+  });
+  html += '</tbody></table>';
+  $('#tableScroll').innerHTML = tasks.length ? html : '<div class="empty">正規化済みの比較対象がありません。<br>未正規化キューで標準作業名を付けてください。</div>';
+  $('#paging').innerHTML = '<span>最新見積を表示（過去値は「旧: ¥xx YYYY-MM」）</span>';
+  $$('#tableScroll td[data-id]').forEach((c) => {
+    c.onclick = () => {
+      state.selectedId = c.dataset.id;
+      if (state.draft && state.selectedId !== state.draft.id) state.draft = null;
+      renderCompare();
+      $('#detailPanel').classList.add('open');
+    };
+  });
+}
+
+function formValue(e, k) { return esc(e?.[k] ?? ''); }
+
+function renderDetail() {
+  const e = currentEntry();
+  if (!e) {
+    $('#detailContent').innerHTML = '<div class="empty">行を選択するか<br>「新規登録」を押してください。</div>';
+    return;
+  }
+  const isNew = !!e._new;
+  const normalized = [...new Set(state.aliases.map((a) => a.normalized_name).filter(Boolean))].sort();
+  const hist = isNew ? [] : state.history.filter((h) => h.entry_id === e.id)
+    .sort((a, b) => b.changed_at.localeCompare(a.changed_at)).slice(0, 12);
+  $('#detailContent').innerHTML = `
+    <div class="detail-head"><h2>${isNew ? '新規登録' : '詳細・編集'}</h2>
+      <button type="button" class="btn small" id="closeDetail">閉じる</button></div>
+    <form id="entryForm">
+      <label class="field"><span>メーカー *</span><input name="manufacturer" value="${formValue(e, 'manufacturer')}" required></label>
+      <label class="field"><span>作業名（原文）*</span>
+        <input name="task_raw" id="taskRawInput" value="${formValue(e, 'task_raw')}" list="rawSuggestions" required>
+        <datalist id="rawSuggestions"></datalist>
+        <span class="suggest" id="aliasSuggest"></span>
+      </label>
+      <label class="field"><span>標準作業名</span>
+        <input name="task_normalized" value="${formValue(e, 'task_normalized')}" list="normalizedList">
+        <datalist id="normalizedList">${normalized.map((n) => `<option value="${esc(n)}">`).join('')}</datalist>
+      </label>
+      <label class="check"><input type="checkbox" name="register_alias" ${isNew ? 'checked' : ''}> このメーカー＋原文名をエイリアス辞書へ登録</label>
+      <div class="row2">
+        <label class="field"><span>人区</span><input name="workforce_type" value="${formValue(e, 'workforce_type')}"></label>
+        <label class="field"><span>人数（crew_size）</span><input name="crew_size" type="number" min="0.01" step="any" value="${formValue(e, 'crew_size')}"></label>
+      </div>
+      <div class="row2">
+        <label class="field"><span>単価（円）*</span><input name="unit_price" type="number" min="0" step="any" value="${formValue(e, 'unit_price')}" required></label>
+        <label class="field"><span>日数</span><input name="days" type="number" min="0.01" step="any" value="${formValue(e, 'days')}"></label>
+      </div>
+      <label class="field"><span>見積日 *</span><input name="quote_date" type="date" value="${formValue(e, 'quote_date')}" required></label>
+      <label class="field"><span>前提条件</span><textarea name="default_assumption">${formValue(e, 'default_assumption')}</textarea></label>
+      <label class="field"><span>妥当性判定（手動）</span>
+        <select name="validity_judgment">
+          <option value="">未設定（自動判定）</option>
+          ${['妥当', '要確認', 'アカン'].map((v) => `<option ${e.validity_judgment === v ? 'selected' : ''}>${v}</option>`).join('')}
+        </select>
+      </label>
+      <label class="field"><span>判定コメント</span><textarea name="judgment_comment">${formValue(e, 'judgment_comment')}</textarea></label>
+      <label class="field"><span>参考メモ</span><textarea name="reference_note">${formValue(e, 'reference_note')}</textarea></label>
+      <label class="field"><span>出典区分 *</span>
+        <select name="source_type">${SOURCE_TYPES_ALL.map((v) => `<option ${e.source_type === v ? 'selected' : ''}>${v}</option>`).join('')}</select>
+      </label>
+      <label class="field"><span>元ファイル</span><input name="source_file" value="${formValue(e, 'source_file')}"></label>
+      <label class="field"><span>変更理由（履歴用）</span><input name="reason" placeholder="任意"></label>
+      <div class="form-actions">
+        <button class="btn primary" type="submit">保存</button>
+        ${!isNew ? `<button class="btn ${e.deleted ? '' : 'danger'}" type="button" id="deleteRestoreBtn">${e.deleted ? '復元' : '論理削除'}</button>` : ''}
+      </div>
+    </form>
+    ${!isNew ? `<div class="history"><h2>更新履歴</h2>${hist.length
+      ? hist.map((h) => `<div class="history-item"><b>${esc(h.field_changed)}</b>: ${esc(h.old_value)} → ${esc(h.new_value)}
+          <span class="sub">${esc(new Date(h.changed_at).toLocaleString('ja-JP'))} / ${esc(h.changed_by)}${h.reason ? ' ・' + esc(h.reason) : ''}</span></div>`).join('')
+      : '<p class="hint">履歴はありません。</p>'}</div>` : ''}`;
+
+  $('#closeDetail').onclick = () => {
+    if (state.draft) { state.draft = null; state.selectedId = null; }
+    $('#detailPanel').classList.remove('open');
+    renderDetail();
+  };
+  $('#entryForm').onsubmit = saveEntry;
+  $('#entryForm [name=manufacturer]').oninput = updateAliasSuggestions;
+  $('#taskRawInput').oninput = updateAliasSuggestions;
+  updateAliasSuggestions();
+  if (!isNew) $('#deleteRestoreBtn').onclick = () => toggleDelete(e);
+}
+
+function updateAliasSuggestions() {
+  const form = $('#entryForm');
+  if (!form) return;
+  const raw = form.elements.task_raw.value.trim().toLowerCase();
+  const maker = form.elements.manufacturer.value.trim();
+  const matches = state.aliases.filter((a) =>
+    (!maker || a.manufacturer === maker) &&
+    (!raw || a.raw_name.toLowerCase().includes(raw) || a.normalized_name.toLowerCase().includes(raw))
+  ).slice(0, 8);
+  $('#rawSuggestions').innerHTML = matches.map((a) =>
+    `<option value="${esc(a.raw_name)}">${esc(a.normalized_name)}</option>`).join('');
+  $('#aliasSuggest').textContent = matches.length
+    ? '候補: ' + matches.map((a) => a.raw_name + ' → ' + a.normalized_name).join(' / ')
+    : '辞書にない場合は標準作業名を入力し「辞書へ登録」を選べます。';
+}
+
+function newEntry() {
+  const t = now();
+  state.draft = {
+    id: uid(), manufacturer: '', task_raw: '', task_normalized: '', workforce_type: '',
+    crew_size: null, unit_price: '', days: null, unit_cost: null,
+    quote_date: new Date().toISOString().slice(0, 10), default_assumption: '',
+    validity_judgment: '', judgment_comment: '', reference_note: '',
+    source_type: '手動入力', source_file: '', deviation_rate: null, deleted: false,
+    created_at: t, updated_at: t, updated_by: state.settings.user_name, _new: true
+  };
+  state.selectedId = state.draft.id;
+  renderCompare();
+  $('#detailPanel').classList.add('open');
+}
+
+function saveEntry(ev) {
+  ev.preventDefault();
+  const f = ev.currentTarget;
+  const cur = currentEntry();
+  if (!cur) return;
+  const isNew = !!cur._new;
+  const reason = f.elements.reason.value.trim();
+  const next = {};
+  ENTRY_FIELDS.forEach((k) => { next[k] = f.elements[k] ? f.elements[k].value.trim() : cur[k]; });
+  next.crew_size = next.crew_size === '' ? null : Number(next.crew_size);
+  next.days = next.days === '' ? null : Number(next.days);
+  next.unit_price = Number(next.unit_price);
+  if (!next.manufacturer || !next.task_raw || !Number.isFinite(next.unit_price) || next.unit_price < 0 || !validDate(next.quote_date)) {
+    toast('必須項目・数値・見積日を確認してください。', 'error');
+    return;
+  }
+  if (!SOURCE_TYPES_ALL.includes(next.source_type)) {
+    toast('出典区分が不正です。', 'error');
+    return;
+  }
+  let e;
+  if (isNew) {
+    e = Object.assign({}, cur, next);
+    delete e._new;
+    e.created_at = now();
+    e.unit_cost = unitCost(e.unit_price, e.crew_size, e.days);
+    e.updated_at = now();
+    e.updated_by = state.settings.user_name;
+    state.entries.push(e);
+    state.draft = null;
+    state.selectedId = e.id;
+  } else {
+    e = cur;
+    ENTRY_FIELDS.forEach((k) => {
+      const old = e[k] ?? '';
+      const nv = next[k] ?? '';
+      if (String(old) !== String(nv)) {
+        recordHistory(e.id, k, old, nv, reason);
+        e[k] = nv;
+      }
+    });
+    e.unit_cost = unitCost(e.unit_price, e.crew_size, e.days);
+    e.updated_at = now();
+    e.updated_by = state.settings.user_name;
+  }
+  if (f.elements.register_alias.checked && e.task_normalized) {
+    addAlias(e.manufacturer, e.task_raw, e.task_normalized);
+  }
+  saveAll();
+  toast(isNew ? '登録しました。' : '更新しました。');
+  renderAll();
+}
+
+function toggleDelete(e) {
+  const nv = !e.deleted;
+  recordHistory(e.id, 'deleted', e.deleted, nv, nv ? '論理削除' : '復元');
+  e.deleted = nv;
+  e.updated_at = now();
+  e.updated_by = state.settings.user_name;
+  saveAll();
+  toast(nv ? '論理削除しました。' : '復元しました。');
+  renderAll();
+}
+
+function addAlias(manufacturer, raw, normalized) {
+  if (!manufacturer || !raw || !normalized) return false;
+  const ex = state.aliases.find((a) => a.manufacturer === manufacturer && a.raw_name === raw);
+  if (ex) { ex.normalized_name = normalized; return false; }
+  state.aliases.push({ alias_id: uid(), raw_name: raw, manufacturer, normalized_name: normalized });
+  return true;
+}
+
+function bigrams(s) {
+  const n = String(s).replace(/[\s　・ー]/g, '');
+  const a = [];
+  for (let i = 0; i < n.length - 1; i++) a.push(n.slice(i, i + 2));
+  return a;
+}
+function similarity(a, b) {
+  if (!a || !b) return 0;
+  if (a.includes(b) || b.includes(a)) return 0.9;
+  const aa = bigrams(a), bb = bigrams(b);
+  if (!aa.length || !bb.length) return 0;
+  const set = new Set(bb);
+  const hit = aa.filter((x) => set.has(x)).length;
+  return 2 * hit / (aa.length + bb.length);
+}
+function similarNames(raw, names) {
+  return names.map((n) => [n, similarity(raw, n)]).filter((x) => x[1] > 0.15)
+    .sort((a, b) => b[1] - a[1]).map((x) => x[0]);
+}
+
+function renderQueue() {
+  const rows = state.entries.filter((e) => !e.deleted && !e.task_normalized);
+  const map = {};
+  rows.forEach((e) => {
+    const k = e.manufacturer + '\u001f' + e.task_raw;
+    (map[k] || (map[k] = { manufacturer: e.manufacturer, raw: e.task_raw, ids: [] })).ids.push(e.id);
+  });
+  const groups = Object.values(map);
+  const names = [...new Set(
+    state.aliases.map((a) => a.normalized_name).concat(state.entries.map((e) => e.task_normalized)).filter(Boolean)
+  )].sort();
+  $('#queueContent').innerHTML = `<div class="card"><h2>未正規化キュー <span class="badge">${rows.length}</span></h2>
+    <p class="hint">メーカー × 原文作業名ごとに一括適用します。適用するとエイリアス辞書にも登録されます。</p>
+    ${groups.length ? `<div class="queue-grid head"><div>メーカー</div><div>原文作業名</div><div>件数</div><div>標準作業名</div><div></div></div>
+    ${groups.map((g, i) => {
+      const suggestions = similarNames(g.raw, names).slice(0, 3);
+      return `<div class="queue-grid">
+        <div>${esc(g.manufacturer)}</div><div>${esc(g.raw)}</div><div>${g.ids.length}</div>
+        <div><input class="fullinput queue-name" data-i="${i}" list="queueNames" placeholder="選択または新規入力">
+          <div class="suggest">${suggestions.length ? '候補: ' + suggestions.map(esc).join(' / ') : '候補なし'}</div></div>
+        <button type="button" class="btn small primary queue-apply" data-i="${i}">適用</button></div>`;
+    }).join('')}<datalist id="queueNames">${names.map((n) => `<option value="${esc(n)}">`).join('')}</datalist>`
+    : '<div class="empty" style="height:180px">未正規化データはありません。</div>'}</div>`;
+  $$('.queue-apply').forEach((b) => {
+    b.onclick = () => {
+      const i = Number(b.dataset.i);
+      const g = groups[i];
+      const input = $(`.queue-name[data-i="${i}"]`);
+      const name = input.value.trim();
+      if (!name) { toast('標準作業名を入力してください。', 'error'); return; }
+      g.ids.forEach((id) => {
+        const e = state.entries.find((x) => x.id === id);
+        recordHistory(e.id, 'task_normalized', '', name, '未正規化キュー一括適用');
+        e.task_normalized = name;
+        e.updated_at = now();
+        e.updated_by = state.settings.user_name;
+      });
+      addAlias(g.manufacturer, g.raw, name);
+      saveAll();
+      toast(g.ids.length + '件を「' + name + '」へ正規化しました。');
+      renderAll();
+    };
+  });
+}
+
+function renderAliases() {
+  const sorted = state.aliases.slice().sort((a, b) =>
+    (a.manufacturer + a.raw_name).localeCompare(b.manufacturer + b.raw_name, 'ja'));
+  $('#aliasContent').innerHTML = `<div class="card"><h2>エイリアス辞書</h2>
+    <form id="aliasForm" class="aliases-grid">
+      <label class="field"><span>メーカー *</span><input name="manufacturer" required></label>
+      <label class="field"><span>原文作業名 *</span><input name="raw" required></label>
+      <label class="field"><span>標準作業名 *</span><input name="normalized" list="aliasNames" required>
+        <datalist id="aliasNames">${[...new Set(sorted.map((a) => a.normalized_name))].map((n) => `<option value="${esc(n)}">`).join('')}</datalist>
+      </label>
+      <button class="btn primary" type="submit">追加 / 更新</button>
+    </form></div>
+    <div class="card"><table class="data-table"><thead><tr><th>メーカー</th><th>原文作業名</th><th>標準作業名</th><th></th></tr></thead>
+    <tbody>${sorted.map((a) => `<tr><td>${esc(a.manufacturer)}</td><td>${esc(a.raw_name)}</td><td>${esc(a.normalized_name)}</td>
+      <td><button type="button" class="btn small danger alias-delete" data-id="${a.alias_id}">削除</button></td></tr>`).join('')}</tbody></table>
+    ${sorted.length ? '' : '<p class="hint">辞書はまだありません。</p>'}</div>`;
+  $('#aliasForm').onsubmit = (ev) => {
+    ev.preventDefault();
+    const f = ev.currentTarget;
+    addAlias(f.manufacturer.value.trim(), f.raw.value.trim(), f.normalized.value.trim());
+    saveAll();
+    toast('エイリアスを保存しました。');
+    renderAliases();
+  };
+  $$('.alias-delete').forEach((b) => {
+    b.onclick = () => {
+      state.aliases = state.aliases.filter((a) => a.alias_id !== b.dataset.id);
+      saveAll();
+      renderAliases();
+    };
+  });
+}
+
+function renderSettings() {
+  $('#settingsContent').innerHTML = `<div class="settings-grid">
+    <div class="card"><h2>基本設定</h2>
+      <form id="settingsForm">
+        <label class="field"><span>利用者名</span><input name="user_name" value="${esc(state.settings.user_name)}" required></label>
+        <label class="field"><span>乖離閾値（%）</span><input name="threshold" type="number" min="1" max="999" value="${esc(state.settings.deviation_threshold_percent)}"></label>
+        <label class="field"><span>比較モード</span>
+          <select name="mode"><option ${state.settings.comparison_mode === '単価' ? 'selected' : ''}>単価</option>
+          <option ${state.settings.comparison_mode === '原単位' ? 'selected' : ''}>原単位</option></select>
+        </label>
+        <label class="check"><input type="checkbox" name="show_deleted" ${state.settings.show_deleted ? 'checked' : ''}> 削除済みを表示</label>
+        <button class="btn primary">設定を保存</button>
+      </form>
+    </div>
+    <div class="card"><h2>Excel出力</h2>
+      <p class="hint">見積データと更新履歴を別シートに出力します。SheetJS CDN（xlsx-0.20.3）が必要です。オフライン/CDNブロック時は失敗します。</p>
+      <div class="form-actions">
+        <button type="button" class="btn" id="excelAll">全件をExcel</button>
+        <button type="button" class="btn" id="excelFiltered2">絞り込み結果をExcel</button>
+      </div>
+    </div>
+    <div class="card"><h2>JSON全量バックアップ</h2>
+      <p class="hint">entries / history / task_alias / settings を1ファイルに保存します。</p>
+      <div class="form-actions">
+        <button type="button" class="btn primary" id="backupBtn">JSONを書き出す</button>
+        <button type="button" class="btn" id="restoreBtn">JSONから復元</button>
+      </div>
+    </div>
+    <div class="card danger-zone"><h2>保存状況・制限</h2>
+      <p class="hint">保存先: このブラウザーの localStorage<br>目安容量: 約5MB（環境依存）<br>現在: <b id="settingsStorage"></b><br>
+      PDF抽出は対象外です。Excel出力以外は外部通信しません。</p>
+    </div>
+  </div>`;
+  const bytes = Object.values(LS).reduce((n, k) => n + ((localStorage.getItem(k) || '').length * 2), 0);
+  $('#settingsStorage').textContent = (bytes / 1024).toFixed(1) + ' KB';
+  $('#settingsForm').onsubmit = (ev) => {
+    ev.preventDefault();
+    const f = ev.currentTarget;
+    state.settings.user_name = f.user_name.value.trim();
+    state.settings.deviation_threshold_percent = Math.max(1, Number(f.threshold.value) || 15);
+    state.settings.comparison_mode = f.mode.value;
+    state.settings.show_deleted = f.show_deleted.checked;
+    $('#fDeleted').checked = state.settings.show_deleted;
+    saveAll();
+    toast('設定を保存しました。');
+    renderAll();
+  };
+  $('#excelAll').onclick = () => exportExcel(false);
+  $('#excelFiltered2').onclick = () => exportExcel(true);
+  $('#backupBtn').onclick = exportBackup;
+  $('#restoreBtn').onclick = () => $('#restoreDialog').showModal();
+}
+
+function syncControls() {
+  $$('#modeSeg button').forEach((b) => b.classList.toggle('active', b.dataset.mode === state.settings.comparison_mode));
+  $('#thresholdRange').value = state.settings.deviation_threshold_percent;
+  $('#thresholdNum').value = state.settings.deviation_threshold_percent;
+  $('#fDeleted').checked = state.settings.show_deleted;
+  $$('#viewSeg button').forEach((b) => b.classList.toggle('active', b.dataset.listview === state.listView));
+}
+
+function parseCSV(text) {
+  text = text.replace(/^\uFEFF/, '');
+  const rows = [];
+  let row = [], cell = '', quoted = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (quoted) {
+      if (c === '"' && text[i + 1] === '"') { cell += '"'; i++; }
+      else if (c === '"') quoted = false;
+      else cell += c;
+    } else if (c === '"') quoted = true;
+    else if (c === ',') { row.push(cell); cell = ''; }
+    else if (c === '\n') {
+      row.push(cell.replace(/\r$/, ''));
+      rows.push(row);
+      row = [];
+      cell = '';
+    } else cell += c;
+  }
+  if (cell !== '' || row.length) {
+    row.push(cell.replace(/\r$/, ''));
+    rows.push(row);
+  }
+  if (!rows.length) return { rows: [], headerError: 'ファイルが空です' };
+  const header = rows.shift();
+  if (header.length !== CSV_FIELDS.length || header.some((v, i) => v !== CSV_FIELDS[i])) {
+    return { rows: [], headerError: 'CSVヘッダーまたはカラム順が仕様と一致しません' };
+  }
+  return {
+    rows: rows.filter((r) => r.some((x) => String(x).trim() !== '')).map((r, i) => ({
+      data: Object.fromEntries(CSV_FIELDS.map((f, j) => [f, r[j] ?? ''])),
+      line: i + 2,
+      raw: r
+    }))
+  };
+}
+
+function validateImportRow(obj, line) {
+  const r = {};
+  CSV_FIELDS.forEach((f) => { r[f] = obj[f] == null ? '' : String(obj[f]).trim(); });
+  const errors = [];
+  ['manufacturer', 'task_raw', 'unit_price', 'source_type', 'source_file'].forEach((f) => {
+    if (!r[f]) errors.push(f + ' 必須');
+  });
+  const up = finiteNumber(r.unit_price, false);
+  const crew = finiteNumber(r.crew_size, true);
+  const days = finiteNumber(r.days, true);
+  if (!Number.isFinite(up) || up < 0) errors.push('unit_price 数値不正');
+  if (r.crew_size !== '' && (!Number.isFinite(crew) || crew <= 0)) errors.push('crew_size 数値不正');
+  if (r.days !== '' && (!Number.isFinite(days) || days <= 0)) errors.push('days 数値不正');
+  if (r.quote_date && !validDate(r.quote_date)) errors.push('quote_date 形式不正');
+  if (!SOURCE_TYPES_IMPORT.includes(r.source_type)) errors.push('source_type 不正');
+  r.unit_price = up;
+  r.crew_size = crew;
+  r.days = days;
+  return { line, data: r, errors };
+}
+
+async function prepareImport(file) {
+  state.importRows = [];
+  state.importErrors = [];
+  try {
+    const text = await file.text();
+    let source = [];
+    if (file.name.toLowerCase().endsWith('.json')) {
+      const arr = JSON.parse(text);
+      if (!Array.isArray(arr)) throw new Error('JSONは配列である必要があります');
+      source = arr.map((data, i) => ({ data, line: i + 1, raw: CSV_FIELDS.map((f) => data[f] ?? '') }));
+    } else {
+      const parsed = parseCSV(text);
+      if (parsed.headerError) throw new Error(parsed.headerError);
+      source = parsed.rows;
+    }
+    source.forEach((x) => {
+      const v = validateImportRow(x.data, x.line);
+      v.raw = x.raw;
+      if (v.errors.length) state.importErrors.push(v);
+      else state.importRows.push(v);
+    });
+    renderImportPreview();
+  } catch (e) {
+    state.importRows = [];
+    state.importErrors = [{ line: 0, data: {}, errors: [e.message], raw: [] }];
+    renderImportPreview();
+    toast('ファイルを解析できません: ' + e.message, 'error');
+  }
+}
+
+function renderImportPreview() {
+  const blanks = [...new Set(state.importRows.filter((x) => !x.data.quote_date).map((x) => x.data.source_file))];
+  const reasons = {};
+  state.importErrors.forEach((x) => x.errors.forEach((e) => { reasons[e] = (reasons[e] || 0) + 1; }));
+  $('#importPreview').innerHTML = `<div class="summary">解析済み: 正常候補 <b>${state.importRows.length}</b> / スキップ候補 <b>${state.importErrors.length}</b>
+    <div class="hint">取込み完了時に「正常 n / スキップ m」を表示します。</div></div>` +
+    (blanks.length
+      ? `<h3>見積日が空欄です（元ファイル単位で補完）</h3>${blanks.map((f) =>
+        `<div class="date-fill"><span>${esc(f)}</span><input type="date" class="fill-date" data-file="${esc(f)}"></div>`).join('')}`
+      : '<p class="hint">見積日の空欄はありません。</p>') +
+    (Object.keys(reasons).length
+      ? `<div class="error-list">${Object.entries(reasons).map(([r, n]) => esc(r) + ': ' + n + '件').join('<br>')}</div>`
+      : '');
+  $$('.fill-date').forEach((i) => {
+    i.onchange = () => {
+      state.importRows.filter((x) => x.data.source_file === i.dataset.file && !x.data.quote_date)
+        .forEach((x) => { x.data.quote_date = i.value; });
+    };
+  });
+  $('#importCommitBtn').disabled = !state.importRows.length;
+  $('#skipDownloadBtn').disabled = !state.importErrors.length;
+}
+
+function importCommit() {
+  const blank = state.importRows.filter((x) => !x.data.quote_date);
+  if (blank.length) {
+    toast('見積日未補完が' + blank.length + '件あります。ファイル単位で日付を入力してください。', 'error');
+    return;
+  }
+  const policy = $('#duplicatePolicy').value;
+  const existing = new Map(state.entries.map((e) => [duplicateKey(e), e]));
+  let ok = 0, over = 0;
+  const finalErrors = state.importErrors.slice();
+  state.importRows.forEach((x) => {
+    const v = validateImportRow(x.data, x.line);
+    if (v.errors.length) { finalErrors.push(v); return; }
+    const r = v.data;
+    const key = duplicateKey(r);
+    const dupe = existing.get(key);
+    if (dupe && policy === 'skip') {
+      finalErrors.push(Object.assign({}, v, { errors: ['重複のためスキップ'] }));
+      return;
+    }
+    const alias = state.aliases.find((a) => a.manufacturer === r.manufacturer && a.raw_name === r.task_raw);
+    const t = now();
+    const values = {
+      manufacturer: r.manufacturer, task_raw: r.task_raw,
+      task_normalized: alias ? alias.normalized_name : '',
+      workforce_type: r.workforce_type, crew_size: r.crew_size, unit_price: r.unit_price, days: r.days,
+      unit_cost: unitCost(r.unit_price, r.crew_size, r.days), quote_date: r.quote_date,
+      default_assumption: r.default_assumption, validity_judgment: '',
+      judgment_comment: r.judgment_comment, reference_note: r.reference_note,
+      source_type: r.source_type, source_file: r.source_file, deviation_rate: null, deleted: false,
+      updated_at: t, updated_by: state.settings.user_name
+    };
+    if (dupe && policy === 'overwrite') {
+      ENTRY_FIELDS.forEach((f) => {
+        if (String(dupe[f] ?? '') !== String(values[f] ?? '')) {
+          recordHistory(dupe.id, f, dupe[f], values[f], 'インポート上書き');
+          dupe[f] = values[f];
+        }
+      });
+      dupe.unit_cost = values.unit_cost;
+      dupe.updated_at = t;
+      dupe.updated_by = state.settings.user_name;
+      over++;
+      ok++;
+    } else {
+      const e = Object.assign({ id: uid(), created_at: t }, values);
+      state.entries.push(e);
+      existing.set(key, e);
+      ok++;
+    }
+  });
+  state.importErrors = finalErrors;
+  saveAll();
+  $('#skipDownloadBtn').disabled = !finalErrors.length;
+  toast('取込み完了：正常 ' + ok + ' / スキップ ' + finalErrors.length + (over ? '（上書き ' + over + '）' : ''));
+  $('#importDialog').close();
+  renderAll();
+}
+
+function csvEscape(v) {
+  const s = String(v ?? '');
+  return /[",\r\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+}
+function stamp() {
+  const d = new Date(), p = (n) => String(n).padStart(2, '0');
+  return d.getFullYear() + p(d.getMonth() + 1) + p(d.getDate()) + '_' + p(d.getHours()) + p(d.getMinutes()) + p(d.getSeconds());
+}
+function downloadText(text, name, type) {
+  const blob = new Blob([text], { type });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = name; a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+function downloadSkip() {
+  const head = CSV_FIELDS.concat('skip_reason').join(',');
+  const lines = state.importErrors.map((x) =>
+    CSV_FIELDS.map((f) => csvEscape(x.data?.[f] ?? '')).concat(csvEscape(x.errors.join(' / '))).join(',')
+  );
+  downloadText('\uFEFF' + [head, ...lines].join('\r\n'), 'import-skipped-' + stamp() + '.csv', 'text/csv;charset=utf-8');
+}
+
+function exportExcel(filtered) {
+  if (typeof XLSX === 'undefined') {
+    toast('SheetJS が読み込めていません。オフラインまたは CDN ブロックのため Excel 出力できません。', 'error');
+    return;
+  }
+  const src = filtered ? filteredEntries() : state.entries;
+  const exportRows = src.map((e) => {
+    const o = {};
+    ['id', ...ENTRY_FIELDS, 'unit_cost', 'deviation_rate', 'deleted', 'created_at', 'updated_at', 'updated_by']
+      .forEach((k) => { o[k] = e[k] ?? ''; });
+    o.display_judgment = evaluationLabel(e).text;
+    return o;
+  });
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(exportRows), '見積データ');
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(state.history), '更新履歴');
+  XLSX.writeFile(wb, '見積単価DB_' + (filtered ? '絞り込み' : '全件') + '_' + stamp() + '.xlsx');
+}
+
+function exportBackup() {
+  const out = {
+    app: 'メーカー別見積単価データベース化ツール GlockBOT 0.1.0',
+    exported_at: now(),
+    entries: state.entries.map((e) => {
+      const c = Object.assign({}, e);
+      delete c._eval; delete c._new;
+      return c;
+    }),
+    history: state.history,
+    task_alias: state.aliases,
+    settings: state.settings
+  };
+  downloadText(JSON.stringify(out, null, 2), '見積単価DB_バックアップ_' + stamp() + '.json', 'application/json');
+}
+
+async function restoreBackup() {
+  const file = $('#restoreFile').files[0];
+  if (!file) { toast('JSONファイルを選択してください。', 'error'); return; }
+  try {
+    const b = JSON.parse(await file.text());
+    if (!Array.isArray(b.entries) || !Array.isArray(b.history) || !Array.isArray(b.task_alias) || !b.settings) {
+      throw new Error('バックアップ形式が不正です');
+    }
+    if ($('#restoreMode').value === 'replace') {
+      state.entries = b.entries.map(normalizeEntry);
+      state.history = b.history;
+      state.aliases = b.task_alias;
+      state.settings = Object.assign({}, DEFAULT_SETTINGS, b.settings);
+    } else {
+      const ei = new Set(state.entries.map((x) => x.id));
+      const hi = new Set(state.history.map((x) => x.id));
+      const ai = new Set(state.aliases.map((x) => x.alias_id));
+      state.entries.push(...b.entries.filter((x) => !ei.has(x.id)).map(normalizeEntry));
+      state.history.push(...b.history.filter((x) => !hi.has(x.id)));
+      state.aliases.push(...b.task_alias.filter((x) => !ai.has(x.alias_id)));
+      state.settings = Object.assign({}, state.settings, b.settings, {
+        user_name: state.settings.user_name || b.settings.user_name
+      });
+    }
+    saveAll();
+    $('#restoreDialog').close();
+    state.selectedId = null;
+    state.draft = null;
+    toast('バックアップを復元しました。');
+    renderAll();
+  } catch (e) {
+    toast('復元できません: ' + e.message, 'error');
+  }
+}
+
+function setTab(tab) {
+  state.activeTab = tab;
+  $$('.tab').forEach((b) => b.classList.toggle('active', b.dataset.tab === tab));
+  $$('.view').forEach((v) => v.classList.toggle('active', v.id === 'view-' + tab));
+  $('#mainToolbar').style.display = tab === 'compare' ? 'flex' : 'none';
+  if (tab === 'aliases') renderAliases();
+  if (tab === 'settings') renderSettings();
+  if (tab === 'queue') renderQueue();
+}
+
+$$('.tab').forEach((b) => { b.onclick = () => setTab(b.dataset.tab); });
+$('#newBtn').onclick = newEntry;
+$('#importBtn').onclick = () => {
+  $('#importFile').value = '';
+  state.importRows = [];
+  state.importErrors = [];
+  $('#importPreview').textContent = 'UTF-8 CSV（BOM可）または JSON 配列を選択してください。';
+  $('#importCommitBtn').disabled = true;
+  $('#skipDownloadBtn').disabled = true;
+  $('#importDialog').showModal();
+};
+$('#importFile').onchange = (e) => { if (e.target.files[0]) prepareImport(e.target.files[0]); };
+$('#importCancelBtn').onclick = () => $('#importDialog').close();
+$('#importCommitBtn').onclick = importCommit;
+$('#skipDownloadBtn').onclick = downloadSkip;
+$('#restoreCancelBtn').onclick = () => $('#restoreDialog').close();
+$('#restoreCommitBtn').onclick = restoreBackup;
+$('#excelFilteredBtn').onclick = () => exportExcel(true);
+
+$$('#modeSeg button').forEach((b) => {
+  b.onclick = () => {
+    state.settings.comparison_mode = b.dataset.mode;
+    saveAll();
+    renderAll();
+  };
+});
+function setThreshold(v) {
+  state.settings.deviation_threshold_percent = Math.max(1, Math.min(999, Number(v) || 15));
+  saveAll();
+  renderAll();
+}
+$('#thresholdRange').oninput = debounce((e) => setThreshold(e.target.value), 80);
+$('#thresholdNum').onchange = (e) => setThreshold(e.target.value);
+$$('#viewSeg button').forEach((b) => {
+  b.onclick = () => { state.listView = b.dataset.listview; state.page = 1; renderCompare(); syncControls(); };
+});
+['#fManufacturer', '#fTask', '#fValidity', '#fFrom', '#fTo', '#fSort', '#fDeleted'].forEach((s) => {
+  $(s).onchange = () => {
+    if (s === '#fDeleted') {
+      state.settings.show_deleted = $('#fDeleted').checked;
+      saveAll();
+    }
+    state.page = 1;
+    renderCompare();
+  };
+});
+$('#fKeyword').oninput = debounce(() => { state.page = 1; renderCompare(); }, 150);
+$('#filterClear').onclick = () => {
+  $('#fManufacturer').value = '';
+  $('#fTask').value = '';
+  $('#fValidity').value = '';
+  $('#fFrom').value = '';
+  $('#fTo').value = '';
+  $('#fKeyword').value = '';
+  $('#fSort').value = 'quote_date_desc';
+  state.page = 1;
+  renderCompare();
+};
+
+$('#nameForm').onsubmit = (e) => {
+  e.preventDefault();
+  const n = $('#firstUserName').value.trim();
+  if (!n) return;
+  state.settings.user_name = n;
+  saveAll();
+  $('#nameDialog').close();
+  renderAll();
+};
+
+recalculate();
+saveAll();
+renderAll();
+if (!state.settings.user_name) {
+  $('#nameDialog').showModal();
+  setTimeout(() => $('#firstUserName').focus(), 50);
+}
+})();
+
+</script>
+</body>
+</html>

@@ -1,0 +1,1343 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>川崎BXP 据付負荷スクリーニング — GlockBOT 0.1.0</title>
+<style>
+:root {
+  --bg:#12141a; --panel:#1e2129; --accent:#4f8cff; --ng:#ff5c5c; --warn:#ffb84f; --ok:#4fd68c;
+  --text:#e8eaed; --muted:#9aa0a6; --border:#2a2f3a; --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--text);font:13px/1.45 system-ui,-apple-system,sans-serif}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer;background:#2a3140;border:1px solid var(--border);border-radius:6px;padding:6px 10px;color:var(--text)}
+button:hover{border-color:var(--accent)}
+button.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+button.danger{background:#3a2222;border-color:var(--ng)}
+input[type=number],input[type=text],select,textarea{background:#151820;border:1px solid var(--border);border-radius:4px;padding:4px 6px;width:100%}
+label{display:block;color:var(--muted);font-size:11px;margin-bottom:2px}
+.row{display:flex;gap:8px;align-items:flex-end;margin-bottom:8px}
+.row>*{flex:1}
+.app{display:flex;flex-direction:column;height:100%}
+header{display:flex;align-items:center;gap:12px;padding:8px 12px;background:var(--panel);border-bottom:1px solid var(--border)}
+header h1{font-size:15px;margin:0;font-weight:600}
+header .ver{color:var(--accent);font-weight:700}
+.main{flex:1;display:grid;grid-template-columns:320px 1fr 340px;min-height:0}
+.pane{background:var(--panel);border-right:1px solid var(--border);overflow:auto;min-height:0}
+.pane:last-child{border-right:none;border-left:1px solid var(--border)}
+.pane h2{font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);margin:0;padding:10px 12px 6px}
+.tabs{display:flex;gap:0;border-bottom:1px solid var(--border);padding:0 8px}
+.tabs button{flex:1;border:none;border-radius:0;background:transparent;padding:8px 4px;color:var(--muted);border-bottom:2px solid transparent}
+.tabs button.active{color:var(--accent);border-bottom-color:var(--accent)}
+.tab-body{padding:10px 12px}
+.tab-body.hidden{display:none}
+.center{display:flex;flex-direction:column;background:var(--bg);min-height:0}
+.viz-wrap{flex:1;display:grid;grid-template-rows:1fr 140px;gap:8px;padding:8px;min-height:0}
+.viz-top{display:grid;grid-template-columns:1fr 1fr;gap:8px;min-height:0}
+.canvas-box{background:var(--panel);border:1px solid var(--border);border-radius:8px;position:relative;min-height:0;overflow:hidden}
+.canvas-box canvas{width:100%;height:100%;display:block}
+.canvas-box .tag{position:absolute;top:6px;left:8px;font-size:11px;color:var(--muted)}
+.overlay-kpi{position:absolute;right:8px;top:6px;font-family:var(--mono);font-size:11px;text-align:right;background:rgba(18,20,26,.75);padding:4px 6px;border-radius:4px}
+.transport{display:flex;align-items:center;gap:8px;padding:6px 8px;background:var(--panel);border:1px solid var(--border);border-radius:8px}
+.transport input[type=range]{flex:1}
+.timeline-canvas{height:48px;width:100%;background:#151820;border-radius:4px}
+.right-body{padding:10px 12px}
+.kpi-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
+.kpi{background:#151820;border:1px solid var(--border);border-radius:8px;padding:8px}
+.kpi .v{font-family:var(--mono);font-size:16px;font-weight:700}
+.kpi .l{font-size:11px;color:var(--muted)}
+.chart-box{background:#151820;border:1px solid var(--border);border-radius:8px;padding:6px;margin-bottom:10px}
+.chart-box canvas{width:100%;height:160px;display:block}
+.bolt-bars{display:flex;flex-direction:column;gap:4px}
+.bolt-bar{display:grid;grid-template-columns:40px 1fr 48px;gap:6px;align-items:center;font-size:11px}
+.bolt-bar .track{height:10px;background:#0d0f14;border-radius:4px;overflow:hidden}
+.bolt-bar .fill{height:100%;border-radius:4px}
+.tips{margin-top:10px;padding:8px;background:#151820;border-radius:8px;border:1px solid var(--border);font-size:12px;color:var(--muted)}
+.tips li{margin:4px 0}
+table.steps{width:100%;border-collapse:collapse;font-size:11px}
+table.steps th,table.steps td{border:1px solid var(--border);padding:2px 3px;text-align:center}
+table.steps input{width:52px;padding:2px;text-align:center}
+table.steps tr.peak{background:rgba(255,92,92,.15)}
+.anchor-list{display:flex;flex-direction:column;gap:4px;max-height:180px;overflow:auto}
+.anchor-item{display:flex;gap:6px;align-items:center;font-size:11px}
+.footer{padding:8px 12px;background:#0d0f14;border-top:1px solid var(--border);font-size:11px;color:var(--muted)}
+.footer .disclaimer{color:var(--warn);margin-bottom:4px}
+.note{font-size:11px;color:var(--muted);margin:6px 0}
+.banner{display:none;background:#3a2a10;color:var(--warn);padding:6px 10px;font-size:12px;border-bottom:1px solid var(--warn)}
+.banner.show{display:block}
+.modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:50;align-items:center;justify-content:center;padding:20px}
+.modal.show{display:flex}
+.modal-inner{background:#fff;color:#111;max-width:800px;width:100%;max-height:90vh;overflow:auto;border-radius:8px;padding:24px}
+.modal-inner h2{margin-top:0}
+.modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:16px}
+.modal-actions button{color:#111;background:#eee}
+@media print{
+  body *{visibility:hidden}
+  #printReport,.modal-inner,#printReport *{visibility:visible}
+  .modal{display:flex!important;position:static;background:#fff}
+  .modal-inner{box-shadow:none;max-height:none}
+  .modal-actions{display:none}
+}
+.sliders label{margin-top:6px}
+.three-missing{color:var(--warn);font-size:11px;padding:4px 8px}
+</style>
+<script>
+/* Three.js r128 optional — corporate CDN may block */
+window.__THREE_OK=false;
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"
+  onload="window.__THREE_OK=true"
+  onerror="window.__THREE_OK=false"></script>
+</head>
+<body>
+<div class="app">
+  <header>
+    <h1>川崎BXP 据付負荷スクリーニング</h1>
+    <span class="ver">GlockBOT 0.1.0</span>
+    <span style="flex:1"></span>
+    <button id="btnRecalc" class="primary">再計算</button>
+    <button id="btnExport">CSV出力</button>
+    <button id="btnReport">印刷レポート</button>
+  </header>
+  <div id="lWarn" class="banner">LMOVE は 0.1.0 では J 補間へフォールバックします（未達: 逆キネマ）。</div>
+  <div class="main">
+    <!-- LEFT -->
+    <aside class="pane" id="leftPane">
+      <div class="tabs">
+        <button type="button" class="active" data-tab="robot">ロボット</button>
+        <button type="button" data-tab="stand">架台・ｱﾝｶｰ</button>
+        <button type="button" data-tab="prog">動作</button>
+      </div>
+      <div class="tab-body" id="tab-robot">
+        <div class="row">
+          <div><label>型式</label>
+            <select id="modelSel">
+              <option>BXP110S</option><option>BXP110L</option><option>BXP135X</option>
+              <option selected>BXP165L</option><option>BXP210L</option>
+            </select>
+          </div>
+        </div>
+        <div class="row">
+          <div><label>ツール質量 kg</label><input type="number" id="toolKg" value="45" step="1"/></div>
+          <div><label>ワーク質量 kg</label><input type="number" id="workKg" value="0" step="1"/></div>
+        </div>
+        <div class="row">
+          <div><label>DAF</label><input type="number" id="daf" value="1.3" step="0.05" min="1"/></div>
+          <div><label>カタログ最大モード</label>
+            <select id="catalogMode"><option value="0">オフ（動的推定）</option><option value="1">オン（M_tip固定）</option></select>
+          </div>
+        </div>
+        <p class="note">質量配分・DH・M_tip/T_rot は近似プレースホルダ（公式表でない場合あり）。</p>
+        <h2 style="padding-left:0">手動関節 (J1–J6 °)</h2>
+        <div class="sliders" id="jointSliders"></div>
+      </div>
+      <div class="tab-body hidden" id="tab-stand">
+        <div class="row">
+          <div><label>架台高さ h mm</label><input type="number" id="h_mm" value="800" step="10"/></div>
+          <div><label>天板 L mm</label><input type="number" id="L_mm" value="1200" step="10"/></div>
+        </div>
+        <div class="row">
+          <div><label>天板 W mm</label><input type="number" id="W_mm" value="1000" step="10"/></div>
+          <div><label>□パイプ mm</label><input type="number" id="pipe" value="200" step="1"/></div>
+        </div>
+        <div class="row">
+          <div><label>肉厚 t mm</label><input type="number" id="t_mm" value="9" step="0.5"/></div>
+          <div><label>架台質量 kg</label><input type="number" id="mStand" value="" placeholder="自動"/></div>
+        </div>
+        <p class="note" id="standMassNote">架台は剛体仮定。質量は仕様の概算式。</p>
+        <div class="row">
+          <div><label>ピッチ X mm</label><input type="number" id="pitchX" value="900"/></div>
+          <div><label>ピッチ Y mm</label><input type="number" id="pitchY" value="700"/></div>
+        </div>
+        <div class="row">
+          <div><label>許容引張 Na N</label><input type="number" id="Na" value="45000"/></div>
+          <div><label>許容せん断 Qa N</label><input type="number" id="Qa" value="25000"/></div>
+        </div>
+        <div class="row">
+          <button type="button" id="btnResetBolts">角ボルト8本リセット</button>
+          <button type="button" id="btnAddMatsuba">松葉+2</button>
+        </div>
+        <div class="anchor-list" id="anchorList"></div>
+      </div>
+      <div class="tab-body hidden" id="tab-prog">
+        <div class="row">
+          <button type="button" id="btnPreset1">プリセット:旋回往復</button>
+          <button type="button" id="btnPreset2">上下ピック</button>
+        </div>
+        <div class="row">
+          <button type="button" id="btnPreset3">フル速デモ</button>
+          <button type="button" id="btnAddStep">行追加</button>
+        </div>
+        <label>CSVペースト (step,J1..J6,speed,accel,weld_dwell)</label>
+        <textarea id="csvPaste" rows="3" placeholder="1,0,-30,45,0,-60,0,100,100,0"></textarea>
+        <button type="button" id="btnImportCsv" style="margin:6px 0">取込</button>
+        <div style="overflow:auto;max-height:360px">
+          <table class="steps" id="stepTable">
+            <thead><tr><th>#</th><th>J1</th><th>J2</th><th>J3</th><th>J4</th><th>J5</th><th>J6</th><th>Spd%</th><th>Acc%</th><th>Wld</th><th></th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </aside>
+
+    <!-- CENTER -->
+    <section class="center">
+      <div class="viz-wrap">
+        <div class="viz-top">
+          <div class="canvas-box">
+            <div class="tag">側面ビュー (Canvas2D・CDN不要)</div>
+            <div class="overlay-kpi" id="overlayKpi">M_floor —</div>
+            <canvas id="sideCanvas"></canvas>
+          </div>
+          <div class="canvas-box">
+            <div class="tag">床平面・ボルト利用率</div>
+            <canvas id="floorCanvas"></canvas>
+            <div id="threeHost" class="three-missing" style="display:none"></div>
+          </div>
+        </div>
+        <div class="transport">
+          <button type="button" id="btnPlay">▶</button>
+          <button type="button" id="btnStop">■</button>
+          <input type="range" id="seek" min="0" max="0" value="0" step="1"/>
+          <label style="white-space:nowrap;color:var(--muted)">速度
+            <select id="playSpeed"><option>0.5</option><option selected>1</option><option>2</option><option>4</option></select>
+          </label>
+          <span id="timeLabel" style="font-family:var(--mono);min-width:90px">t=0.00s</span>
+        </div>
+        <canvas class="timeline-canvas" id="tlCanvas"></canvas>
+      </div>
+    </section>
+
+    <!-- RIGHT -->
+    <aside class="pane" id="rightPane">
+      <h2>結果 KPI</h2>
+      <div class="right-body">
+        <div class="kpi-grid">
+          <div class="kpi"><div class="l">ピーク M_floor</div><div class="v" id="kpiM">—</div><div class="l" id="kpiMmeta">—</div></div>
+          <div class="kpi"><div class="l">最悪ボルト利用率</div><div class="v" id="kpiU">—</div><div class="l" id="kpiUmeta">—</div></div>
+          <div class="kpi"><div class="l">カタログ M_tip</div><div class="v" id="kpiCat">—</div><div class="l">illustrative</div></div>
+          <div class="kpi"><div class="l">Fz_floor @peak</div><div class="v" id="kpiFz">—</div><div class="l">N</div></div>
+        </div>
+        <div class="chart-box">
+          <div class="tag" style="position:static;margin-bottom:4px">M_floor(t) vs カタログ線</div>
+          <canvas id="chartCanvas" width="600" height="160"></canvas>
+        </div>
+        <h2 style="padding:0 0 6px">ボルト利用率</h2>
+        <div class="bolt-bars" id="boltBars"></div>
+        <div class="tips"><strong>簡易ヒント</strong><ul id="tipList"><li>再計算後に表示</li></ul></div>
+      </div>
+    </aside>
+  </div>
+  <footer class="footer">
+    <div class="disclaimer">本結果は簡易モデルによる推定値です。据付可否の最終判断は、川崎重工の据付・接続要領書および構造設計者による正式検討に基づいてください。</div>
+    <div>GlockBOT 0.1.0 · 架台剛体仮定 · DH/質量/カタログ値は近似 · Three.js r128 は任意（CDNブロック時は Canvas2D のみ）</div>
+  </footer>
+</div>
+
+<div class="modal" id="reportModal">
+  <div class="modal-inner" id="printReport">
+    <h2>据付負荷スクリーニング レポート</h2>
+    <p><strong>GlockBOT 0.1.0</strong></p>
+    <div id="reportBody"></div>
+    <p style="margin-top:24px;border-top:1px solid #ccc;padding-top:12px;color:#666;font-size:12px">
+      本結果は簡易モデルによる推定値です。据付可否の最終判断は、川崎重工の据付・接続要領書および構造設計者による正式検討に基づいてください。
+    </p>
+    <div class="modal-actions">
+      <button type="button" onclick="window.print()">印刷 / PDF</button>
+      <button type="button" id="btnCloseReport">閉じる</button>
+    </div>
+  </div>
+</div>
+
+<script>
+window.BXPCore = (function(){
+'use strict';
+/**
+ * Kawasaki BXP mount-load physics core (Node-testable).
+ * Keep in sync with the CORE block in ../index.html.
+ * Values marked illustrative are approximate placeholders, not official catalog tables.
+ */
+'use strict';
+
+const G = 9.80665;
+const DISCLAIMER =
+  '本結果は簡易モデルによる推定値です。据付可否の最終判断は、川崎重工の据付・接続要領書および構造設計者による正式検討に基づいてください。';
+const VERSION = 'GlockBOT 0.1.0';
+
+/** Illustrative DH (mm, deg) + mass split + catalog M_tip/T_rot placeholders */
+const MODELS = {
+  BXP110S: {
+    name: 'BXP110S',
+    payloadKg: 110,
+    totalMassKg: 1180,
+    // [a(mm), alpha(deg), d(mm), thetaOffset(deg)] modified DH-style used as a,α,d with θ from joint
+    dh: [
+      { a: 150, alpha: -90, d: 650, th0: 0 },
+      { a: 870, alpha: 0, d: 0, th0: -90 },
+      { a: 210, alpha: -90, d: 0, th0: 0 },
+      { a: 0, alpha: 90, d: 1050, th0: 0 },
+      { a: 0, alpha: -90, d: 0, th0: 0 },
+      { a: 0, alpha: 0, d: 200, th0: 0 }
+    ],
+    // mass fractions of totalMassKg at links after joints 1..4 (shoulder, upper, elbow/fore, wrist)
+    massFrac: [0.28, 0.32, 0.25, 0.15],
+    M_tip_Nm: 28000,
+    T_rot_Nm: 18000,
+    note: 'illustrative / approximate'
+  },
+  BXP110L: {
+    name: 'BXP110L',
+    payloadKg: 110,
+    totalMassKg: 1250,
+    dh: [
+      { a: 150, alpha: -90, d: 650, th0: 0 },
+      { a: 1070, alpha: 0, d: 0, th0: -90 },
+      { a: 210, alpha: -90, d: 0, th0: 0 },
+      { a: 0, alpha: 90, d: 1240, th0: 0 },
+      { a: 0, alpha: -90, d: 0, th0: 0 },
+      { a: 0, alpha: 0, d: 200, th0: 0 }
+    ],
+    massFrac: [0.26, 0.33, 0.26, 0.15],
+    M_tip_Nm: 32000,
+    T_rot_Nm: 20000,
+    note: 'illustrative / approximate'
+  },
+  BXP135X: {
+    name: 'BXP135X',
+    payloadKg: 135,
+    totalMassKg: 1380,
+    dh: [
+      { a: 160, alpha: -90, d: 680, th0: 0 },
+      { a: 950, alpha: 0, d: 0, th0: -90 },
+      { a: 220, alpha: -90, d: 0, th0: 0 },
+      { a: 0, alpha: 90, d: 1150, th0: 0 },
+      { a: 0, alpha: -90, d: 0, th0: 0 },
+      { a: 0, alpha: 0, d: 215, th0: 0 }
+    ],
+    massFrac: [0.27, 0.32, 0.26, 0.15],
+    M_tip_Nm: 38000,
+    T_rot_Nm: 23000,
+    note: 'illustrative / approximate'
+  },
+  BXP165L: {
+    name: 'BXP165L',
+    payloadKg: 165,
+    totalMassKg: 1580,
+    dh: [
+      { a: 170, alpha: -90, d: 720, th0: 0 },
+      { a: 1150, alpha: 0, d: 0, th0: -90 },
+      { a: 230, alpha: -90, d: 0, th0: 0 },
+      { a: 0, alpha: 90, d: 1300, th0: 0 },
+      { a: 0, alpha: -90, d: 0, th0: 0 },
+      { a: 0, alpha: 0, d: 220, th0: 0 }
+    ],
+    massFrac: [0.25, 0.34, 0.26, 0.15],
+    M_tip_Nm: 45000,
+    T_rot_Nm: 28000,
+    note: 'illustrative / approximate'
+  },
+  BXP210L: {
+    name: 'BXP210L',
+    payloadKg: 210,
+    totalMassKg: 1850,
+    dh: [
+      { a: 180, alpha: -90, d: 750, th0: 0 },
+      { a: 1200, alpha: 0, d: 0, th0: -90 },
+      { a: 250, alpha: -90, d: 0, th0: 0 },
+      { a: 0, alpha: 90, d: 1400, th0: 0 },
+      { a: 0, alpha: -90, d: 0, th0: 0 },
+      { a: 0, alpha: 0, d: 230, th0: 0 }
+    ],
+    massFrac: [0.24, 0.35, 0.26, 0.15],
+    M_tip_Nm: 55000,
+    T_rot_Nm: 35000,
+    note: 'illustrative / approximate'
+  }
+};
+
+function deg2rad(d) { return (d * Math.PI) / 180; }
+function rad2deg(r) { return (r * 180) / Math.PI; }
+
+function mat4Identity() {
+  return [1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1];
+}
+
+function mat4Mul(A, B) {
+  const O = new Array(16);
+  for (let c = 0; c < 4; c++) {
+    for (let r = 0; r < 4; r++) {
+      O[c * 4 + r] =
+        A[0 * 4 + r] * B[c * 4 + 0] +
+        A[1 * 4 + r] * B[c * 4 + 1] +
+        A[2 * 4 + r] * B[c * 4 + 2] +
+        A[3 * 4 + r] * B[c * 4 + 3];
+    }
+  }
+  return O;
+}
+
+/** T = Rz(θ)·Tz(d)·Tx(a)·Rx(α) — column-major */
+function dhTransform(thetaDeg, d, a, alphaDeg) {
+  const th = deg2rad(thetaDeg);
+  const al = deg2rad(alphaDeg);
+  const ct = Math.cos(th), st = Math.sin(th);
+  const ca = Math.cos(al), sa = Math.sin(al);
+  // column-major 4x4
+  return [
+    ct, st, 0, 0,
+    -st * ca, ct * ca, sa, 0,
+    st * sa, -ct * sa, ca, 0,
+    a * ct, a * st, d, 1
+  ];
+}
+
+/**
+ * Forward kinematics. jointsDeg: [J1..J6] degrees.
+ * Returns { frames: mat4[7] (base..TCP), points: {x,y,z}[7] in meters }
+ */
+function forwardKinematics(jointsDeg, model) {
+  const dh = model.dh;
+  const frames = [mat4Identity()];
+  let T = mat4Identity();
+  const points = [{ x: 0, y: 0, z: 0 }];
+  for (let i = 0; i < 6; i++) {
+    const p = dh[i];
+    const Ti = dhTransform(jointsDeg[i] + p.th0, p.d / 1000, p.a / 1000, p.alpha);
+    T = mat4Mul(T, Ti);
+    frames.push(T.slice());
+    points.push({ x: T[12], y: T[13], z: T[14] });
+  }
+  return { frames, points };
+}
+
+function concentratedMasses(model, toolKg, workKg) {
+  const mRobot = model.totalMassKg;
+  const fr = model.massFrac;
+  return [
+    fr[0] * mRobot,
+    fr[1] * mRobot,
+    fr[2] * mRobot,
+    fr[3] * mRobot + toolKg + workKg
+  ];
+}
+
+/** Mass positions: after J1, J2, J3/J4 mid, TCP (points index 1,2,4,6) */
+function massPositionsFromFK(fk) {
+  const p = fk.points;
+  return [p[1], p[2], p[4], p[6]];
+}
+
+function standMassKg(h_mm, L_mm, W_mm, pipe_mm, t_mm) {
+  // Spec formula base: (4*54*(h/1000) + (L/1000)*(W/1000)*196)*1.15
+  // Dynamic leg mass from section if pipe/t given
+  const h = h_mm / 1000;
+  const L = L_mm / 1000;
+  const W = W_mm / 1000;
+  let legKgPerM = 54;
+  if (pipe_mm && t_mm && pipe_mm > 2 * t_mm) {
+    const outer = pipe_mm / 1000;
+    const inner = (pipe_mm - 2 * t_mm) / 1000;
+    const area = outer * outer - inner * inner; // m²
+    legKgPerM = area * 7850;
+  }
+  return (4 * legKgPerM * h + L * W * 196) * 1.15;
+}
+
+/**
+ * Simulate joint trajectory with synchronized trapezoid JMOVE + dwell for weld/timer.
+ * steps: [{j:[6], speed, accel, weld, timer, interp}]
+ * Returns samples: {t, joints, stepIndex}[]
+ */
+function buildTrajectory(steps, dt) {
+  dt = dt || 0.01;
+  const samples = [];
+  if (!steps || !steps.length) return samples;
+  let t = 0;
+  let cur = steps[0].j.slice();
+  samples.push({ t: 0, joints: cur.slice(), stepIndex: 0, static: true });
+
+  for (let s = 1; s < steps.length; s++) {
+    const st = steps[s];
+    const tgt = st.j.slice();
+    const weld = !!(st.weld || st.weld_dwell > 0);
+    const timer = Number(st.timer || st.weld_dwell || 0) || 0;
+    const isL = String(st.interp || 'J').toUpperCase().startsWith('L');
+
+    // LMOVE: warn/fallback to J (MVP)
+    const speed = Math.max(1, Number(st.speed) || 100) / 100;
+    const accel = Math.max(1, Number(st.accel) || 100) / 100;
+
+    // max joint rate ~ 120 deg/s at 100% (illustrative)
+    const maxRate = 120 * speed; // deg/s
+    const maxAcc = 400 * accel; // deg/s²
+    let maxDelta = 0;
+    for (let i = 0; i < 6; i++) maxDelta = Math.max(maxDelta, Math.abs(tgt[i] - cur[i]));
+
+    if (maxDelta < 1e-6 || weld) {
+      // static / weld segment
+      const dwell = weld ? Math.max(timer, 0.3) : Math.max(timer, dt);
+      const n = Math.max(1, Math.round(dwell / dt));
+      for (let k = 1; k <= n; k++) {
+        t += dt;
+        samples.push({ t, joints: cur.slice(), stepIndex: s, static: true, weld: weld, lFallback: isL });
+      }
+      continue;
+    }
+
+    // Trapezoid time for dominant axis
+    const v = maxRate;
+    const a = maxAcc;
+    let tAcc = v / a;
+    let dAcc = 0.5 * a * tAcc * tAcc;
+    let tTotal;
+    if (2 * dAcc >= maxDelta) {
+      // triangle
+      tAcc = Math.sqrt(maxDelta / a);
+      tTotal = 2 * tAcc;
+      dAcc = 0.5 * a * tAcc * tAcc;
+    } else {
+      const dCoast = maxDelta - 2 * dAcc;
+      tTotal = 2 * tAcc + dCoast / v;
+    }
+
+    const n = Math.max(2, Math.round(tTotal / dt));
+    const start = cur.slice();
+    for (let k = 1; k <= n; k++) {
+      const tau = (k / n) * tTotal;
+      let sNorm;
+      if (2 * dAcc >= maxDelta - 1e-9 && tTotal > 0) {
+        // triangle profile position fraction
+        const tA = tTotal / 2;
+        if (tau <= tA) sNorm = 0.5 * a * tau * tau / maxDelta;
+        else {
+          const td = tau - tA;
+          sNorm = (0.5 * a * tA * tA + a * tA * td - 0.5 * a * td * td) / maxDelta;
+        }
+      } else {
+        const tA = tAcc;
+        const tC = tTotal - 2 * tA;
+        if (tau <= tA) sNorm = (0.5 * a * tau * tau) / maxDelta;
+        else if (tau <= tA + tC) sNorm = (dAcc + v * (tau - tA)) / maxDelta;
+        else {
+          const td = tau - (tA + tC);
+          sNorm = (dAcc + v * tC + v * td - 0.5 * a * td * td) / maxDelta;
+        }
+      }
+      sNorm = Math.min(1, Math.max(0, sNorm));
+      const j = start.map((v0, i) => v0 + (tgt[i] - v0) * sNorm);
+      t += dt;
+      samples.push({ t, joints: j, stepIndex: s, static: false, lFallback: isL });
+    }
+    cur = tgt.slice();
+
+    if (timer > 0 && !weld) {
+      const n2 = Math.max(1, Math.round(timer / dt));
+      for (let k = 1; k <= n2; k++) {
+        t += dt;
+        samples.push({ t, joints: cur.slice(), stepIndex: s, static: true });
+      }
+    }
+  }
+  return samples;
+}
+
+function centralDiffAccel(series, dt) {
+  const n = series.length;
+  const out = new Array(n);
+  for (let i = 0; i < n; i++) {
+    if (i === 0 || i === n - 1) out[i] = { ax: 0, ay: 0, az: 0 };
+    else {
+      const p0 = series[i - 1], p1 = series[i], p2 = series[i + 1];
+      out[i] = {
+        ax: (p2.x - 2 * p1.x + p0.x) / (dt * dt),
+        ay: (p2.y - 2 * p1.y + p0.y) / (dt * dt),
+        az: (p2.z - 2 * p1.z + p0.z) / (dt * dt)
+      };
+    }
+  }
+  return out;
+}
+
+/**
+ * Compute base loads for one sample given mass positions + accels.
+ * Returns Fx,Fy,Fz,M,T (before DAF on M,T)
+ */
+function baseLoads(masses, positions, accels) {
+  let Fx = 0, Fy = 0, Fz = 0, Mx = 0, My = 0, Tz = 0;
+  for (let i = 0; i < masses.length; i++) {
+    const m = masses[i];
+    const p = positions[i];
+    const a = accels[i] || { ax: 0, ay: 0, az: 0 };
+    const fx = m * a.ax;
+    const fy = m * a.ay;
+    const fz = m * (G + a.az);
+    Fx += fx;
+    Fy += fy;
+    Fz += fz;
+    // Moment about base origin: r × F
+    Mx += p.y * fz - p.z * fy;
+    My += p.z * fx - p.x * fz;
+    Tz += p.x * fy - p.y * fx;
+  }
+  const M = Math.sqrt(Mx * Mx + My * My);
+  return { Fx, Fy, Fz, Mx, My, M, T: Tz };
+}
+
+function floorLoads(base, h_m, mStand, daf) {
+  daf = daf == null ? 1.3 : daf;
+  const Fh = Math.sqrt(base.Fx * base.Fx + base.Fy * base.Fy);
+  const M = base.M * daf;
+  const T = base.T * daf;
+  return {
+    M_floor: M + Fh * h_m,
+    Fz_floor: base.Fz + mStand * G,
+    T_floor: T,
+    Fx: base.Fx,
+    Fy: base.Fy,
+    Fz: base.Fz,
+    M,
+    T,
+    Fh
+  };
+}
+
+/**
+ * Default corner bolt pattern (8 bolts) in mm relative to plate center.
+ * pitchX, pitchY = outer column pitches.
+ */
+function defaultBolts(pitchX, pitchY) {
+  const hx = pitchX / 2, hy = pitchY / 2;
+  const ox = pitchX * 0.35, oy = pitchY * 0.35;
+  return [
+    { id: 'B1', x: -hx, y: -hy, enabled: true, matsuba: false },
+    { id: 'B2', x: -ox, y: -hy, enabled: true, matsuba: false },
+    { id: 'B3', x: ox, y: -hy, enabled: true, matsuba: false },
+    { id: 'B4', x: hx, y: -hy, enabled: true, matsuba: false },
+    { id: 'B5', x: -hx, y: hy, enabled: true, matsuba: false },
+    { id: 'B6', x: -ox, y: hy, enabled: true, matsuba: false },
+    { id: 'B7', x: ox, y: hy, enabled: true, matsuba: false },
+    { id: 'B8', x: hx, y: hy, enabled: true, matsuba: false }
+  ];
+}
+
+function addMatsuba(bolts, pitchX, pitchY) {
+  const hx = pitchX / 2 + 80, hy = pitchY / 2 + 80;
+  return bolts.concat([
+    { id: 'M1', x: -hx, y: 0, enabled: true, matsuba: true },
+    { id: 'M2', x: hx, y: 0, enabled: true, matsuba: true }
+  ]);
+}
+
+/**
+ * Elastic bolt-group tensile + shear split.
+ * plate half-size for compression edge: halfL, halfW (mm)
+ * Allowables: Na (tensile N), Qa (shear N)
+ */
+function analyzeBolts(bolts, M_floor, T_floor, Fx, Fy, halfL_mm, halfW_mm, Na, Qa) {
+  const active = bolts.filter((b) => b.enabled);
+  if (!active.length) return { bolts: [], maxUtil: 0, worstId: null };
+
+  // Moment direction: assume My-dominant tipping about Y → tension by x distance from compression edge
+  // Use distance from plate edge in tipping direction. Simplified: c_i = distance from compression edge along x
+  // Compression edge at x = -halfL (worst for positive My tipping). Use |x| relative to neutral at edge.
+  const edge = halfL_mm; // mm
+  // c_i = x_i - (-edge) = x_i + edge  (tensile when positive from compression edge)
+  // Better classic: lever arm from neutral axis through compression edge
+  let sumC2 = 0;
+  const cs = active.map((b) => {
+    const c = b.x + edge; // mm from left edge
+    sumC2 += c * c;
+    return c;
+  });
+  let sumR2 = 0;
+  const rs = active.map((b) => {
+    const r = Math.sqrt(b.x * b.x + b.y * b.y);
+    sumR2 += r * r;
+    return r;
+  });
+  const n = active.length;
+  const Fh = Math.sqrt(Fx * Fx + Fy * Fy);
+  const results = [];
+  let maxUtil = 0;
+  let worstId = null;
+
+  for (let i = 0; i < n; i++) {
+    const b = active[i];
+    const c = cs[i];
+    const r = rs[i] || 1e-6;
+    // N_i in N; M_floor in N·m → convert lever mm→m
+    const Ni = sumC2 > 0 ? (M_floor * (c / 1000)) / (sumC2 / 1e6) : 0;
+    const N_tensile = Math.max(0, Ni);
+    // shear: equal share of Fh + torsion share
+    const Qeqx = Fx / n;
+    const Qeqy = Fy / n;
+    const Qt = sumR2 > 0 ? (T_floor * (r / 1000)) / (sumR2 / 1e6) : 0;
+    // torsion shear direction perpendicular to radius
+    const qx = Qeqx + (r > 0 ? (-b.y / r) * Qt : 0);
+    const qy = Qeqy + (r > 0 ? (b.x / r) * Qt : 0);
+    const Qi = Math.sqrt(qx * qx + qy * qy);
+    const utilT = Na > 0 ? N_tensile / Na : 0;
+    const utilS = Qa > 0 ? Qi / Qa : 0;
+    // interaction approx
+    const utilC = Math.sqrt(utilT * utilT + utilS * utilS);
+    const util = Math.max(utilT, utilC);
+    results.push({
+      id: b.id,
+      x: b.x,
+      y: b.y,
+      matsuba: b.matsuba,
+      N: N_tensile,
+      Q: Qi,
+      util,
+      color: util >= 1 ? 'ng' : util >= 0.7 ? 'warn' : 'ok'
+    });
+    if (util > maxUtil) {
+      maxUtil = util;
+      worstId = b.id;
+    }
+  }
+  return { bolts: results, maxUtil, worstId };
+}
+
+/**
+ * Full timeline simulation.
+ * opts: { modelKey, toolKg, workKg, h_mm, L_mm, W_mm, pipe, t, mStandOverride, daf, steps, bolts, halfL, halfW, Na, Qa, dt }
+ */
+function simulate(opts) {
+  const model = MODELS[opts.modelKey] || MODELS.BXP165L;
+  const dt = opts.dt || 0.01;
+  const toolKg = opts.toolKg || 0;
+  const workKg = opts.workKg || 0;
+  const masses = concentratedMasses(model, toolKg, workKg);
+  const h_m = (opts.h_mm || 0) / 1000;
+  const mStand =
+    opts.mStandOverride != null
+      ? opts.mStandOverride
+      : standMassKg(opts.h_mm || 0, opts.L_mm || 1200, opts.W_mm || 1000, opts.pipe || 200, opts.t || 9);
+  const daf = opts.daf != null ? opts.daf : 1.3;
+  const samples = buildTrajectory(opts.steps, dt);
+
+  // FK positions for each sample / each mass
+  const posSeries = masses.map(() => []);
+  for (let s = 0; s < samples.length; s++) {
+    const fk = forwardKinematics(samples[s].joints, model);
+    const mp = massPositionsFromFK(fk);
+    for (let i = 0; i < masses.length; i++) posSeries[i].push(mp[i]);
+  }
+
+  const accSeries = posSeries.map((ser) => centralDiffAccel(ser, dt));
+
+  const timeline = [];
+  let peakM = -1;
+  let peakIdx = 0;
+  let worstBoltUtil = 0;
+  let worstBoltId = null;
+  let worstBoltAt = 0;
+
+  const bolts = opts.bolts || defaultBolts(opts.pitchX || 900, opts.pitchY || 700);
+  const halfL = opts.halfL != null ? opts.halfL : (opts.L_mm || 1200) / 2;
+  const halfW = opts.halfW != null ? opts.halfW : (opts.W_mm || 1000) / 2;
+  const Na = opts.Na != null ? opts.Na : 45000; // N illustrative
+  const Qa = opts.Qa != null ? opts.Qa : 25000;
+
+  for (let s = 0; s < samples.length; s++) {
+    const positions = posSeries.map((ser) => ser[s]);
+    const accels = accSeries.map((ser) => ser[s]);
+    // Force static dynamics to zero on weld/static samples (gravity only via az=0)
+    if (samples[s].static) {
+      for (let i = 0; i < accels.length; i++) accels[i] = { ax: 0, ay: 0, az: 0 };
+    }
+    const base = baseLoads(masses, positions, accels);
+    const floor = floorLoads(base, h_m, mStand, daf);
+    const boltRes = analyzeBolts(
+      bolts,
+      floor.M_floor,
+      floor.T_floor,
+      floor.Fx,
+      floor.Fy,
+      halfL,
+      halfW,
+      Na,
+      Qa
+    );
+    timeline.push({
+      t: samples[s].t,
+      stepIndex: samples[s].stepIndex,
+      joints: samples[s].joints,
+      static: !!samples[s].static,
+      weld: !!samples[s].weld,
+      ...floor,
+      boltMaxUtil: boltRes.maxUtil,
+      boltWorstId: boltRes.worstId,
+      boltDetail: boltRes.bolts
+    });
+    if (floor.M_floor > peakM) {
+      peakM = floor.M_floor;
+      peakIdx = s;
+    }
+    if (boltRes.maxUtil > worstBoltUtil) {
+      worstBoltUtil = boltRes.maxUtil;
+      worstBoltId = boltRes.worstId;
+      worstBoltAt = s;
+    }
+  }
+
+  const totalRobotMass = masses.reduce((a, b) => a + b, 0);
+
+  return {
+    model,
+    masses,
+    mStand,
+    totalRobotMass,
+    timeline,
+    peak: {
+      M_floor: peakM,
+      t: timeline[peakIdx] ? timeline[peakIdx].t : 0,
+      stepIndex: timeline[peakIdx] ? timeline[peakIdx].stepIndex : 0,
+      index: peakIdx
+    },
+    worstBolt: {
+      util: worstBoltUtil,
+      id: worstBoltId,
+      t: timeline[worstBoltAt] ? timeline[worstBoltAt].t : 0,
+      index: worstBoltAt
+    },
+    catalog: { M_tip: model.M_tip_Nm, T_rot: model.T_rot_Nm }
+  };
+}
+
+
+return { G, DISCLAIMER, VERSION, MODELS, deg2rad, rad2deg, dhTransform, forwardKinematics, concentratedMasses, massPositionsFromFK, standMassKg, buildTrajectory, centralDiffAccel, baseLoads, floorLoads, defaultBolts, addMatsuba, analyzeBolts, simulate, mat4Mul, mat4Identity };
+})();
+</script>
+<script>
+(function(){
+'use strict';
+const C = window.BXPCore;
+const DISCLAIMER = C.DISCLAIMER;
+
+let state = {
+  bolts: C.defaultBolts(900, 700),
+  steps: [],
+  sim: null,
+  idx: 0,
+  playing: false,
+  joints: [0,-30,45,0,-60,0],
+  raf: 0,
+  lastTs: 0
+};
+
+function $(id){ return document.getElementById(id); }
+
+/* ----- tabs ----- */
+document.querySelectorAll('.tabs button').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    document.querySelectorAll('.tabs button').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    ['robot','stand','prog'].forEach(t=>{
+      $('tab-'+t).classList.toggle('hidden', btn.dataset.tab!==t);
+    });
+  });
+});
+
+/* ----- joint sliders ----- */
+function buildSliders(){
+  const host = $('jointSliders');
+  host.innerHTML = '';
+  for(let i=0;i<6;i++){
+    const lab = document.createElement('label');
+    lab.textContent = 'J'+(i+1)+' '+state.joints[i]+'°';
+    const inp = document.createElement('input');
+    inp.type='range'; inp.min=-180; inp.max=180; inp.value=state.joints[i];
+    inp.dataset.j=i;
+    inp.addEventListener('input',()=>{
+      state.joints[i]=Number(inp.value);
+      lab.textContent='J'+(i+1)+' '+state.joints[i]+'°';
+      drawSide(state.joints);
+    });
+    host.appendChild(lab); host.appendChild(inp);
+  }
+}
+
+/* ----- presets ----- */
+function presetSwing(){
+  state.steps=[
+    {j:[0,-30,45,0,-60,0],speed:100,accel:100,weld:0,timer:0,interp:'J'},
+    {j:[90,-30,45,0,-60,0],speed:100,accel:100,weld:0,timer:0,interp:'J'},
+    {j:[-90,-30,45,0,-60,0],speed:100,accel:100,weld:0,timer:0,interp:'J'},
+    {j:[0,-30,45,0,-60,0],speed:80,accel:80,weld:0,timer:0,interp:'J'}
+  ];
+  renderSteps(); recalc();
+}
+function presetPick(){
+  state.steps=[
+    {j:[0,-10,30,0,-40,0],speed:80,accel:80,weld:0,timer:0,interp:'J'},
+    {j:[0,-40,60,0,-70,0],speed:60,accel:60,weld:0,timer:0,interp:'J'},
+    {j:[0,-40,60,0,-70,0],speed:100,accel:100,weld:1,timer:0.6,weld_dwell:0.6,interp:'J'},
+    {j:[0,-10,30,0,-40,0],speed:80,accel:80,weld:0,timer:0,interp:'J'},
+    {j:[60,-10,30,0,-40,0],speed:100,accel:100,weld:0,timer:0,interp:'J'}
+  ];
+  renderSteps(); recalc();
+}
+function presetFull(){
+  state.steps=[
+    {j:[0,-20,20,0,-30,0],speed:100,accel:100,weld:0,timer:0,interp:'J'},
+    {j:[120,-45,70,30,-80,90],speed:100,accel:100,weld:0,timer:0,interp:'J'},
+    {j:[-120,-10,10,-30,-20,-90],speed:100,accel:100,weld:0,timer:0,interp:'J'},
+    {j:[0,-20,20,0,-30,0],speed:100,accel:80,weld:0,timer:0,interp:'J'}
+  ];
+  renderSteps(); recalc();
+}
+
+function renderSteps(){
+  const tb=$('stepTable').querySelector('tbody');
+  tb.innerHTML='';
+  state.steps.forEach((st,i)=>{
+    const tr=document.createElement('tr');
+    tr.dataset.i=i;
+    let cells='<td>'+(i+1)+'</td>';
+    for(let j=0;j<6;j++) cells+=`<td><input data-f="j${j}" type="number" value="${st.j[j]}"/></td>`;
+    cells+=`<td><input data-f="speed" type="number" value="${st.speed||100}"/></td>`;
+    cells+=`<td><input data-f="accel" type="number" value="${st.accel||100}"/></td>`;
+    cells+=`<td><input data-f="weld" type="number" step="0.1" value="${st.weld_dwell||st.weld||0}"/></td>`;
+    cells+=`<td><button type="button" data-del="${i}">✕</button></td>`;
+    tr.innerHTML=cells;
+    tb.appendChild(tr);
+  });
+  tb.querySelectorAll('input').forEach(inp=>{
+    inp.addEventListener('change',()=>{
+      const i=Number(inp.closest('tr').dataset.i);
+      const f=inp.dataset.f;
+      if(f.startsWith('j')){ state.steps[i].j[Number(f.slice(1))]=Number(inp.value); }
+      else if(f==='weld'){ const v=Number(inp.value); state.steps[i].weld=v>0?1:0; state.steps[i].weld_dwell=v; state.steps[i].timer=v; }
+      else state.steps[i][f]=Number(inp.value);
+    });
+  });
+  tb.querySelectorAll('[data-del]').forEach(btn=>{
+    btn.addEventListener('click',()=>{ state.steps.splice(Number(btn.dataset.del),1); renderSteps(); });
+  });
+}
+
+function readStepsFromTable(){ /* already live */ }
+
+function importCsv(){
+  const text=$('csvPaste').value.trim();
+  if(!text) return;
+  const lines=text.split(/\r?\n/).filter(Boolean);
+  const steps=[];
+  for(const line of lines){
+    if(/^step\b/i.test(line)||/^#/.test(line)) continue;
+    const p=line.split(/[,\t]/).map(s=>s.trim());
+    if(p.length<7) continue;
+    let off=0;
+    if(/^d+$/.test(p[0]) && p.length>=8) off=1;
+    const j=p.slice(off,off+6).map(Number);
+    const speed=Number(p[off+6]||100);
+    const accel=Number(p[off+7]||100);
+    const weld=Number(p[off+8]||0);
+    steps.push({j,speed,accel,weld:weld>0?1:0,weld_dwell:weld,timer:weld,interp:'J'});
+  }
+  if(steps.length){ state.steps=steps; renderSteps(); recalc(); }
+}
+
+/* ----- bolts UI ----- */
+function renderBolts(){
+  const host=$('anchorList');
+  host.innerHTML='';
+  state.bolts.forEach((b,i)=>{
+    const div=document.createElement('div');
+    div.className='anchor-item';
+    div.innerHTML=`<strong>${b.id}</strong> <span>(${b.x},${b.y})</span>
+      <label style="display:inline;color:var(--text)"><input type="checkbox" ${b.enabled?'checked':''}/> 有効</label>
+      ${b.matsuba?'<span style="color:var(--accent)">松葉</span>':''}`;
+    div.querySelector('input').addEventListener('change',e=>{ b.enabled=e.target.checked; });
+    host.appendChild(div);
+  });
+}
+
+function inputs(){
+  const modelKey=$('modelSel').value;
+  const h_mm=Number($('h_mm').value)||0;
+  const L_mm=Number($('L_mm').value)||1200;
+  const W_mm=Number($('W_mm').value)||1000;
+  const pipe=Number($('pipe').value)||200;
+  const t=Number($('t_mm').value)||9;
+  let mStand=$('mStand').value;
+  mStand = mStand===''? null : Number(mStand);
+  const auto=C.standMassKg(h_mm,L_mm,W_mm,pipe,t);
+  $('standMassNote').textContent='架台剛体仮定。自動概算質量 ≈ '+auto.toFixed(1)+' kg'+(mStand!=null?'（手入力優先）':'');
+  return {
+    modelKey, toolKg:Number($('toolKg').value)||0, workKg:Number($('workKg').value)||0,
+    h_mm, L_mm, W_mm, pipe, t, mStandOverride:mStand,
+    daf:Number($('daf').value)||1.3,
+    pitchX:Number($('pitchX').value)||900, pitchY:Number($('pitchY').value)||700,
+    Na:Number($('Na').value)||45000, Qa:Number($('Qa').value)||25000,
+    bolts: state.bolts, steps: state.steps, dt:0.01,
+    halfL: L_mm/2, halfW: W_mm/2,
+    catalogMode: $('catalogMode').value==='1'
+  };
+}
+
+function recalc(){
+  const opt=inputs();
+  let lFallback=false;
+  opt.steps.forEach(s=>{ if(String(s.interp||'J').toUpperCase().startsWith('L')) lFallback=true; });
+  $('lWarn').classList.toggle('show', lFallback);
+  state.sim=C.simulate(opt);
+  if(opt.catalogMode){
+    const Mtip=state.sim.catalog.M_tip;
+    state.sim.timeline.forEach(r=>{ r.M_floor=Math.max(r.M_floor, Mtip); r.M=Math.max(r.M,Mtip); });
+    state.sim.peak.M_floor=Math.max(state.sim.peak.M_floor, Mtip);
+  }
+  $('seek').max=Math.max(0,state.sim.timeline.length-1);
+  state.idx=0;
+  updateKPI();
+  drawAll();
+  highlightPeakSteps();
+}
+
+function highlightPeakSteps(){
+  if(!state.sim) return;
+  const peakStep=state.sim.peak.stepIndex;
+  $('stepTable').querySelectorAll('tbody tr').forEach(tr=>{
+    tr.classList.toggle('peak', Number(tr.dataset.i)===peakStep);
+  });
+}
+
+function updateKPI(){
+  const sim=state.sim; if(!sim) return;
+  const p=sim.peak;
+  $('kpiM').textContent=(p.M_floor/1000).toFixed(2)+' kNm';
+  $('kpiMmeta').textContent='t='+p.t.toFixed(2)+'s / step '+(p.stepIndex+1);
+  $('kpiU').textContent=(sim.worstBolt.util*100).toFixed(1)+'%';
+  $('kpiUmeta').textContent=(sim.worstBolt.id||'—')+' @ t='+sim.worstBolt.t.toFixed(2)+'s';
+  $('kpiCat').textContent=(sim.catalog.M_tip/1000).toFixed(1)+' kNm';
+  const row=sim.timeline[p.index];
+  $('kpiFz').textContent=row? Math.round(row.Fz_floor).toLocaleString() : '—';
+  // tips
+  const tips=[];
+  if(sim.worstBolt.util>=1) tips.push('利用率≥1のボルトあり → 松葉追加や無効ボルト見直しを検討');
+  else if(sim.worstBolt.util>=0.7) tips.push('利用率≥0.7 → 接着系繰返しに注意（0.5超でも監視推奨）');
+  const h=Number($('h_mm').value)||0;
+  if(h>=800) tips.push('架台高さ由来の F×h が大きい可能性 → 低床化・ブレース検討');
+  if(p.M_floor>sim.catalog.M_tip) tips.push('推定ピークがカタログ M_tip を超過（スクリーニング警告）');
+  tips.push('該当ピーク step の Spd/Acc を下げて再計算し低減率を確認');
+  $('tipList').innerHTML=tips.map(t=>'<li>'+t+'</li>').join('');
+  renderBoltBars(row);
+}
+
+function renderBoltBars(row){
+  const host=$('boltBars'); host.innerHTML='';
+  if(!row||!row.boltDetail) return;
+  row.boltDetail.forEach(b=>{
+    const col=b.color==='ng'?'var(--ng)':b.color==='warn'?'var(--warn)':'var(--ok)';
+    const pct=Math.min(100,b.util*100);
+    const div=document.createElement('div');
+    div.className='bolt-bar';
+    div.innerHTML=`<span>${b.id}</span><div class="track"><div class="fill" style="width:${pct}%;background:${col}"></div></div><span>${(b.util*100).toFixed(0)}%</span>`;
+    host.appendChild(div);
+  });
+}
+
+/* ----- drawing ----- */
+function resizeCanvas(c){
+  const r=c.parentElement.getBoundingClientRect();
+  const dpr=window.devicePixelRatio||1;
+  c.width=Math.max(100,r.width*dpr);
+  c.height=Math.max(100,r.height*dpr);
+  return c.getContext('2d');
+}
+
+function drawSide(joints){
+  const canvas=$('sideCanvas');
+  const ctx=resizeCanvas(canvas);
+  const W=canvas.width,H=canvas.height;
+  ctx.clearRect(0,0,W,H);
+  const model=C.MODELS[$('modelSel').value];
+  const fk=C.forwardKinematics(joints||state.joints, model);
+  const h_m=(Number($('h_mm').value)||0)/1000;
+  // side view XZ
+  const scale=Math.min(W,H)/3.5;
+  const ox=W*0.25, oy=H*0.85;
+  function tx(x,z){ return ox + x*scale; }
+  function ty(x,z){ return oy - (z+h_m)*scale; }
+  // floor & stand box
+  ctx.strokeStyle='#3a4150'; ctx.lineWidth=2;
+  ctx.beginPath(); ctx.moveTo(0,oy); ctx.lineTo(W,oy); ctx.stroke();
+  ctx.fillStyle='#252a35';
+  const L=(Number($('L_mm').value)||1200)/1000;
+  ctx.fillRect(tx(-L/2,0)-2, ty(0,0)-(h_m*scale), L*scale+4, h_m*scale);
+  // robot links
+  ctx.strokeStyle='#4f8cff'; ctx.lineWidth=3* (window.devicePixelRatio||1);
+  ctx.beginPath();
+  fk.points.forEach((p,i)=>{
+    const X=tx(p.x,p.z), Y=ty(p.x,p.z);
+    if(i===0) ctx.moveTo(X,Y); else ctx.lineTo(X,Y);
+  });
+  ctx.stroke();
+  fk.points.forEach((p,i)=>{
+    ctx.fillStyle=i===fk.points.length-1?'#ffb84f':'#e8eaed';
+    ctx.beginPath(); ctx.arc(tx(p.x,p.z),ty(p.x,p.z),4*(window.devicePixelRatio||1),0,Math.PI*2); ctx.fill();
+  });
+  // tipping arc hint
+  if(state.sim && state.sim.timeline[state.idx]){
+    const r=state.sim.timeline[state.idx];
+    const mag=Math.min(80, r.M_floor/800);
+    ctx.strokeStyle=r.M_floor>state.sim.catalog.M_tip?'#ff5c5c':'#4fd68c';
+    ctx.beginPath(); ctx.arc(ox,oy, mag*(window.devicePixelRatio||1), -Math.PI*0.9, -Math.PI*0.1); ctx.stroke();
+  }
+}
+
+function drawFloor(){
+  const canvas=$('floorCanvas');
+  const ctx=resizeCanvas(canvas);
+  const W=canvas.width,H=canvas.height;
+  ctx.clearRect(0,0,W,H);
+  const L=Number($('L_mm').value)||1200, Ww=Number($('W_mm').value)||1000;
+  const scale=Math.min(W/ (L*1.4), H/(Ww*1.4));
+  const ox=W/2, oy=H/2;
+  ctx.strokeStyle='#3a4150'; ctx.strokeRect(ox-L/2*scale, oy-Ww/2*scale, L*scale, Ww*scale);
+  const row=state.sim && state.sim.timeline[state.idx];
+  const detail=row && row.boltDetail;
+  state.bolts.forEach(b=>{
+    if(!b.enabled){
+      ctx.fillStyle='#666'; ctx.font=(11*(window.devicePixelRatio||1))+'px sans-serif';
+      ctx.fillText('✕', ox+b.x*scale-4, oy-b.y*scale+4);
+      return;
+    }
+    let col='#4fd68c';
+    if(detail){
+      const d=detail.find(x=>x.id===b.id);
+      if(d) col=d.color==='ng'?'#ff5c5c':d.color==='warn'?'#ffb84f':'#4fd68c';
+    }
+    ctx.fillStyle=col;
+    ctx.beginPath(); ctx.arc(ox+b.x*scale, oy-b.y*scale, 7*(window.devicePixelRatio||1),0,Math.PI*2); ctx.fill();
+    ctx.fillStyle='#fff'; ctx.font=(9*(window.devicePixelRatio||1))+'px sans-serif';
+    ctx.fillText(b.id, ox+b.x*scale+8, oy-b.y*scale+3);
+  });
+  if(row){
+    const ang=Math.atan2(row.Fy,row.Fx);
+    ctx.strokeStyle='#ffb84f'; ctx.beginPath();
+    ctx.moveTo(ox,oy); ctx.lineTo(ox+Math.cos(ang)*40, oy-Math.sin(ang)*40); ctx.stroke();
+  }
+}
+
+function drawChart(){
+  const canvas=$('chartCanvas');
+  const ctx=canvas.getContext('2d');
+  const W=canvas.width, H=canvas.height;
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle='#151820'; ctx.fillRect(0,0,W,H);
+  if(!state.sim||!state.sim.timeline.length) return;
+  const tl=state.sim.timeline;
+  const cat=state.sim.catalog.M_tip;
+  let maxM=cat;
+  tl.forEach(r=>{ if(r.M_floor>maxM) maxM=r.M_floor; });
+  maxM*=1.1;
+  const pad=20;
+  function xAt(i){ return pad + (W-2*pad)*i/(tl.length-1||1); }
+  function yAt(v){ return H-pad - (H-2*pad)*v/maxM; }
+  // catalog line
+  ctx.strokeStyle='#4f8cff'; ctx.setLineDash([4,4]);
+  ctx.beginPath(); ctx.moveTo(pad,yAt(cat)); ctx.lineTo(W-pad,yAt(cat)); ctx.stroke();
+  ctx.setLineDash([]);
+  // series
+  ctx.beginPath();
+  for(let i=0;i<tl.length;i++){
+    const x=xAt(i), y=yAt(tl[i].M_floor);
+    if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+  }
+  ctx.strokeStyle='#e8eaed'; ctx.lineWidth=1.5; ctx.stroke();
+  // exceed in red overlay segments
+  ctx.strokeStyle='#ff5c5c'; ctx.lineWidth=2;
+  ctx.beginPath();
+  let inEx=false;
+  for(let i=0;i<tl.length;i++){
+    const x=xAt(i), y=yAt(tl[i].M_floor);
+    if(tl[i].M_floor>cat){ if(!inEx){ctx.moveTo(x,y); inEx=true;} else ctx.lineTo(x,y); }
+    else inEx=false;
+  }
+  ctx.stroke();
+  // peak marker
+  const pi=state.sim.peak.index;
+  ctx.fillStyle='#ff5c5c';
+  ctx.beginPath();
+  const px=xAt(pi), py=yAt(tl[pi].M_floor);
+  ctx.moveTo(px,py-6); ctx.lineTo(px+5,py+4); ctx.lineTo(px-5,py+4); ctx.closePath(); ctx.fill();
+  // cursor
+  ctx.strokeStyle='#ffb84f';
+  ctx.beginPath(); ctx.moveTo(xAt(state.idx),pad); ctx.lineTo(xAt(state.idx),H-pad); ctx.stroke();
+}
+
+function drawTimeline(){
+  const canvas=$('tlCanvas');
+  const dpr=window.devicePixelRatio||1;
+  const r=canvas.getBoundingClientRect();
+  canvas.width=r.width*dpr; canvas.height=r.height*dpr;
+  const ctx=canvas.getContext('2d');
+  const W=canvas.width,H=canvas.height;
+  ctx.fillStyle='#151820'; ctx.fillRect(0,0,W,H);
+  if(!state.sim) return;
+  const tl=state.sim.timeline;
+  const n=tl.length;
+  let maxM=1; tl.forEach(x=>{if(x.M_floor>maxM)maxM=x.M_floor;});
+  for(let i=0;i<n;i++){
+    const x0=W*i/n, x1=W*(i+1)/n;
+    const hot=tl[i].M_floor>state.sim.catalog.M_tip;
+    ctx.fillStyle=hot?'rgba(255,92,92,.45)':'rgba(79,140,255,.25)';
+    ctx.fillRect(x0,0,Math.max(1,x1-x0),H);
+  }
+  // peak diamond
+  const pi=state.sim.peak.index;
+  const px=W*(pi+0.5)/n;
+  ctx.fillStyle='#ff5c5c';
+  ctx.beginPath(); ctx.moveTo(px,2); ctx.lineTo(px+6,H/2); ctx.lineTo(px,H-2); ctx.lineTo(px-6,H/2); ctx.closePath(); ctx.fill();
+  // playhead
+  ctx.fillStyle='#ffb84f';
+  ctx.fillRect(W*state.idx/n,0,2,H);
+}
+
+function drawAll(){
+  const row=state.sim && state.sim.timeline[state.idx];
+  if(row){
+    state.joints=row.joints.slice();
+    $('overlayKpi').textContent='M_floor '+(row.M_floor/1000).toFixed(2)+' kNm | T '+(row.T_floor/1000).toFixed(2)+' | Fz '+Math.round(row.Fz_floor);
+    $('timeLabel').textContent='t='+row.t.toFixed(2)+'s';
+    renderBoltBars(row);
+  }
+  drawSide(state.joints);
+  drawFloor();
+  drawChart();
+  drawTimeline();
+}
+
+/* ----- playback ----- */
+function tick(ts){
+  if(!state.playing||!state.sim) return;
+  const spd=Number($('playSpeed').value)||1;
+  if(!state.lastTs) state.lastTs=ts;
+  const dt=ts-state.lastTs;
+  if(dt>100/spd){
+    state.lastTs=ts;
+    state.idx=Math.min(state.sim.timeline.length-1, state.idx+1);
+    $('seek').value=state.idx;
+    drawAll();
+    if(state.idx>=state.sim.timeline.length-1){ state.playing=false; $('btnPlay').textContent='▶'; return; }
+  }
+  state.raf=requestAnimationFrame(tick);
+}
+
+$('btnPlay').onclick=()=>{
+  if(!state.sim) recalc();
+  state.playing=!state.playing;
+  $('btnPlay').textContent=state.playing?'⏸':'▶';
+  state.lastTs=0;
+  if(state.playing) state.raf=requestAnimationFrame(tick);
+};
+$('btnStop').onclick=()=>{ state.playing=false; $('btnPlay').textContent='▶'; state.idx=0; $('seek').value=0; drawAll(); };
+$('seek').oninput=()=>{ state.idx=Number($('seek').value); drawAll(); };
+
+/* ----- export CSV ----- */
+function exportCsv(){
+  if(!state.sim) recalc();
+  const sim=state.sim;
+  const model=$('modelSel').value;
+  const lines=[];
+  lines.push('項目,値');
+  lines.push('版,GlockBOT 0.1.0');
+  lines.push('型式,'+model);
+  lines.push('ツールkg,'+$('toolKg').value);
+  lines.push('ワークkg,'+$('workKg').value);
+  lines.push('h_mm,'+$('h_mm').value);
+  lines.push('DAF,'+$('daf').value);
+  lines.push('ピークM_floor_Nm,'+sim.peak.M_floor.toFixed(1));
+  lines.push('ピーク時刻_s,'+sim.peak.t.toFixed(3));
+  lines.push('ピークステップ,'+(sim.peak.stepIndex+1));
+  lines.push('最悪ボルト,'+(sim.worstBolt.id||''));
+  lines.push('最悪利用率,'+sim.worstBolt.util.toFixed(4));
+  lines.push('免責,"'+DISCLAIMER+'"');
+  lines.push('');
+  lines.push('step,t_s,M_floor_Nm,T_floor_Nm,Fz_floor_N,boltMaxUtil');
+  // downsample peaks per step
+  const byStep={};
+  sim.timeline.forEach(r=>{
+    const s=r.stepIndex;
+    if(!byStep[s]||r.M_floor>byStep[s].M_floor) byStep[s]=r;
+  });
+  Object.keys(byStep).sort((a,b)=>a-b).forEach(k=>{
+    const r=byStep[k];
+    lines.push([Number(k)+1,r.t.toFixed(3),r.M_floor.toFixed(1),r.T_floor.toFixed(1),r.Fz_floor.toFixed(1),r.boltMaxUtil.toFixed(4)].join(','));
+  });
+  lines.push('');
+  lines.push('bolt_id,util,N_N,Q_N,判定');
+  const detail=sim.timeline[sim.peak.index].boltDetail||[];
+  detail.forEach(b=>{
+    const jud=b.util>=1?'NG':b.util>=0.7?'注意':'OK';
+    lines.push([b.id,b.util.toFixed(4),b.N.toFixed(1),b.Q.toFixed(1),jud].join(','));
+  });
+  const bom='\uFEFF';
+  const blob=new Blob([bom+lines.join('\n')],{type:'text/csv;charset=utf-8'});
+  const a=document.createElement('a');
+  const d=new Date();
+  const ymd=d.getFullYear()+String(d.getMonth()+1).padStart(2,'0')+String(d.getDate()).padStart(2,'0');
+  a.href=URL.createObjectURL(blob);
+  a.download=model+'_据付負荷_'+ymd+'.csv';
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+function openReport(){
+  if(!state.sim) recalc();
+  const sim=state.sim;
+  const chartUrl=$('chartCanvas').toDataURL('image/png');
+  $('reportBody').innerHTML=`
+    <p>型式: <b>${$('modelSel').value}</b> / h=${$('h_mm').value} mm / DAF=${$('daf').value}</p>
+    <p>ピーク M_floor: <b>${(sim.peak.M_floor/1000).toFixed(2)} kNm</b> @ t=${sim.peak.t.toFixed(2)}s step ${sim.peak.stepIndex+1}</p>
+    <p>最悪ボルト: <b>${sim.worstBolt.id||'—'}</b> 利用率 ${(sim.worstBolt.util*100).toFixed(1)}%</p>
+    <img src="${chartUrl}" style="max-width:100%;border:1px solid #ccc"/>
+    <h3>ボルト利用率（ピーク時）</h3>
+    <table border="1" cellpadding="4" cellspacing="0" style="border-collapse:collapse;width:100%;font-size:12px">
+      <tr><th>ID</th><th>利用率</th><th>N[N]</th><th>Q[N]</th></tr>
+      ${(sim.timeline[sim.peak.index].boltDetail||[]).map(b=>`<tr><td>${b.id}</td><td>${(b.util*100).toFixed(1)}%</td><td>${b.N.toFixed(0)}</td><td>${b.Q.toFixed(0)}</td></tr>`).join('')}
+    </table>
+  `;
+  $('reportModal').classList.add('show');
+}
+
+/* ----- wire ----- */
+$('btnRecalc').onclick=recalc;
+$('btnExport').onclick=exportCsv;
+$('btnReport').onclick=openReport;
+$('btnCloseReport').onclick=()=>$('reportModal').classList.remove('show');
+$('btnPreset1').onclick=presetSwing;
+$('btnPreset2').onclick=presetPick;
+$('btnPreset3').onclick=presetFull;
+$('btnImportCsv').onclick=importCsv;
+$('btnAddStep').onclick=()=>{
+  const last=state.steps[state.steps.length-1]||{j:[0,-30,45,0,-60,0],speed:100,accel:100};
+  state.steps.push({j:last.j.slice(),speed:100,accel:100,weld:0,timer:0,interp:'J'});
+  renderSteps();
+};
+$('btnResetBolts').onclick=()=>{ state.bolts=C.defaultBolts(Number($('pitchX').value)||900,Number($('pitchY').value)||700); renderBolts(); };
+$('btnAddMatsuba').onclick=()=>{ state.bolts=C.addMatsuba(state.bolts,Number($('pitchX').value)||900,Number($('pitchY').value)||700); renderBolts(); };
+$('modelSel').onchange=()=>{ buildSliders(); recalc(); };
+window.addEventListener('resize',()=>drawAll());
+
+// Three.js optional badge
+setTimeout(()=>{
+  if(!window.__THREE_OK || typeof THREE==='undefined'){
+    const h=$('threeHost');
+    h.style.display='block';
+    h.textContent='Three.js 未読込（CDNブロックの可能性）。Canvas2D側面・平面図で継続可。';
+  }
+},800);
+
+buildSliders();
+renderBolts();
+presetSwing();
+})();
+</script>
+</body>
+</html>

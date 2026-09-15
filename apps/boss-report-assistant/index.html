@@ -1,0 +1,1261 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>上司報告 攻略ツール — GlockBOT 0.1.0</title>
+<style>
+  :root {
+    --bg0: #0F1B3D;
+    --bg1: #1A2F5C;
+    --card: rgba(255,255,255,0.06);
+    --border: rgba(255,255,255,0.12);
+    --text: #E2E8F0;
+    --muted: #93A5C8;
+    --dim: #64748B;
+    --accent: #4F46E5;
+    --accent2: #7C3AED;
+    --ok: #0CA678;
+    --warn: #E67700;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    min-height: 100vh;
+    background: linear-gradient(135deg, var(--bg0) 0%, var(--bg1) 50%, var(--bg0) 100%);
+    font-family: "Hiragino Kaku Gothic ProN", "Yu Gothic", "Meiryo", sans-serif;
+    color: var(--text);
+    padding: 24px 16px 48px;
+  }
+  .wrap { max-width: 720px; margin: 0 auto; }
+  .badge {
+    display: inline-block; background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.15); border-radius: 8px;
+    padding: 4px 14px; font-size: 11px; color: #A5B4FC;
+    letter-spacing: 0.1em; margin-bottom: 12px; text-transform: uppercase;
+  }
+  h1 { color: #fff; font-size: 26px; font-weight: 800; margin: 0 0 6px; letter-spacing: -0.02em; }
+  .sub { color: var(--muted); font-size: 13px; margin: 0 0 20px; }
+  .card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 16px; padding: 20px; margin-bottom: 16px;
+  }
+  .mode-bar {
+    display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
+    justify-content: space-between; margin-bottom: 20px;
+  }
+  .mode-toggle {
+    display: inline-flex; background: rgba(255,255,255,0.06);
+    border: 1px solid var(--border); border-radius: 10px; overflow: hidden;
+  }
+  .mode-toggle button {
+    border: none; background: transparent; color: var(--muted);
+    padding: 8px 14px; font-size: 13px; font-weight: 600; cursor: pointer;
+    font-family: inherit;
+  }
+  .mode-toggle button.active {
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    color: #fff;
+  }
+  .steps { display: flex; align-items: center; margin-bottom: 24px; }
+  .step-dot {
+    width: 22px; height: 22px; border-radius: 50%; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 700; color: #fff;
+  }
+  .step-label { font-size: 11px; white-space: nowrap; }
+  .step-line { flex: 1; height: 1px; margin: 0 8px; background: rgba(255,255,255,0.08); }
+  textarea, input[type="text"], input[type="password"] {
+    width: 100%; background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.1); border-radius: 10px;
+    color: var(--text); font-size: 14px; line-height: 1.7;
+    padding: 12px 14px; outline: none; font-family: inherit; resize: vertical;
+  }
+  textarea:focus, input:focus { border-color: rgba(165,180,252,0.4); }
+  label.field-label {
+    display: block; color: #CBD5E1; font-size: 12px; font-weight: 700;
+    margin-bottom: 6px;
+  }
+  .btn {
+    border: none; border-radius: 10px; color: #fff; font-size: 14px;
+    font-weight: 700; cursor: pointer; padding: 12px 16px; font-family: inherit;
+  }
+  .btn:disabled { cursor: not-allowed; opacity: 0.45; }
+  .btn-primary {
+    width: 100%; padding: 14px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+  }
+  .btn-primary:disabled { background: rgba(99,102,241,0.3); opacity: 1; }
+  .btn-ok {
+    width: 100%; padding: 16px;
+    background: linear-gradient(135deg, #0CA678, #059669);
+  }
+  .btn-ghost {
+    background: transparent; border: 1px solid rgba(255,255,255,0.2);
+    color: var(--muted); font-weight: 600;
+  }
+  .btn-sm {
+    padding: 6px 12px; font-size: 12px; font-weight: 600;
+    background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 6px; color: var(--muted); cursor: pointer; font-family: inherit;
+  }
+  .btn-sm.copied { background: rgba(16,185,129,0.3); color: #6EE7B7; }
+  .row { display: flex; gap: 10px; }
+  .row > .btn { flex: 1; }
+  .alert {
+    border-radius: 10px; padding: 14px; font-size: 14px; text-align: center; margin-bottom: 16px;
+  }
+  .alert-err { background: rgba(239,68,68,0.15); border: 1px solid rgba(239,68,68,0.3); color: #FCA5A5; }
+  .alert-load { background: rgba(79,70,229,0.15); border: 1px solid rgba(79,70,229,0.3); color: #A5B4FC; }
+  .alert-warn {
+    background: rgba(230,119,0,0.12); border: 1px solid rgba(230,119,0,0.3);
+    border-radius: 12px; padding: 16px 18px; margin-bottom: 16px; text-align: left;
+  }
+  .section-card {
+    background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 12px; padding: 16px 18px; margin-bottom: 12px;
+  }
+  .checklist { display: grid; gap: 10px; margin: 12px 0; }
+  .check-item {
+    display: flex; gap: 10px; align-items: flex-start;
+    background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 10px; padding: 12px;
+  }
+  .check-item .status {
+    font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 4px;
+    white-space: nowrap; margin-top: 2px;
+  }
+  .status-ok { background: rgba(12,166,120,0.25); color: #6EE7B7; }
+  .status-miss { background: rgba(230,119,0,0.25); color: #FBD38D; }
+  .ai-panel {
+    background: rgba(230,119,0,0.08); border: 1px solid rgba(230,119,0,0.25);
+    border-radius: 12px; padding: 14px 16px; margin-bottom: 16px;
+  }
+  .ai-panel p { margin: 0 0 10px; font-size: 12px; color: #FBD38D; line-height: 1.6; }
+  .slide-item {
+    background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 12px; margin-bottom: 10px; overflow: hidden;
+  }
+  .slide-head {
+    display: flex; align-items: center; gap: 12px; padding: 14px 16px; cursor: pointer;
+  }
+  .slide-no {
+    width: 28px; height: 28px; border-radius: 6px; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 800; color: #fff;
+  }
+  .type-tag {
+    font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 4px; white-space: nowrap;
+  }
+  .hint-box {
+    border-radius: 8px; padding: 10px 12px; margin-bottom: 8px; font-size: 13px;
+  }
+  .footer {
+    text-align: center; margin-top: 32px; color: #475569; font-size: 12px;
+  }
+  .footer strong { color: #64748B; }
+  .editable { margin-top: 6px; min-height: 60px; }
+  .hidden { display: none !important; }
+  .flex-between { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+  .sample-btn {
+    margin-top: 8px; background: transparent; border: 1px dashed rgba(165,180,252,0.35);
+    color: #A5B4FC; border-radius: 8px; padding: 8px 12px; font-size: 12px;
+    cursor: pointer; font-family: inherit; width: 100%;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div style="text-align:center;margin-bottom:20px">
+    <div class="badge">Boss Report Optimizer</div>
+    <h1>上司報告 攻略ツール</h1>
+    <p class="sub">メモ・会議テキストから「報告文」と「パワポ構成＋台本」を整える</p>
+  </div>
+
+  <div class="mode-bar">
+    <div class="mode-toggle" role="group" aria-label="動作モード">
+      <button type="button" id="modeOffline" class="active">オフライン</button>
+      <button type="button" id="modeAi">AI（APIキー）</button>
+    </div>
+    <span id="modeHint" style="font-size:11px;color:var(--dim)">社内利用はオフライン推奨</span>
+  </div>
+
+  <div id="aiPanel" class="ai-panel hidden">
+    <p>⚠️ AIモードでは入力内容が Anthropic に送信されます。社内・機密メモには使わないでください。ブラウザの CORS 制限により API 呼び出しが失敗する場合があります（その場合はオフラインを利用）。</p>
+    <label class="field-label" for="apiKey">Anthropic API キー</label>
+    <input type="password" id="apiKey" placeholder="sk-ant-..." autocomplete="off" />
+    <div class="row" style="margin-top:8px">
+      <label style="flex:1;font-size:12px;color:var(--muted);display:flex;align-items:center;gap:6px">
+        <input type="checkbox" id="saveKey" /> キーを localStorage に保存
+      </label>
+      <button type="button" class="btn-sm" id="clearKey">保存キーを消去</button>
+    </div>
+    <label class="field-label" for="modelName" style="margin-top:10px">モデル</label>
+    <input type="text" id="modelName" value="claude-sonnet-4-6" />
+  </div>
+
+  <div class="steps" id="stepBar"></div>
+  <div id="errorBox" class="alert alert-err hidden"></div>
+  <div id="loadingBox" class="alert alert-load hidden"></div>
+
+  <!-- Phase: input -->
+  <div id="phaseInput" class="card">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+      <span>📝</span>
+      <span style="font-size:14px;font-weight:600">報告したい内容・会議テキストを入力</span>
+    </div>
+    <textarea id="memoInput" rows="9" placeholder=""></textarea>
+    <button type="button" class="sample-btn" id="sampleBtn">📌 サンプルメモを入れる（録音アプリ A→B）</button>
+
+    <div style="margin-top:16px">
+      <div style="font-size:13px;font-weight:700;color:#CBD5E1;margin-bottom:8px">4要素チェックリスト（不足を埋める）</div>
+      <div class="checklist" id="formChecklist"></div>
+    </div>
+
+    <button type="button" class="btn btn-primary" id="btnCheck" style="margin-top:12px">
+      🚀 情報を確認して報告文を作る
+    </button>
+  </div>
+
+  <!-- Phase: questions -->
+  <div id="phaseQuestions" class="hidden"></div>
+
+  <!-- Phase: result -->
+  <div id="phaseResult" class="hidden"></div>
+
+  <!-- Phase: slides -->
+  <div id="phaseSlides" class="hidden"></div>
+
+  <div class="footer">
+    <strong>GlockBOT 0.1.0</strong> · 上司報告攻略ツール · オフライン優先
+  </div>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  // ===== プロンプト定義（原ソース踏襲） =====
+  const CHECK_PROMPT = `あなたは「上司への報告を承認されやすい形に整える」専門のアシスタントです。
+
+ユーザーのメモを受け取り、以下の4要素が揃っているか判定してください。
+
+## 4要素
+1. conclusion（結論・全体像）: 何の話で何を伝えたいか
+2. reason（理由・根拠）: なぜそう判断したか、客観的な事実・データ
+3. action（求めるアクション）: 上司に何をしてほしいか
+4. materials（判断材料）: 上司が承認するために必要な情報
+
+## 判定ルール
+- 各要素について「ある / 不足」を判定する
+- 「不足」とは：要素が完全に欠けている、または推測で補うしかない状態
+- 「ある程度書いてあれば」→ 「ある」と判定してよい
+
+## 出力形式（JSONのみ、前置き・後書き不要）
+{
+  "allPresent": true または false,
+  "missing": [
+    {
+      "key": "reason",
+      "label": "理由・根拠",
+      "question": "なぜその判断に至ったか、具体的な理由や数値・事実を教えてください。"
+    }
+  ]
+}
+- allPresent が true の場合、missing は空配列 []
+- JSONのみ返すこと`;
+
+  const GENERATE_PROMPT = `あなたは「上司への報告を承認されやすい形に整える」専門のアシスタントです。
+
+ユーザーのメモと補足情報をもとに、以下の4要素に沿って整理・肉付けしてください。
+
+## 出力形式（JSONのみ）
+{
+  "title": "報告の一言タイトル（15文字以内）",
+  "conclusion": "【結論・全体像】何の話で、何を伝えたいのか（2〜3文）",
+  "reason": "【理由・根拠】なぜそう判断したか、客観的な事実・データを含めて（3〜4文）",
+  "action": "【求めるアクション】上司に何をしてほしいか、明確に1つ（1〜2文）",
+  "materials": "【判断材料】上司が承認するために必要な情報の補足（2〜3文）",
+  "opening": "口頭報告の冒頭トーク（例：「〇〇の件で、ご承認をお願いしたいです。」）"
+}
+
+## 注意事項
+- 「承認してほしいだけ」の場合は、上司が余計な判断をしなくて済むよう、選択肢を絞った表現にする
+- 主観的意見と客観的事実を区別して書く
+- 難しい言葉より、上司が一瞬で理解できるシンプルな言葉を選ぶ
+- JSONのみ返すこと（コードブロックや前置き・後書き不要）`;
+
+  const SLIDES_PROMPT = `あなたはプレゼン資料設計の専門家です。
+以下の【報告サマリー】と【元の情報】をもとに、上司向けパワーポイント資料の構成案を作成してください。
+
+## 資料作成の4原則（必ず守ること）
+1. 1スライド＝1メッセージ：1枚に情報を詰め込まない。ページ数より1枚の明確さを優先
+2. 事実だけでなく「理由」を明記：「なぜ」を必ずセットで書く
+3. 段階的に説明：読み手の思い込みを防ぐため、情報を順序立てて積み上げる
+4. 工程・位置は細かく分けて図示：作業範囲・手順は区間ごとに明記する
+
+## 出力形式（JSONのみ、前置き・後書き不要）
+{
+  "deckTitle": "資料全体のタイトル",
+  "purpose": "この資料で上司に何を判断・承認してもらうか（1文）",
+  "slides": [
+    {
+      "slideNo": 1,
+      "type": "表紙 | 背景・経緯 | 現状・課題 | 提案内容 | 理由・根拠 | 工程・手順 | コスト・リスク | まとめ・依頼",
+      "title": "スライドタイトル（20文字以内）",
+      "message": "このスライドで言いたい1つのメッセージ（30文字以内）",
+      "bullets": ["箇条書き内容1", "箇条書き内容2", "箇条書き内容3"],
+      "visualHint": {
+        "type": "写真 | 図 | 表 | グラフ | フロー図 | Before/After",
+        "description": "何を貼るべきか（例：現地の全体写真、作業前後の比較写真）",
+        "shootingGuide": "📸 撮ってくる素材リスト（例：○○の全景、□□の現在の状態、△△の設置場所）。写真不要なら空文字",
+        "annotationGuide": "✏️ 写真や図に入れると伝わる注釈・矢印の案（例：「ここが問題箇所→」「この範囲が対象エリア」）。不要なら空文字",
+        "placementTip": "スライドのどこに配置すると見やすいか（例：右半分に大きく、テキストの下に横並び）"
+      },
+      "script": "このスライドの口頭説明台本（2〜4文。「〜です。〜ました。〜をお願いします。」調で）"
+    }
+  ],
+  "presentationTips": ["発表時の注意点1", "発表時の注意点2"]
+}
+## visualHintの書き方ルール
+- shootingGuideは元の情報に場所・現場・設備・作業が含まれる場合のみ具体的に書く。デスクワーク系なら空文字でOK
+- annotationGuideは「上司が一瞬で状況を理解できる」ための注釈案を書く。矢印・ラベル・範囲の色分けなど具体的に
+- 写真より図・表の方が適切なスライドはshooting Guideを空にしてdescriptionに図の内容を書く
+- slides は5〜8枚程度を目安に
+- JSONのみ返すこと`;
+
+  const PLACEHOLDER = `例：
+・録音アプリをA社からB社に変えたい
+・理由は音質と操作性がB社の方が良いから
+・費用は年間3,000円増えるけど大して変わらない
+・来月から使いたい
+
+（会議テキストや議事録もそのまま貼ってOK）`;
+
+  const SAMPLE_MEMO = `・録音アプリをA社からB社に変えたい
+・理由は音質と操作性がB社の方が良いから
+・費用は年間3,000円増えるけど大して変わらない
+・来月から使いたい`;
+
+  const SECTION_DEFS = [
+    { key: "conclusion", label: "結論・全体像",    icon: "🎯", desc: "何の話か、何が言いたいか", color: "#3B5BDB" },
+    { key: "reason",     label: "理由・根拠",      icon: "📋", desc: "なぜそう判断したか",       color: "#0CA678" },
+    { key: "action",     label: "求めるアクション", icon: "✅", desc: "上司に何をしてほしいか",   color: "#E67700" },
+    { key: "materials",  label: "判断材料",         icon: "💡", desc: "承認に必要な補足情報",     color: "#7048E8" },
+  ];
+
+  const SLIDE_TYPE_COLOR = {
+    "表紙":       "#475569",
+    "背景・経緯": "#3B5BDB",
+    "現状・課題": "#C2410C",
+    "提案内容":   "#0CA678",
+    "理由・根拠": "#0CA678",
+    "工程・手順": "#7048E8",
+    "コスト・リスク": "#B45309",
+    "まとめ・依頼":   "#E67700",
+  };
+
+  const QUESTIONS = {
+    conclusion: "何の話で、何を伝えたいのかを一言で教えてください。",
+    reason: "なぜその判断に至ったか、具体的な理由や数値・事実を教えてください。",
+    action: "上司に何をしてほしいですか？（承認・決裁・相談・報告のみ など）",
+    materials: "承認判断に必要な補足（費用・期限・比較・影響など）があれば教えてください。",
+  };
+
+  const STEPS = [
+    { num: 1, label: "メモ入力" },
+    { num: 2, label: "情報確認" },
+    { num: 3, label: "報告文" },
+    { num: 4, label: "パワポ構成" },
+  ];
+  const phaseToStep = { input: 1, questions: 2, result: 3, slides: 4 };
+
+  // ===== State =====
+  const state = {
+    mode: "offline", // offline | ai
+    phase: "input",
+    input: "",
+    form: { conclusion: "", reason: "", action: "", materials: "" },
+    missing: [],
+    answers: {},
+    result: null,
+    slides: null,
+    loading: false,
+    loadingMsg: "",
+    error: "",
+    copied: "",
+    expandedSlide: 0,
+  };
+
+  const LS_KEY = "boss-report-assistant-api-key";
+
+  // ===== Heuristic check (offline) =====
+  function heuristicCheck(text, form) {
+    const t = (text || "") + "\n" + Object.values(form || {}).join("\n");
+    const missing = [];
+
+    const hasConclusion =
+      (form.conclusion && form.conclusion.trim()) ||
+      /変えたい|したい|提案|結論|お願い|変更|導入|切替|切り替え|承認|依頼/.test(t) ||
+      (t.trim().length > 20 && /を|へ|から/.test(t));
+
+    const hasReason =
+      (form.reason && form.reason.trim()) ||
+      /理由|なぜ|根拠|ため|から|音質|操作性|効果|改善|問題|課題|比較|良い|悪い|データ|実績/.test(t);
+
+    const hasAction =
+      (form.action && form.action.trim()) ||
+      /承認|お願い|決裁|確認|相談|許可|ゴー|OK|してほしい|して頂き|していただ/.test(t) ||
+      /変えたい|使いたい|導入したい|変更したい/.test(t);
+
+    const hasMaterials =
+      (form.materials && form.materials.trim()) ||
+      /\d/.test(t) ||
+      /円|万円|コスト|費用|予算|期限|まで|来月|今月|来週|年間|比較|影響|リスク|工程/.test(t);
+
+    if (!hasConclusion) missing.push({ key: "conclusion", label: "結論・全体像", question: QUESTIONS.conclusion });
+    if (!hasReason) missing.push({ key: "reason", label: "理由・根拠", question: QUESTIONS.reason });
+    if (!hasAction) missing.push({ key: "action", label: "求めるアクション", question: QUESTIONS.action });
+    if (!hasMaterials) missing.push({ key: "materials", label: "判断材料", question: QUESTIONS.materials });
+
+    return { allPresent: missing.length === 0, missing };
+  }
+
+  // Expose for tests via window
+  function extractTopic(memo, form) {
+    const src = (form.conclusion || memo || "").trim();
+    const firstLine = src.split(/\n/).map(s => s.replace(/^[・\-*\d.、．\s]+/, "").trim()).find(Boolean) || "報告案件";
+    let title = firstLine.replace(/したい|してほしい|について|の件/, "").trim();
+    if (title.length > 15) title = title.slice(0, 15);
+    if (!title) title = "報告案件";
+    return title;
+  }
+
+  function pick(formVal, answerVal, fallback) {
+    const a = (formVal || "").trim();
+    const b = (answerVal || "").trim();
+    if (a) return a;
+    if (b) return b;
+    return fallback;
+  }
+
+  function templateGenerate(memo, form, answers) {
+    const a = answers || {};
+    const title = extractTopic(memo, form);
+    const conclusion = pick(
+      form.conclusion,
+      a.conclusion,
+      `【結論・全体像】${title}の件です。現状の課題を踏まえ、対応方針についてご報告し、ご判断をお願いしたい内容です。`
+    );
+    const reason = pick(
+      form.reason,
+      a.reason,
+      memo.trim()
+        ? `【理由・根拠】メモに記載の状況から判断しています。\n${memo.trim().slice(0, 280)}`
+        : "【理由・根拠】現状の課題・比較検討の結果に基づく判断です。具体的な数値・事実は追記してください。"
+    );
+    const action = pick(
+      form.action,
+      a.action,
+      "【求めるアクション】本件についてご承認をお願いします。"
+    );
+    const materials = pick(
+      form.materials,
+      a.materials,
+      memo.match(/\d|円|期限|来月|コスト|費用|影響/)
+        ? `【判断材料】${memo.trim().slice(0, 200)}`
+        : "【判断材料】費用・期限・影響範囲などの補足は追記してください。"
+    );
+    const opening = `「${title}の件で、ご承認をお願いしたいです。」`;
+    return {
+      title,
+      conclusion: conclusion.startsWith("【") ? conclusion : `【結論・全体像】${conclusion}`,
+      reason: reason.startsWith("【") ? reason : `【理由・根拠】${reason}`,
+      action: action.startsWith("【") ? action : `【求めるアクション】${action}`,
+      materials: materials.startsWith("【") ? materials : `【判断材料】${materials}`,
+      opening,
+    };
+  }
+
+  function hasFieldCue(text, keys) {
+    return keys.some(k => (text || "").includes(k));
+  }
+
+  function templateSlides(result, memo) {
+    const combined = [result.conclusion, result.reason, result.action, result.materials, memo].join("\n");
+    const hasCost = /\d|円|コスト|費用|予算|リスク/.test(combined);
+    const hasProcess = /工程|手順|スケジュール|来月|移行|切替|切り替え|導入/.test(combined);
+    const hasField = /現場|設備|写真|現地|工場|設置|作業/.test(combined);
+
+    const slides = [];
+    let n = 1;
+    const push = (type, title, message, bullets, visualHint, script) => {
+      slides.push({ slideNo: n++, type, title, message, bullets, visualHint, script });
+    };
+
+    push(
+      "表紙",
+      result.title,
+      "承認いただきたい案件の概要",
+      [result.title, result.opening.replace(/^「|」$/g, ""), "本日のご依頼事項を明確化"],
+      {
+        type: "図",
+        description: "タイトルと依頼内容を大きく配置",
+        shootingGuide: "",
+        annotationGuide: "",
+        placementTip: "中央寄せでタイトルを大きく",
+      },
+      `${result.opening.replace(/^「|」$/g, "")} 本日は${result.title}についてご説明します。`
+    );
+
+    push(
+      "背景・経緯",
+      "背景と経緯",
+      "なぜ今この話をするのか",
+      [
+        "現状の運用・前提",
+        memo.split(/\n/).map(s => s.replace(/^[・\-*\s]+/, "").trim()).filter(Boolean)[0] || "課題発生の経緯",
+        "検討に至ったきっかけ",
+      ],
+      {
+        type: "フロー図",
+        description: "現状→課題発生→検討開始の流れ",
+        shootingGuide: hasField ? "現状の対象物・場所の全景" : "",
+        annotationGuide: hasField ? "問題箇所に矢印「ここが対象」" : "時系列の矢印で経緯を示す",
+        placementTip: "左にテキスト、右にフロー",
+      },
+      "まず背景です。現状の運用のなかで課題が見え、今回の検討に至りました。"
+    );
+
+    push(
+      "現状・課題",
+      "現状と課題",
+      "放置すると困るポイント",
+      [
+        "現状の不満・制約",
+        result.reason.replace(/^【理由・根拠】/, "").slice(0, 80) || "課題の要点",
+        "影響（品質・工数・コスト等）",
+      ],
+      {
+        type: hasField ? "写真" : "表",
+        description: hasField ? "現状の課題が分かる写真" : "現状 vs 理想の対比表",
+        shootingGuide: hasField ? "課題箇所のクローズアップ、全体との位置関係" : "",
+        annotationGuide: hasField ? "「ここが問題箇所→」ラベル" : "課題行を色分け",
+        placementTip: "上半分に課題、下に影響",
+      },
+      "現状の課題は次のとおりです。このままでは業務への影響が残るため、対応が必要です。"
+    );
+
+    push(
+      "提案内容",
+      "ご提案内容",
+      "何をどう変えたいか",
+      [
+        result.conclusion.replace(/^【結論・全体像】/, "").slice(0, 80),
+        "提案の範囲（対象・非対象）",
+        "期待する効果",
+      ],
+      {
+        type: "Before/After",
+        description: "変更前と変更後の対比",
+        shootingGuide: hasField ? "変更後イメージが分かる資料・画面" : "",
+        annotationGuide: "Before / After を左右で色分け",
+        placementTip: "左右2カラム",
+      },
+      "ご提案はこちらです。範囲を絞り、承認しやすい形に整理しています。"
+    );
+
+    push(
+      "理由・根拠",
+      "理由と根拠",
+      "なぜこの案が妥当か",
+      [
+        result.reason.replace(/^【理由・根拠】/, "").slice(0, 100),
+        "客観的な事実・比較",
+        "主観と事実の区別",
+      ],
+      {
+        type: "表",
+        description: "比較表（現行案 vs 提案）",
+        shootingGuide: "",
+        annotationGuide: "優位項目をハイライト",
+        placementTip: "表を中央大きく",
+      },
+      "根拠はこちらです。数値・事実ベースで比較した結果、本提案が妥当と判断しました。"
+    );
+
+    if (hasCost) {
+      push(
+        "コスト・リスク",
+        "コストとリスク",
+        "費用・影響は許容範囲か",
+        [
+          result.materials.replace(/^【判断材料】/, "").slice(0, 100),
+          "増減費用の見通し",
+          "主なリスクと緩和策",
+        ],
+        {
+          type: "表",
+          description: "費用内訳・リスク一覧表",
+          shootingGuide: "",
+          annotationGuide: "許容ラインを点線で示す",
+          placementTip: "表を全面、注釈は下",
+        },
+        "費用とリスクも整理しました。影響は限定的で、緩和策も用意しています。"
+      );
+    } else if (hasProcess) {
+      push(
+        "工程・手順",
+        "工程と手順",
+        "いつ・どう進めるか",
+        [
+          "実施ステップ",
+          "想定スケジュール",
+          "関係者と役割",
+        ],
+        {
+          type: "フロー図",
+          description: "工程を区間ごとに図示",
+          shootingGuide: hasField ? "作業区間ごとの写真" : "",
+          annotationGuide: "区間ごとに番号と担当を付記",
+          placementTip: "横フローを中央に",
+        },
+        "進め方です。手順を分けて示すので、承認後すぐ着手できる状態にしています。"
+      );
+    } else {
+      push(
+        "工程・手順",
+        "進め方",
+        "承認後の次アクション",
+        ["承認後の初動", "関係者への展開", "フォローアップ"],
+        {
+          type: "フロー図",
+          description: "承認→実施→確認の流れ",
+          shootingGuide: "",
+          annotationGuide: "次アクションを太字",
+          placementTip: "縦フロー中央",
+        },
+        "承認いただければ、すぐに次のステップへ進めます。"
+      );
+    }
+
+    push(
+      "まとめ・依頼",
+      "まとめとお願い",
+      "本日お願いしたいこと",
+      [
+        result.action.replace(/^【求めるアクション】/, "").slice(0, 80),
+        "判断に必要な材料は提示済み",
+        "ご承認のお願い",
+      ],
+      {
+        type: "図",
+        description: "依頼事項を1行で大きく",
+        shootingGuide: "",
+        annotationGuide: "依頼ボックスを強調色",
+        placementTip: "中央に依頼文",
+      },
+      `${result.action.replace(/^【求めるアクション】/, "")} ご質問があればお答えします。ご承認をお願いします。`
+    );
+
+    // Clamp 5–8
+    while (slides.length > 8) slides.pop();
+    while (slides.length < 5) {
+      push(
+        "理由・根拠",
+        "補足根拠",
+        "追加の判断材料",
+        [result.materials.replace(/^【判断材料】/, "").slice(0, 80) || "補足", "必要に応じて追記", "質問歓迎"],
+        { type: "図", description: "補足メモ", shootingGuide: "", annotationGuide: "", placementTip: "中央" },
+        "補足です。判断に必要な材料は以上です。"
+      );
+    }
+    slides.forEach((s, i) => { s.slideNo = i + 1; });
+
+    return {
+      deckTitle: `${result.title} — 報告資料`,
+      purpose: result.action.replace(/^【求めるアクション】/, "").trim() || "本件のご承認",
+      slides,
+      presentationTips: [
+        "冒頭で依頼（承認）を先に伝え、その後に根拠を積み上げる",
+        "1スライド1メッセージを守り、詳細は口頭で補足する",
+        "数値・期限は指差し確認し、曖昧な表現を避ける",
+      ],
+    };
+  }
+
+  function parseAIJson(text) {
+    const clean = String(text || "").replace(/```json|```/g, "").trim();
+    return JSON.parse(clean);
+  }
+
+  async function callAI(systemPrompt, userContent, maxTokens) {
+    const key = document.getElementById("apiKey").value.trim();
+    if (!key) throw new Error("APIキーが未入力です。");
+    const model = document.getElementById("modelName").value.trim() || "claude-sonnet-4-6";
+    const response = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": key,
+        "anthropic-version": "2023-06-01",
+      },
+      body: JSON.stringify({
+        model,
+        max_tokens: maxTokens || 1000,
+        system: systemPrompt,
+        messages: [{ role: "user", content: userContent }],
+      }),
+    });
+    if (!response.ok) {
+      const errText = await response.text().catch(() => "");
+      throw new Error("APIエラー: " + response.status + " " + errText.slice(0, 120));
+    }
+    const data = await response.json();
+    const text = (data.content || []).map(i => i.text || "").join("") || "";
+    return parseAIJson(text);
+  }
+
+  // ===== UI helpers =====
+  function $(id) { return document.getElementById(id); }
+
+  function setError(msg) {
+    state.error = msg || "";
+    const box = $("errorBox");
+    if (state.error) { box.textContent = state.error; box.classList.remove("hidden"); }
+    else box.classList.add("hidden");
+  }
+
+  function setLoading(on, msg) {
+    state.loading = on;
+    state.loadingMsg = msg || "";
+    const box = $("loadingBox");
+    if (on) { box.textContent = state.loadingMsg; box.classList.remove("hidden"); }
+    else box.classList.add("hidden");
+  }
+
+  function renderSteps() {
+    const current = phaseToStep[state.phase] || 1;
+    const bar = $("stepBar");
+    bar.innerHTML = "";
+    STEPS.forEach((s, i) => {
+      const isActive = current === s.num;
+      const isDone = current > s.num;
+      const wrap = document.createElement("div");
+      wrap.style.cssText = "display:flex;align-items:center;" + (i < STEPS.length - 1 ? "flex:1;" : "");
+      wrap.innerHTML =
+        '<div style="display:flex;align-items:center;gap:6px">' +
+        '<div class="step-dot" style="background:' + (isDone ? "#0CA678" : isActive ? "#4F46E5" : "rgba(255,255,255,0.1)") + '">' +
+        (isDone ? "✓" : s.num) + "</div>" +
+        '<span class="step-label" style="color:' + (isActive ? "#E2E8F0" : isDone ? "#6EE7B7" : "#475569") + '">' + s.label + "</span>" +
+        "</div>";
+      if (i < STEPS.length - 1) {
+        const line = document.createElement("div");
+        line.className = "step-line";
+        line.style.background = isDone ? "rgba(110,231,183,0.3)" : "rgba(255,255,255,0.08)";
+        wrap.appendChild(line);
+      }
+      bar.appendChild(wrap);
+    });
+  }
+
+  function showPhase(phase) {
+    state.phase = phase;
+    ["phaseInput", "phaseQuestions", "phaseResult", "phaseSlides"].forEach(id => $(id).classList.add("hidden"));
+    const map = { input: "phaseInput", questions: "phaseQuestions", result: "phaseResult", slides: "phaseSlides" };
+    $(map[phase]).classList.remove("hidden");
+    renderSteps();
+  }
+
+  function readForm() {
+    return {
+      conclusion: ($("form_conclusion") && $("form_conclusion").value) || "",
+      reason: ($("form_reason") && $("form_reason").value) || "",
+      action: ($("form_action") && $("form_action").value) || "",
+      materials: ($("form_materials") && $("form_materials").value) || "",
+    };
+  }
+
+  function buildFormChecklist() {
+    const host = $("formChecklist");
+    host.innerHTML = "";
+    SECTION_DEFS.forEach(s => {
+      const div = document.createElement("div");
+      div.className = "check-item";
+      div.style.borderLeft = "3px solid " + s.color;
+      div.innerHTML =
+        '<div style="flex:1">' +
+        '<label class="field-label" for="form_' + s.key + '">' + s.icon + " " + s.label +
+        ' <span style="color:#64748B;font-weight:500">— ' + s.desc + "</span></label>" +
+        '<textarea id="form_' + s.key + '" class="editable" rows="2" placeholder="わかる範囲で記入（任意）">' +
+        (state.form[s.key] || "").replace(/</g, "&lt;") + "</textarea></div>";
+      host.appendChild(div);
+    });
+  }
+
+  function copyText(label, text) {
+    const done = () => {
+      state.copied = label;
+      document.querySelectorAll(".btn-sm").forEach(b => {
+        if (b.dataset.copyLabel === label) {
+          b.classList.add("copied");
+          b.textContent = "✓ コピー済";
+        }
+      });
+      setTimeout(() => {
+        state.copied = "";
+        document.querySelectorAll(".btn-sm.copied").forEach(b => {
+          b.classList.remove("copied");
+          b.textContent = b.dataset.copyIdle || "コピー";
+        });
+      }, 2000);
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(done).catch(() => fallbackCopy(text, done));
+    } else fallbackCopy(text, done);
+  }
+
+  function fallbackCopy(text, done) {
+    const ta = document.createElement("textarea");
+    ta.value = text; document.body.appendChild(ta); ta.select();
+    try { document.execCommand("copy"); } catch (e) {}
+    document.body.removeChild(ta);
+    done();
+  }
+
+  function formatReportFull(r) {
+    return "【" + r.title + "】\n\n■ 結論・全体像\n" + r.conclusion +
+      "\n\n■ 理由・根拠\n" + r.reason +
+      "\n\n■ 求めるアクション\n" + r.action +
+      "\n\n■ 判断材料\n" + r.materials +
+      "\n\n▶ 冒頭トーク\n" + r.opening;
+  }
+
+  function formatSlidesScript(slides) {
+    const text = slides.slides.map(s => {
+      const vh = s.visualHint;
+      const vhStr = vh && typeof vh === "object"
+        ? "【" + vh.type + "】" + vh.description +
+          (vh.shootingGuide ? "\n撮影: " + vh.shootingGuide : "") +
+          (vh.annotationGuide ? "\n注釈: " + vh.annotationGuide : "")
+        : String(vh || "");
+      return "【スライド" + s.slideNo + "】" + s.title +
+        "\nメッセージ: " + s.message +
+        "\n内容:\n" + (s.bullets || []).map(b => "・" + b).join("\n") +
+        "\n台本: " + s.script +
+        "\n素材ヒント: " + vhStr;
+    }).join("\n\n---\n\n");
+    return slides.deckTitle + "\n目的: " + slides.purpose + "\n\n" + text;
+  }
+
+  function formatShootingList(slides) {
+    const items = [];
+    (slides.slides || []).forEach(s => {
+      const sg = s.visualHint && s.visualHint.shootingGuide;
+      if (sg && String(sg).trim()) {
+        items.push("・[スライド" + s.slideNo + " " + s.title + "] " + sg);
+      }
+    });
+    if (!items.length) return "（撮影が必要な素材はありません／デスクワーク系）";
+    return "📸 撮影リスト\n" + items.join("\n");
+  }
+
+  // ===== Phase renderers =====
+  function renderQuestions() {
+    const host = $("phaseQuestions");
+    let html = '<div class="alert-warn"><div style="color:#FBD38D;font-size:13px;font-weight:700;margin-bottom:6px">⚠️ 情報が足りない部分があります</div>' +
+      '<div style="color:#E2E8F0;font-size:13px;line-height:1.6">以下に答えると、より正確な報告文が作れます。わからない場合はスキップもできます。</div></div>';
+
+    // checklist status
+    html += '<div class="card" style="padding:14px"><div style="font-size:12px;font-weight:700;margin-bottom:8px;color:#CBD5E1">4要素ステータス</div>';
+    SECTION_DEFS.forEach(s => {
+      const miss = state.missing.some(m => m.key === s.key);
+      html += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">' +
+        '<span>' + s.icon + "</span><span style=\"font-size:13px\">" + s.label + "</span>" +
+        '<span class="status ' + (miss ? "status-miss" : "status-ok") + '">' + (miss ? "不足" : "ある") + "</span></div>";
+    });
+    html += "</div>";
+
+    state.missing.forEach((m, i) => {
+      const color = (SECTION_DEFS.find(s => s.key === m.key) || {}).color || "#4F46E5";
+      html += '<div class="section-card" style="border-left:3px solid ' + color + '">' +
+        '<div style="color:#CBD5E1;font-size:13px;font-weight:700;margin-bottom:10px">Q' + (i + 1) + ". " + m.question + "</div>" +
+        '<textarea id="ans_' + m.key + '" rows="3" placeholder="わかる範囲で（スキップ可）">' +
+        (state.answers[m.key] || "").replace(/</g, "&lt;") + "</textarea></div>";
+    });
+    html += '<div class="row" style="margin-top:8px">' +
+      '<button type="button" class="btn btn-ghost" id="btnSkip">スキップして生成</button>' +
+      '<button type="button" class="btn btn-primary" id="btnAnswer" style="flex:2">✍️ 回答して報告文を作る</button></div>';
+    host.innerHTML = html;
+    $("btnSkip").onclick = () => doGenerate({});
+    $("btnAnswer").onclick = () => {
+      const ans = {};
+      state.missing.forEach(m => { ans[m.key] = ($("ans_" + m.key) || {}).value || ""; });
+      state.answers = ans;
+      doGenerate(ans);
+    };
+  }
+
+  function renderResult() {
+    const r = state.result;
+    const host = $("phaseResult");
+    let html = '<div class="flex-between" style="margin-bottom:16px">' +
+      '<div><div style="color:#A5B4FC;font-size:11px;letter-spacing:0.08em;margin-bottom:4px">REPORT READY</div>' +
+      '<input type="text" id="edit_title" value="' + escAttr(r.title) + '" style="font-size:18px;font-weight:800;background:transparent;border:1px solid rgba(255,255,255,0.15);padding:6px 10px" /></div>' +
+      '<button type="button" class="btn-sm" data-copy-label="all" data-copy-idle="📋 全文コピー" id="btnCopyAll">📋 全文コピー</button></div>';
+
+    html += '<div class="section-card" style="background:linear-gradient(135deg,rgba(79,70,229,0.25),rgba(124,58,237,0.15));border-color:rgba(165,180,252,0.3)">' +
+      '<div class="flex-between"><div style="flex:1"><div style="color:#A5B4FC;font-size:11px;font-weight:700;margin-bottom:8px">💬 冒頭トーク</div>' +
+      '<textarea id="edit_opening" rows="2">' + esc(r.opening) + "</textarea></div>" +
+      '<button type="button" class="btn-sm" data-copy-label="opening" data-copy-idle="コピー" id="btnCopyOpening">コピー</button></div></div>';
+
+    SECTION_DEFS.forEach(s => {
+      html += '<div class="section-card" style="border-left:3px solid ' + s.color + '">' +
+        '<div class="flex-between"><div style="flex:1"><div style="display:flex;align-items:center;gap:6px;margin-bottom:8px">' +
+        '<span>' + s.icon + '</span><span style="color:#CBD5E1;font-size:12px;font-weight:700">' + s.label + "</span>" +
+        '<span style="color:#64748B;font-size:11px">— ' + s.desc + "</span></div>" +
+        '<textarea id="edit_' + s.key + '" rows="3">' + esc(r[s.key]) + "</textarea></div>" +
+        '<button type="button" class="btn-sm" data-copy-label="' + s.key + '" data-copy-idle="コピー" id="btnCopy_' + s.key + '">コピー</button></div></div>';
+    });
+
+    html += '<div class="row" style="margin-top:8px;flex-wrap:wrap">' +
+      '<button type="button" class="btn btn-ghost" id="btnCopyReport" style="flex:1">📋 報告文全文</button>' +
+      '<button type="button" class="btn btn-ok" id="btnSlides" style="flex:2">📊 パワポ構成案と台本を作る →</button></div>' +
+      '<div style="text-align:center;margin-top:12px"><button type="button" class="btn btn-ghost" id="btnReset1">🔄 別の報告を整える</button></div>';
+
+    host.innerHTML = html;
+
+    const syncResult = () => {
+      state.result = {
+        title: $("edit_title").value.trim() || r.title,
+        opening: $("edit_opening").value,
+        conclusion: $("edit_conclusion").value,
+        reason: $("edit_reason").value,
+        action: $("edit_action").value,
+        materials: $("edit_materials").value,
+      };
+      return state.result;
+    };
+
+    $("btnCopyAll").onclick = () => copyText("all", formatReportFull(syncResult()));
+    $("btnCopyReport").onclick = () => copyText("all", formatReportFull(syncResult()));
+    $("btnCopyOpening").onclick = () => copyText("opening", syncResult().opening);
+    SECTION_DEFS.forEach(s => {
+      $("btnCopy_" + s.key).onclick = () => copyText(s.key, syncResult()[s.key]);
+    });
+    $("btnSlides").onclick = () => { syncResult(); doSlides(); };
+    $("btnReset1").onclick = reset;
+  }
+
+  function renderSlides() {
+    const slides = state.slides;
+    const host = $("phaseSlides");
+    let html = '<div class="card" style="background:linear-gradient(135deg,rgba(12,166,120,0.2),rgba(5,150,105,0.1));border-color:rgba(12,166,120,0.3)">' +
+      '<div class="flex-between"><div><div style="color:#6EE7B7;font-size:11px;font-weight:700;margin-bottom:6px">📊 SLIDE DECK PLAN — ' +
+      slides.slides.length + "枚構成</div>" +
+      '<input type="text" id="edit_deckTitle" value="' + escAttr(slides.deckTitle) + '" style="font-size:16px;font-weight:800;background:transparent;border:1px solid rgba(255,255,255,0.15);padding:6px 10px;margin-bottom:6px" />' +
+      '<div style="color:#A7F3D0;font-size:13px">目的: <input type="text" id="edit_purpose" value="' + escAttr(slides.purpose) + '" style="width:auto;min-width:240px;display:inline-block;padding:4px 8px;font-size:13px" /></div></div>' +
+      '<button type="button" class="btn-sm" data-copy-label="slides-all" data-copy-idle="📋 全構成コピー" id="btnCopySlidesAll">📋 全構成コピー</button></div>' +
+      '<div class="row" style="margin-top:12px">' +
+      '<button type="button" class="btn btn-ghost" id="btnCopyScript">🎤 スライド台本コピー</button>' +
+      '<button type="button" class="btn btn-ghost" id="btnCopyShoot">📸 撮影リストコピー</button></div></div>';
+
+    slides.slides.forEach((s, i) => {
+      const typeColor = Object.entries(SLIDE_TYPE_COLOR).find(([k]) => (s.type || "").includes(k))?.[1] || "#475569";
+      const isOpen = state.expandedSlide === i;
+      html += '<div class="slide-item" style="border-left:3px solid ' + typeColor + ';border-color:' +
+        (isOpen ? "rgba(165,180,252,0.3)" : "rgba(255,255,255,0.08)") + '">' +
+        '<div class="slide-head" data-idx="' + i + '">' +
+        '<div class="slide-no" style="background:' + typeColor + '">' + s.slideNo + "</div>" +
+        '<div style="flex:1;min-width:0"><div style="margin-bottom:2px"><span class="type-tag" style="background:' + typeColor + "33;color:" + typeColor + '">' +
+        esc(s.type) + "</span></div>" +
+        '<div style="color:#E2E8F0;font-size:14px;font-weight:700">' + esc(s.title) + "</div>" +
+        '<div style="color:#93A5C8;font-size:12px;margin-top:2px">' + esc(s.message) + "</div></div>" +
+        '<span style="color:#475569;font-size:18px">' + (isOpen ? "▲" : "▼") + "</span></div>";
+
+      if (isOpen) {
+        const vh = s.visualHint || {};
+        const isObj = vh && typeof vh === "object";
+        html += '<div style="padding:0 16px 16px;border-top:1px solid rgba(255,255,255,0.06)">' +
+          '<div style="margin-top:14px;margin-bottom:10px"><div style="color:#A5B4FC;font-size:11px;font-weight:700;margin-bottom:8px">📌 スライドの内容（編集可）</div>' +
+          '<label class="field-label">タイトル</label><input type="text" id="sl_' + i + '_title" value="' + escAttr(s.title) + '" />' +
+          '<label class="field-label" style="margin-top:8px">メッセージ</label><input type="text" id="sl_' + i + '_message" value="' + escAttr(s.message) + '" />' +
+          '<label class="field-label" style="margin-top:8px">箇条書き（1行1項目）</label>' +
+          '<textarea id="sl_' + i + '_bullets" rows="3">' + esc((s.bullets || []).join("\n")) + "</textarea></div>";
+
+        html += '<div class="hint-box" style="background:rgba(112,72,232,0.1);border:1px solid rgba(112,72,232,0.2)">' +
+          '<div style="color:#C4B5FD;font-size:11px;font-weight:700;margin-bottom:4px">🖼 素材タイプ・何を貼るか</div>' +
+          '<div>' + (isObj ? "【" + esc(vh.type) + "】" + esc(vh.description) : esc(String(vh))) + "</div>" +
+          (isObj && vh.placementTip ? '<div style="color:#A78BFA;font-size:12px;margin-top:6px">📐 配置：' + esc(vh.placementTip) + "</div>" : "") +
+          "</div>";
+        if (isObj && vh.shootingGuide) {
+          html += '<div class="hint-box" style="background:rgba(59,91,219,0.1);border:1px solid rgba(59,91,219,0.25)">' +
+            '<div style="color:#93C5FD;font-size:11px;font-weight:700;margin-bottom:4px">📸 撮ってくる素材リスト</div>' +
+            '<div>' + esc(vh.shootingGuide) + "</div></div>";
+        }
+        if (isObj && vh.annotationGuide) {
+          html += '<div class="hint-box" style="background:rgba(230,119,0,0.08);border:1px solid rgba(230,119,0,0.2)">' +
+            '<div style="color:#FBD38D;font-size:11px;font-weight:700;margin-bottom:4px">✏️ 注釈・矢印の案</div>' +
+            '<div>' + esc(vh.annotationGuide) + "</div></div>";
+        }
+
+        html += '<div class="hint-box" style="background:rgba(12,166,120,0.08);border:1px solid rgba(12,166,120,0.2)">' +
+          '<div class="flex-between" style="margin-bottom:8px"><div style="color:#6EE7B7;font-size:11px;font-weight:700">🎤 口頭説明台本</div>' +
+          '<button type="button" class="btn-sm" data-copy-label="script-' + s.slideNo + '" data-copy-idle="コピー" id="btnScript_' + i + '">コピー</button></div>' +
+          '<textarea id="sl_' + i + '_script" rows="3">' + esc(s.script) + "</textarea></div></div>";
+      }
+      html += "</div>";
+    });
+
+    if (slides.presentationTips && slides.presentationTips.length) {
+      html += '<div class="section-card" style="background:rgba(230,119,0,0.08);border-color:rgba(230,119,0,0.2)">' +
+        '<div style="color:#FBD38D;font-size:12px;font-weight:700;margin-bottom:10px">💡 発表時のポイント</div>';
+      slides.presentationTips.forEach(tip => {
+        html += '<div style="display:flex;gap:8px;margin-bottom:6px"><span style="color:#F59E0B">▶</span><span style="font-size:13px;line-height:1.6">' + esc(tip) + "</span></div>";
+      });
+      html += "</div>";
+    }
+
+    html += '<div class="row"><button type="button" class="btn btn-ghost" id="btnBackResult">← 報告文に戻る</button>' +
+      '<button type="button" class="btn btn-ghost" id="btnReset2">🔄 別の報告を整える</button></div>';
+
+    host.innerHTML = html;
+
+    const syncSlides = () => {
+      state.slides.deckTitle = $("edit_deckTitle").value;
+      state.slides.purpose = $("edit_purpose").value;
+      state.slides.slides.forEach((s, i) => {
+        const t = $("sl_" + i + "_title");
+        const m = $("sl_" + i + "_message");
+        const b = $("sl_" + i + "_bullets");
+        const sc = $("sl_" + i + "_script");
+        if (t) s.title = t.value;
+        if (m) s.message = m.value;
+        if (b) s.bullets = b.value.split(/\n/).map(x => x.trim()).filter(Boolean);
+        if (sc) s.script = sc.value;
+      });
+      return state.slides;
+    };
+
+    host.querySelectorAll(".slide-head").forEach(el => {
+      el.onclick = () => {
+        syncSlides();
+        const idx = Number(el.dataset.idx);
+        state.expandedSlide = state.expandedSlide === idx ? null : idx;
+        renderSlides();
+      };
+    });
+
+    $("btnCopySlidesAll").onclick = () => copyText("slides-all", formatSlidesScript(syncSlides()));
+    $("btnCopyScript").onclick = () => copyText("slides-all", formatSlidesScript(syncSlides()));
+    $("btnCopyShoot").onclick = () => copyText("shoot", formatShootingList(syncSlides()));
+    slides.slides.forEach((s, i) => {
+      const btn = $("btnScript_" + i);
+      if (btn) btn.onclick = () => { syncSlides(); copyText("script-" + s.slideNo, state.slides.slides[i].script); };
+    });
+    $("btnBackResult").onclick = () => { syncSlides(); showPhase("result"); renderResult(); };
+    $("btnReset2").onclick = reset;
+  }
+
+  function esc(s) {
+    return String(s == null ? "" : s)
+      .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  }
+  function escAttr(s) {
+    return esc(s).replace(/"/g, "&quot;");
+  }
+
+  // ===== Actions =====
+  async function handleCheck() {
+    setError("");
+    const memo = $("memoInput").value;
+    state.input = memo;
+    state.form = readForm();
+    if (!memo.trim() && !Object.values(state.form).some(v => v.trim())) {
+      setError("メモか4要素フォームのいずれかを入力してください。");
+      return;
+    }
+    setLoading(true, "📋 情報が揃っているか確認中...");
+    try {
+      let checked;
+      if (state.mode === "ai") {
+        const extras = SECTION_DEFS.map(s => state.form[s.key] ? "【" + s.label + "】" + state.form[s.key] : "").filter(Boolean).join("\n");
+        const userContent = memo + (extras ? "\n\n" + extras : "");
+        checked = await callAI(CHECK_PROMPT, userContent, 800);
+      } else {
+        await delay(120);
+        checked = heuristicCheck(memo, state.form);
+      }
+      if (checked.allPresent) {
+        await doGenerate({});
+      } else {
+        state.missing = checked.missing || [];
+        state.answers = {};
+        state.missing.forEach(m => { state.answers[m.key] = ""; });
+        setLoading(false);
+        showPhase("questions");
+        renderQuestions();
+      }
+    } catch (e) {
+      setLoading(false);
+      setError(aiErrorMsg(e, "確認に失敗しました。オフラインモードに切り替えるか、もう一度試してください。"));
+    }
+  }
+
+  async function doGenerate(extraAnswers) {
+    setError("");
+    setLoading(true, "✍️ 報告文を作成中...");
+    try {
+      let generated;
+      const base = state.input;
+      const form = state.form;
+      if (state.mode === "ai") {
+        let userContent = base;
+        const extras = [];
+        SECTION_DEFS.forEach(s => { if (form[s.key]) extras.push("【" + s.label + "】" + form[s.key]); });
+        (state.missing || []).forEach(m => {
+          if (extraAnswers[m.key]) extras.push("【" + m.label + "の補足】" + extraAnswers[m.key]);
+        });
+        if (extras.length) userContent = base + "\n\n" + extras.join("\n");
+        generated = await callAI(GENERATE_PROMPT, userContent, 1200);
+      } else {
+        await delay(80);
+        generated = templateGenerate(base, form, extraAnswers);
+      }
+      state.result = generated;
+      setLoading(false);
+      showPhase("result");
+      renderResult();
+    } catch (e) {
+      setLoading(false);
+      setError(aiErrorMsg(e, "生成に失敗しました。オフラインモードに切り替えるか、もう一度試してください。"));
+    }
+  }
+
+  async function doSlides() {
+    if (!state.result) return;
+    setError("");
+    setLoading(true, "📊 パワポ構成を設計中...");
+    try {
+      let generated;
+      if (state.mode === "ai") {
+        const userContent = "【報告サマリー】\nタイトル: " + state.result.title +
+          "\n結論・全体像: " + state.result.conclusion +
+          "\n理由・根拠: " + state.result.reason +
+          "\n求めるアクション: " + state.result.action +
+          "\n判断材料: " + state.result.materials +
+          "\n\n【元の情報】\n" + state.input;
+        generated = await callAI(SLIDES_PROMPT, userContent, 2000);
+      } else {
+        await delay(80);
+        generated = templateSlides(state.result, state.input);
+      }
+      if (!generated.slides || generated.slides.length < 5) {
+        throw new Error("スライド枚数が不足しています");
+      }
+      state.slides = generated;
+      state.expandedSlide = 0;
+      setLoading(false);
+      showPhase("slides");
+      renderSlides();
+    } catch (e) {
+      setLoading(false);
+      setError(aiErrorMsg(e, "パワポ構成の生成に失敗しました。オフラインモードに切り替えるか、もう一度試してください。"));
+    }
+  }
+
+  function aiErrorMsg(e, fallback) {
+    const msg = (e && e.message) ? String(e.message) : "";
+    if (/Failed to fetch|NetworkError|CORS|cors/i.test(msg)) {
+      return "AI呼び出しがブロックされました（CORS／ネットワーク）。オフラインモードの利用を推奨します。";
+    }
+    return fallback + (msg ? "（" + msg.slice(0, 100) + "）" : "");
+  }
+
+  function delay(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+  function reset() {
+    state.phase = "input";
+    state.input = "";
+    state.form = { conclusion: "", reason: "", action: "", materials: "" };
+    state.missing = [];
+    state.answers = {};
+    state.result = null;
+    state.slides = null;
+    state.expandedSlide = 0;
+    setError("");
+    $("memoInput").value = "";
+    buildFormChecklist();
+    showPhase("input");
+  }
+
+  // ===== Mode =====
+  function setMode(mode) {
+    if (mode === "ai") {
+      const ok = confirm("AIモードでは入力内容が Anthropic に送信されます。続行しますか？\n（社内・機密メモにはオフラインを推奨）");
+      if (!ok) return;
+    }
+    state.mode = mode;
+    $("modeOffline").classList.toggle("active", mode === "offline");
+    $("modeAi").classList.toggle("active", mode === "ai");
+    $("aiPanel").classList.toggle("hidden", mode !== "ai");
+    $("modeHint").textContent = mode === "offline" ? "社内利用はオフライン推奨" : "データは Anthropic に送信されます";
+  }
+
+  // ===== Init =====
+  function init() {
+    $("memoInput").placeholder = PLACEHOLDER;
+    buildFormChecklist();
+    renderSteps();
+    showPhase("input");
+
+    $("modeOffline").onclick = () => setMode("offline");
+    $("modeAi").onclick = () => setMode("ai");
+    $("btnCheck").onclick = handleCheck;
+    $("sampleBtn").onclick = () => {
+      $("memoInput").value = SAMPLE_MEMO;
+      if ($("form_conclusion")) $("form_conclusion").value = "録音アプリをA社からB社へ変更したい";
+      if ($("form_reason")) $("form_reason").value = "音質と操作性がB社の方が良い";
+      if ($("form_action")) $("form_action").value = "来月からの切替についてご承認をお願いしたい";
+      if ($("form_materials")) $("form_materials").value = "費用は年間3,000円増。影響は軽微";
+    };
+
+    const saved = localStorage.getItem(LS_KEY);
+    if (saved) {
+      $("apiKey").value = saved;
+      $("saveKey").checked = true;
+    }
+    $("saveKey").onchange = () => {
+      if ($("saveKey").checked) localStorage.setItem(LS_KEY, $("apiKey").value.trim());
+      else localStorage.removeItem(LS_KEY);
+    };
+    $("apiKey").onchange = () => {
+      if ($("saveKey").checked) localStorage.setItem(LS_KEY, $("apiKey").value.trim());
+    };
+    $("clearKey").onclick = () => {
+      localStorage.removeItem(LS_KEY);
+      $("apiKey").value = "";
+      $("saveKey").checked = false;
+    };
+  }
+
+  // Export for Node selfcheck (when evaluated in jsdom / extracted)
+  window.BossReportAssistant = {
+    version: "GlockBOT 0.1.0",
+    CHECK_PROMPT,
+    GENERATE_PROMPT,
+    SLIDES_PROMPT,
+    SECTION_DEFS,
+    SLIDE_TYPE_COLOR,
+    heuristicCheck,
+    templateGenerate,
+    templateSlides,
+    parseAIJson,
+    SAMPLE_MEMO,
+  };
+
+  init();
+})();
+</script>
+</body>
+</html>
