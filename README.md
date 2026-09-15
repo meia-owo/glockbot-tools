@@ -2,6 +2,13 @@
 
 こっこsan の GlockBOT 成果物を **GitHub Pages** で確認するための公開リポジトリです。
 
+
+## Excelの取り方（チャットを遡らない）
+
+1. **いちばん簡単**: [Releases（最新）](https://github.com/meia-owo/glockbot-tools/releases/latest) から xlsx をダウンロード
+2. **Pages一覧の上部**「Excel・ダウンロード」からも同じ
+3. リポ内パス: `apps/gantt-progress/GanttProgress_v3_TEMPLATE.xlsx`
+
 ## 見る場所
 
 Pages 有効化後のトップ（例）:

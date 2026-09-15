@@ -5,60 +5,86 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>GlockBOT ツール一覧</title>
   <style>
-    :root { --bg:#0f1419; --card:#1a2332; --text:#e7ecf3; --muted:#9aa8bc; --acc:#3d8bfd; --border:#2a3648; }
+    :root { --bg:#0f1419; --card:#1a2332; --text:#e7ecf3; --muted:#9aa8bc; --acc:#3d8bfd; --border:#2a3648; --excel:#1d6f42; }
     * { box-sizing: border-box; }
     body { margin:0; font-family: system-ui, sans-serif; background:var(--bg); color:var(--text); line-height:1.5; }
     header { padding:28px 20px 12px; max-width:920px; margin:0 auto; }
     h1 { margin:0 0 8px; font-size:1.6rem; }
+    h2 { margin:28px 0 10px; font-size:1.15rem; }
     .note { color:var(--muted); font-size:.95rem; }
     .warn { margin:16px 0; padding:12px 14px; border:1px solid #8a6d3b; background:#2a2318; border-radius:10px; color:#f0d9a8; font-size:.9rem; }
-    main { max-width:920px; margin:0 auto; padding:8px 20px 40px; display:grid; gap:14px; }
+    main { max-width:920px; margin:0 auto; padding:8px 20px 40px; }
+    .grid { display:grid; gap:14px; }
     a.card { display:block; text-decoration:none; color:inherit; background:var(--card); border:1px solid var(--border); border-radius:12px; padding:16px 18px; }
     a.card:hover { border-color:var(--acc); }
+    a.card.excel { border-color:#2f6b4a; }
+    a.card.excel:hover { border-color:var(--excel); }
     .title { font-weight:700; font-size:1.05rem; }
     .meta { color:var(--muted); font-size:.85rem; margin-top:4px; }
     .tag { display:inline-block; margin-top:8px; font-size:.75rem; padding:2px 8px; border-radius:999px; background:#243044; color:#b8c7dc; }
+    .tag.excel { background:#1e3d2d; color:#9fd6b4; }
+    .links { margin-top:10px; font-size:.9rem; }
+    .links a { color:#8ec7ff; margin-right:12px; }
     footer { max-width:920px; margin:0 auto; padding:0 20px 40px; color:var(--muted); font-size:.8rem; }
   </style>
 </head>
 <body>
   <header>
     <h1>GlockBOT ツール一覧</h1>
-    <p class="note">こっこsan用の確認・デモ置き場。データは各ツール内で処理し、このサイトに送信しません。</p>
-    <div class="warn">公開ページです。パスワード・APIキー・社外秘データはここに貼らないでください。上司報告ツールのAPIキー欄は、使う場合も自分のブラウザ内だけに留めてください。</div>
+    <p class="note">成果物の確認場所はここ。チャットを遡らなくて大丈夫。</p>
+    <div class="warn">公開ページです。パスワード・APIキー・社外秘データは貼らないでください。</div>
   </header>
   <main>
-    <a class="card" href="apps/yaskawa-diff-check/">
-      <div class="title">安川ロボット 差分チェック</div>
-      <div class="meta">Before/After を比較して Excel 出力</div>
-      <span class="tag">GlockBOT 0.1.0 · HTML</span>
-    </a>
-    <a class="card" href="apps/quote-unitprice-db/">
-      <div class="title">メーカー別見積単価DB</div>
-      <div class="meta">検索・乖離判定・バックアップ</div>
-      <span class="tag">GlockBOT 0.1.0 · HTML</span>
-    </a>
-    <a class="card" href="apps/teams-heat-ambiguity/">
-      <div class="title">Teams 熱量・曖昧度可視化</div>
-      <div class="meta">VTT を色分けして確認</div>
-      <span class="tag">GlockBOT 0.1.0 · HTML</span>
-    </a>
-    <a class="card" href="apps/boss-report-assistant/">
-      <div class="title">上司報告 攻略ツール</div>
-      <div class="meta">メモから報告文・スライド構成（既定はオフライン）</div>
-      <span class="tag">GlockBOT 0.1.0 · HTML</span>
-    </a>
-    <a class="card" href="apps/kawasaki-bxp-load-screen/">
-      <div class="title">川崎BXP 据付負荷スクリーニング</div>
-      <div class="meta">一次評価のみ（構造保証ではありません）</div>
-      <span class="tag">GlockBOT 0.1.0 · HTML</span>
-    </a>
-    <a class="card" href="apps/gantt-progress/">
-      <div class="title">ガント進捗管理（Excel用パッケージ）</div>
-      <div class="meta">ブラウザアプリではなく xlsx + VBA。README を見て Windows で組み立て</div>
-      <span class="tag">GlockBOT 0.1.0 · Excel</span>
-    </a>
+    <h2>📥 Excel・ダウンロード</h2>
+    <div class="grid">
+      <a class="card excel" href="https://github.com/meia-owo/glockbot-tools/releases/latest">
+        <div class="title">最新リリース（おすすめ）</div>
+        <div class="meta">Excelファイルをまとめてダウンロードできる場所。版が上がってもここが最新。</div>
+        <span class="tag excel">GitHub Releases</span>
+      </a>
+      <a class="card excel" href="apps/gantt-progress/GanttProgress_v3_TEMPLATE.xlsx">
+        <div class="title">ガント進捗テンプレート（xlsx）</div>
+        <div class="meta">直接ダウンロード。VBAは同フォルダの README / vba を参照。</div>
+        <div class="links">
+          <a href="apps/gantt-progress/">フォルダを見る</a>
+          <a href="apps/gantt-progress/README.md">README</a>
+        </div>
+        <span class="tag excel">GlockBOT 0.1.0 · Excel</span>
+      </a>
+    </div>
+
+    <h2>🌐 HTMLアプリ（ブラウザで開く）</h2>
+    <div class="grid">
+      <a class="card" href="apps/yaskawa-diff-check/">
+        <div class="title">安川ロボット 差分チェック</div>
+        <div class="meta">Before/After を比較して Excel 出力</div>
+        <span class="tag">GlockBOT 0.1.0 · HTML</span>
+      </a>
+      <a class="card" href="apps/quote-unitprice-db/">
+        <div class="title">メーカー別見積単価DB</div>
+        <div class="meta">検索・乖離判定・バックアップ</div>
+        <span class="tag">GlockBOT 0.1.0 · HTML</span>
+      </a>
+      <a class="card" href="apps/teams-heat-ambiguity/">
+        <div class="title">Teams 熱量・曖昧度可視化</div>
+        <div class="meta">VTT を色分けして確認</div>
+        <span class="tag">GlockBOT 0.1.0 · HTML</span>
+      </a>
+      <a class="card" href="apps/boss-report-assistant/">
+        <div class="title">上司報告 攻略ツール</div>
+        <div class="meta">メモから報告文・スライド構成（既定はオフライン）</div>
+        <span class="tag">GlockBOT 0.1.0 · HTML</span>
+      </a>
+      <a class="card" href="apps/kawasaki-bxp-load-screen/">
+        <div class="title">川崎BXP 据付負荷スクリーニング</div>
+        <div class="meta">一次評価のみ（構造保証ではありません）</div>
+        <span class="tag">GlockBOT 0.1.0 · HTML</span>
+      </a>
+    </div>
   </main>
-  <footer>GlockBOT Pages · 公開リポジトリ。危険な設定変更は都度確認します。</footer>
+  <footer>
+    リポ: <a href="https://github.com/meia-owo/glockbot-tools" style="color:#8ec7ff">meia-owo/glockbot-tools</a>
+    · Pages: <a href="https://meia-owo.github.io/glockbot-tools/" style="color:#8ec7ff">一覧</a>
+  </footer>
 </body>
 </html>
