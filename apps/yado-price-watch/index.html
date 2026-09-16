@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>宿値ウォッチ — GlockBOT 0.1.0</title>
+<title>宿値ウォッチ — GlockBOT 0.2.0</title>
 <style>
 :root {
   --bg: #eceef1;
@@ -185,6 +185,12 @@ table.hotels td.name .area {
   font-size: clamp(11px, 0.8vw, 12px);
   color: var(--muted);
 }
+table.hotels td.name .route-meta {
+  display: block;
+  font-weight: 400;
+  font-size: clamp(11px, 0.8vw, 12px);
+  color: var(--muted);
+}
 table.hotels td.name a.quiet {
   display: inline-block;
   margin-top: 2px;
@@ -335,7 +341,7 @@ footer .ver { font-weight: 700; color: var(--steel); }
   </div>
 
   <footer class="app-footer">
-    <span class="ver">GlockBOT 0.1.0</span>
+    <span class="ver">GlockBOT 0.2.0</span>
     <span>閲覧専用・予約機能なし</span>
   </footer>
 </div>
@@ -344,7 +350,7 @@ footer .ver { font-weight: 700; color: var(--steel); }
 (function () {
   'use strict';
 
-  const VERSION = 'GlockBOT 0.1.0';
+  const VERSION = 'GlockBOT 0.2.0';
   const CDN = {
     latest: 'https://cdn.jsdelivr.net/gh/meia-owo/k-yado-gihu@main/data/latest.json',
     priority: 'https://cdn.jsdelivr.net/gh/meia-owo/k-yado-gihu@main/data/hotels-priority.json',
@@ -424,6 +430,32 @@ footer .ver { font-weight: 700; color: var(--steel); }
     const nos = new Set(pri.map(function (h) { return String(h.hotelNo); }));
     return list.filter(function (r) {
       return ids.has(String(r.id)) || nos.has(String(r.hotelNo));
+    });
+  }
+
+  function displayOrDash(value) {
+    return value == null || String(value).trim() === '' ? '—' : String(value);
+  }
+
+  /** Join priority metadata by id, falling back to hotelNo. */
+  function mergePriorityMetadata(rows, priorityList) {
+    const list = Array.isArray(rows) ? rows : [];
+    const pri = Array.isArray(priorityList) ? priorityList : [];
+    const byId = new Map();
+    const byNo = new Map();
+    pri.forEach(function (h) {
+      if (!h || typeof h !== 'object') return;
+      if (h.id != null && String(h.id).trim() !== '') byId.set(String(h.id), h);
+      if (h.hotelNo != null && String(h.hotelNo).trim() !== '') byNo.set(String(h.hotelNo), h);
+    });
+    return list.map(function (r) {
+      const row = r || {};
+      let meta = row.id != null ? byId.get(String(row.id)) : null;
+      if (!meta && row.hotelNo != null) meta = byNo.get(String(row.hotelNo));
+      return Object.assign({}, row, {
+        distance: displayOrDash(meta && meta.distance),
+        time: displayOrDash(meta && meta.time)
+      });
     });
   }
 
@@ -556,6 +588,7 @@ footer .ver { font-weight: 700; color: var(--steel); }
       cells += '<td class="name">';
       cells += escapeHtml(r.name || '—');
       if (r.area) cells += '<span class="area">' + escapeHtml(r.area) + '</span>';
+      cells += '<span class="route-meta">距離: ' + escapeHtml(displayOrDash(r.distance)) + ' ／ 所要時間: ' + escapeHtml(displayOrDash(r.time)) + '</span>';
       if (r.rakutenUrl) {
         cells += '<a class="quiet" href="' + escapeHtml(r.rakutenUrl) + '" target="_blank" rel="noopener noreferrer">施設ページ</a>';
       }
@@ -756,7 +789,8 @@ footer .ver { font-weight: 700; color: var(--steel); }
       renderMeta(latest, watch);
 
       const filtered = filterPriorityHotels(latest.results || [], priority);
-      const sorted = sortByTotalAsc(filtered);
+      const merged = mergePriorityMetadata(filtered, priority);
+      const sorted = sortByTotalAsc(merged);
       lastPriorityRows = sorted;
       renderTable(sorted);
 
@@ -803,7 +837,9 @@ footer .ver { font-weight: 700; color: var(--steel); }
     nightsCount: nightsCount,
     formatTokyo: formatTokyo,
     formatYen: formatYen,
-    collectNightDates: collectNightDates
+    collectNightDates: collectNightDates,
+    displayOrDash: displayOrDash,
+    mergePriorityMetadata: mergePriorityMetadata
   };
 
   loadAll();
