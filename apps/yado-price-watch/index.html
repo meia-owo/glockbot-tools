@@ -1,0 +1,813 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>宿値ウォッチ — GlockBOT 0.1.0</title>
+<style>
+:root {
+  --bg: #eceef1;
+  --panel: #ffffff;
+  --ink: #1f2937;
+  --muted: #6b7280;
+  --line: #dfe3e8;
+  --steel: #33597a;
+  --steel-soft: #e7eef5;
+  --green: #3f7d4e;
+  --green-soft: #e5f1e7;
+  --red: #b23b3b;
+  --red-soft: #fbe9e9;
+  --amber: #c77b16;
+  --amber-soft: #fdf1de;
+  --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; }
+body {
+  font-family: "Hiragino Kaku Gothic ProN", "Yu Gothic UI", "Yu Gothic", "Meiryo", system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--ink);
+  font-size: clamp(14px, 1.05vw, 17px);
+  line-height: 1.45;
+}
+button { font: inherit; cursor: pointer; }
+.app {
+  display: grid;
+  grid-template-rows: auto auto 1fr auto;
+  min-height: 100%;
+  max-width: 1600px;
+  margin: 0 auto;
+  padding: 0 clamp(12px, 2vw, 36px);
+}
+header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 16px;
+  padding: 12px 0 8px;
+}
+header h1 {
+  margin: 0;
+  font-size: clamp(17px, 1.4vw, 22px);
+  font-weight: 700;
+  color: var(--steel);
+}
+header .badge {
+  font-size: clamp(11px, 0.85vw, 13px);
+  background: var(--steel-soft);
+  color: var(--steel);
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-weight: 600;
+}
+header .spacer { flex: 1; }
+#refreshBtn {
+  background: var(--steel);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-weight: 600;
+  font-size: clamp(13px, 1vw, 15px);
+}
+#refreshBtn:hover { filter: brightness(1.08); }
+#refreshBtn:disabled { opacity: 0.55; cursor: wait; }
+
+.meta {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.meta .card {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 8px 12px;
+}
+.meta .card .label {
+  font-size: clamp(11px, 0.8vw, 12px);
+  color: var(--muted);
+  margin-bottom: 2px;
+}
+.meta .card .value {
+  font-weight: 700;
+  font-size: clamp(14px, 1.1vw, 17px);
+  font-variant-numeric: tabular-nums;
+}
+.meta .card .value.mono { font-family: var(--mono); }
+
+.status-bar {
+  min-height: 28px;
+  margin-bottom: 8px;
+  font-size: clamp(12px, 0.9vw, 14px);
+}
+.status-bar .loading { color: var(--steel); }
+.status-bar .error {
+  background: var(--red-soft);
+  color: var(--red);
+  border: 1px solid #f0c4c4;
+  border-radius: 8px;
+  padding: 8px 12px;
+}
+.status-bar .ok { color: var(--muted); }
+
+.main {
+  display: grid;
+  grid-template-columns: minmax(0, 1.55fr) minmax(280px, 0.85fr);
+  gap: 12px;
+  min-height: 0;
+  padding-bottom: 8px;
+}
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+.panel h2 {
+  margin: 0;
+  padding: 10px 14px 8px;
+  font-size: clamp(13px, 1vw, 15px);
+  color: var(--steel);
+  border-bottom: 1px solid var(--line);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.panel h2 .count {
+  font-size: clamp(11px, 0.8vw, 12px);
+  color: var(--muted);
+  font-weight: 500;
+}
+.table-wrap {
+  overflow: auto;
+  flex: 1;
+  min-height: 0;
+}
+table.hotels {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: clamp(13px, 0.95vw, 15px);
+}
+table.hotels th, table.hotels td {
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+  vertical-align: middle;
+}
+table.hotels th {
+  position: sticky;
+  top: 0;
+  background: #f7f8fa;
+  color: var(--muted);
+  font-weight: 600;
+  font-size: clamp(11px, 0.85vw, 13px);
+  white-space: nowrap;
+  z-index: 1;
+}
+table.hotels th.num, table.hotels td.num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  font-family: var(--mono);
+  white-space: nowrap;
+}
+table.hotels td.name {
+  font-weight: 600;
+  min-width: 12em;
+}
+table.hotels td.name .area {
+  display: block;
+  font-weight: 400;
+  font-size: clamp(11px, 0.8vw, 12px);
+  color: var(--muted);
+}
+table.hotels td.name a.quiet {
+  display: inline-block;
+  margin-top: 2px;
+  font-weight: 400;
+  font-size: clamp(11px, 0.8vw, 12px);
+  color: var(--steel);
+  text-decoration: none;
+  opacity: 0.75;
+}
+table.hotels td.name a.quiet:hover { opacity: 1; text-decoration: underline; }
+table.hotels tr:hover td { background: #f9fafb; }
+.badge-ok {
+  display: inline-block;
+  background: var(--green-soft);
+  color: var(--green);
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: clamp(11px, 0.8vw, 12px);
+  font-weight: 700;
+  white-space: nowrap;
+}
+.badge-ng {
+  display: inline-block;
+  background: var(--red-soft);
+  color: var(--red);
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: clamp(11px, 0.8vw, 12px);
+  font-weight: 700;
+  white-space: nowrap;
+}
+.cell-full { color: var(--red); font-weight: 600; }
+.cell-na { color: var(--muted); }
+.cell-fuka { color: var(--amber); font-weight: 700; }
+.cell-price { color: var(--ink); }
+
+.chart-body {
+  padding: 10px 12px 12px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 220px;
+  gap: 8px;
+}
+#historyCanvas {
+  width: 100%;
+  flex: 1;
+  min-height: 180px;
+  background: #fafbfc;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  display: block;
+}
+.chart-empty {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  color: var(--muted);
+  background: #fafbfc;
+  border: 1px dashed var(--line);
+  border-radius: 8px;
+  padding: 24px;
+  min-height: 180px;
+  font-size: clamp(13px, 1vw, 15px);
+}
+.chart-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+  font-size: clamp(10px, 0.75vw, 12px);
+  color: var(--muted);
+  max-height: 72px;
+  overflow: auto;
+}
+.chart-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.chart-legend i {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  display: inline-block;
+}
+
+footer.app-footer {
+  padding: 8px 0 14px;
+  font-size: clamp(11px, 0.8vw, 13px);
+  color: var(--muted);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  justify-content: space-between;
+  border-top: 1px solid var(--line);
+  margin-top: 4px;
+}
+footer .ver { font-weight: 700; color: var(--steel); }
+
+@media (max-width: 900px) {
+  .main { grid-template-columns: 1fr; }
+  body { font-size: 14px; }
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <h1>宿値ウォッチ</h1>
+    <span class="badge">閲覧専用</span>
+    <div class="spacer"></div>
+    <button type="button" id="refreshBtn">再取得</button>
+  </header>
+
+  <div>
+    <div class="meta" id="metaBar" aria-live="polite">
+      <div class="card"><div class="label">最終更新（Asia/Tokyo）</div><div class="value mono" id="metaGenerated">—</div></div>
+      <div class="card"><div class="label">チェックイン</div><div class="value mono" id="metaCheckin">—</div></div>
+      <div class="card"><div class="label">チェックアウト</div><div class="value mono" id="metaCheckout">—</div></div>
+      <div class="card"><div class="label">泊数</div><div class="value" id="metaNights">—</div></div>
+    </div>
+    <div class="status-bar" id="statusBar"></div>
+  </div>
+
+  <div class="main">
+    <section class="panel" aria-label="優先宿一覧">
+      <h2>優先宿一覧 <span class="count" id="hotelCount"></span></h2>
+      <div class="table-wrap">
+        <table class="hotels" id="hotelTable">
+          <thead id="hotelHead"></thead>
+          <tbody id="hotelBody">
+            <tr><td colspan="8" class="cell-na">読み込み中…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="panel" aria-label="料金履歴">
+      <h2>合計料金の推移</h2>
+      <div class="chart-body">
+        <div class="chart-empty" id="historyEmpty">履歴データはまだありません</div>
+        <canvas id="historyCanvas" hidden></canvas>
+        <div class="chart-legend" id="historyLegend" hidden></div>
+      </div>
+    </section>
+  </div>
+
+  <footer class="app-footer">
+    <span class="ver">GlockBOT 0.1.0</span>
+    <span>閲覧専用・予約機能なし</span>
+  </footer>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  const VERSION = 'GlockBOT 0.1.0';
+  const CDN = {
+    latest: 'https://cdn.jsdelivr.net/gh/meia-owo/k-yado-gihu@main/data/latest.json',
+    priority: 'https://cdn.jsdelivr.net/gh/meia-owo/k-yado-gihu@main/data/hotels-priority.json',
+    watch: 'https://cdn.jsdelivr.net/gh/meia-owo/k-yado-gihu@main/data/watch.json',
+    history: 'https://cdn.jsdelivr.net/gh/meia-owo/k-yado-gihu@main/data/price-history.jsonl'
+  };
+  const CHART_COLORS = [
+    '#33597a', '#3f7d4e', '#c77b16', '#7c3aed', '#0891b2',
+    '#b23b3b', '#0d9488', '#db2777', '#4f46e5', '#65a30d'
+  ];
+
+  /* ===== Pure helpers (selfcheck-compatible) ===== */
+
+  function nightsCount(checkin, checkout) {
+    if (!checkin || !checkout) return null;
+    const a = new Date(checkin + 'T00:00:00');
+    const b = new Date(checkout + 'T00:00:00');
+    if (isNaN(a) || isNaN(b)) return null;
+    const d = Math.round((b - a) / 86400000);
+    return d > 0 ? d : null;
+  }
+
+  function formatTokyo(iso) {
+    if (!iso) return '—';
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return String(iso);
+    try {
+      const fmt = new Intl.DateTimeFormat('ja-JP', {
+        timeZone: 'Asia/Tokyo',
+        year: 'numeric', month: '2-digit', day: '2-digit',
+        hour: '2-digit', minute: '2-digit', second: '2-digit',
+        hour12: false
+      });
+      return fmt.format(d).replace(/\//g, '-') + ' JST';
+    } catch (e) {
+      return String(iso);
+    }
+  }
+
+  function formatYen(n) {
+    if (n == null || n === '' || Number.isNaN(Number(n))) return null;
+    return Number(n).toLocaleString('ja-JP');
+  }
+
+  /** Night cell: available+price → number string; unavailable → 満室; missing → — */
+  function nightCellLabel(night) {
+    if (!night || typeof night !== 'object') return { text: '—', kind: 'na' };
+    if (night.available === false) return { text: '満室', kind: 'full' };
+    if (night.available === true) {
+      if (night.price == null || night.price === '') return { text: '—', kind: 'na' };
+      const y = formatYen(night.price);
+      return y == null ? { text: '—', kind: 'na' } : { text: y, kind: 'price' };
+    }
+    // available unknown
+    if (night.price != null && night.price !== '') {
+      const y = formatYen(night.price);
+      return y == null ? { text: '—', kind: 'na' } : { text: y, kind: 'price' };
+    }
+    return { text: '—', kind: 'na' };
+  }
+
+  /** Total: only when availableAllNights; else 不可. Never blank. */
+  function totalCellLabel(row) {
+    if (!row) return { text: '不可', kind: 'fuka' };
+    if (row.availableAllNights === true) {
+      const y = formatYen(row.total);
+      if (y == null) return { text: '不可', kind: 'fuka' };
+      return { text: y, kind: 'price' };
+    }
+    return { text: '不可', kind: 'fuka' };
+  }
+
+  function filterPriorityHotels(results, priorityList) {
+    const list = Array.isArray(results) ? results : [];
+    const pri = Array.isArray(priorityList) ? priorityList : [];
+    const ids = new Set(pri.map(function (h) { return String(h.id); }));
+    const nos = new Set(pri.map(function (h) { return String(h.hotelNo); }));
+    return list.filter(function (r) {
+      return ids.has(String(r.id)) || nos.has(String(r.hotelNo));
+    });
+  }
+
+  /** Sort by total ascending; unavailable / missing total last */
+  function sortByTotalAsc(rows) {
+    return rows.slice().sort(function (a, b) {
+      const aOk = a && a.availableAllNights === true && a.total != null && !Number.isNaN(Number(a.total));
+      const bOk = b && b.availableAllNights === true && b.total != null && !Number.isNaN(Number(b.total));
+      if (aOk && bOk) return Number(a.total) - Number(b.total);
+      if (aOk && !bOk) return -1;
+      if (!aOk && bOk) return 1;
+      const an = (a && a.name) || '';
+      const bn = (b && b.name) || '';
+      return an < bn ? -1 : an > bn ? 1 : 0;
+    });
+  }
+
+  function collectNightDates(rows) {
+    const set = new Set();
+    (rows || []).forEach(function (r) {
+      (r.nights || []).forEach(function (n) {
+        if (n && n.date) set.add(n.date);
+      });
+    });
+    return Array.from(set).sort();
+  }
+
+  function parseHistoryJsonl(text) {
+    if (!text || !String(text).trim()) return [];
+    const out = [];
+    String(text).split(/\r?\n/).forEach(function (line) {
+      const t = line.trim();
+      if (!t) return;
+      try {
+        const o = JSON.parse(t);
+        if (o && typeof o === 'object') out.push(normalizeHistoryRow(o));
+      } catch (e) { /* skip bad line */ }
+    });
+    return out.filter(Boolean);
+  }
+
+  function normalizeHistoryRow(o) {
+    const id = o.id != null ? o.id : (o.hotelId != null ? o.hotelId : null);
+    const hotelNo = o.hotelNo != null ? String(o.hotelNo) : (o.hotel_no != null ? String(o.hotel_no) : null);
+    const total = o.total != null ? Number(o.total) : (o.priceTotal != null ? Number(o.priceTotal) : (o.sum != null ? Number(o.sum) : null));
+    const ts = o.generatedAt || o.timestamp || o.ts || o.at || o.updatedAt || null;
+    const name = o.name || o.hotelName || null;
+    if (total == null || Number.isNaN(total)) return null;
+    if (id == null && !hotelNo) return null;
+    return { id: id, hotelNo: hotelNo, total: total, generatedAt: ts, name: name };
+  }
+
+  /* ===== DOM ===== */
+  const $ = function (id) { return document.getElementById(id); };
+  const statusBar = $('statusBar');
+  const refreshBtn = $('refreshBtn');
+
+  function setStatus(kind, msg) {
+    if (!msg) { statusBar.innerHTML = ''; return; }
+    if (kind === 'error') statusBar.innerHTML = '<div class="error">' + escapeHtml(msg) + '</div>';
+    else if (kind === 'loading') statusBar.innerHTML = '<div class="loading">' + escapeHtml(msg) + '</div>';
+    else statusBar.innerHTML = '<div class="ok">' + escapeHtml(msg) + '</div>';
+  }
+
+  function escapeHtml(s) {
+    return String(s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+
+  async function fetchJson(url) {
+    const res = await fetch(url, { cache: 'no-store' });
+    if (!res.ok) {
+      const err = new Error('HTTP ' + res.status + ' for ' + url);
+      err.status = res.status;
+      err.url = url;
+      throw err;
+    }
+    return res.json();
+  }
+
+  async function fetchTextOptional(url) {
+    const res = await fetch(url, { cache: 'no-store' });
+    if (res.status === 404) return { ok: false, status: 404, text: '' };
+    if (!res.ok) {
+      const err = new Error('HTTP ' + res.status + ' for ' + url);
+      err.status = res.status;
+      throw err;
+    }
+    return { ok: true, status: res.status, text: await res.text() };
+  }
+
+  function renderMeta(latest, watch) {
+    const checkin = (latest && latest.checkin) || (watch && watch.checkin) || '—';
+    const checkout = (latest && latest.checkout) || (watch && watch.checkout) || '—';
+    const n = nightsCount(checkin, checkout);
+    $('metaGenerated').textContent = formatTokyo(latest && latest.generatedAt);
+    $('metaCheckin').textContent = checkin;
+    $('metaCheckout').textContent = checkout;
+    $('metaNights').textContent = n != null ? (n + '泊') : '—';
+  }
+
+  function renderTable(rows) {
+    const dates = collectNightDates(rows);
+    const head = $('hotelHead');
+    const body = $('hotelBody');
+
+    let th = '<tr>';
+    th += '<th>宿名</th>';
+    th += '<th class="num">合計（3泊）</th>';
+    dates.forEach(function (d) {
+      th += '<th class="num">' + escapeHtml(d.slice(5)) + '</th>';
+    });
+    th += '<th>全日空室</th>';
+    th += '</tr>';
+    head.innerHTML = th;
+
+    if (!rows.length) {
+      body.innerHTML = '<tr><td colspan="' + (3 + dates.length) + '" class="cell-na">優先宿のデータがありません</td></tr>';
+      $('hotelCount').textContent = '（0軒）';
+      return;
+    }
+
+    const html = rows.map(function (r) {
+      const total = totalCellLabel(r);
+      const nightMap = {};
+      (r.nights || []).forEach(function (n) { if (n && n.date) nightMap[n.date] = n; });
+
+      let cells = '';
+      cells += '<td class="name">';
+      cells += escapeHtml(r.name || '—');
+      if (r.area) cells += '<span class="area">' + escapeHtml(r.area) + '</span>';
+      if (r.rakutenUrl) {
+        cells += '<a class="quiet" href="' + escapeHtml(r.rakutenUrl) + '" target="_blank" rel="noopener noreferrer">施設ページ</a>';
+      }
+      cells += '</td>';
+
+      const totalClass = total.kind === 'price' ? 'num cell-price' : (total.kind === 'fuka' ? 'num cell-fuka' : 'num cell-na');
+      cells += '<td class="' + totalClass + '">' + escapeHtml(total.text) + '</td>';
+
+      dates.forEach(function (d) {
+        const cell = nightCellLabel(nightMap[d]);
+        const cls = cell.kind === 'full' ? 'num cell-full' : (cell.kind === 'na' ? 'num cell-na' : 'num cell-price');
+        cells += '<td class="' + cls + '">' + escapeHtml(cell.text) + '</td>';
+      });
+
+      const badge = r.availableAllNights === true
+        ? '<span class="badge-ok">可</span>'
+        : '<span class="badge-ng">不可</span>';
+      cells += '<td>' + badge + '</td>';
+
+      return '<tr>' + cells + '</tr>';
+    }).join('');
+
+    body.innerHTML = html;
+    $('hotelCount').textContent = '（' + rows.length + '軒・合計安い順）';
+  }
+
+  function showHistoryEmpty(msg) {
+    $('historyEmpty').hidden = false;
+    $('historyEmpty').textContent = msg || '履歴データはまだありません';
+    $('historyCanvas').hidden = true;
+    $('historyLegend').hidden = true;
+    $('historyLegend').innerHTML = '';
+  }
+
+  function renderHistory(entries, priorityRows) {
+    if (!entries || !entries.length) {
+      showHistoryEmpty('履歴データはまだありません');
+      return;
+    }
+
+    const priIds = new Set((priorityRows || []).map(function (r) { return String(r.id); }));
+    const priNos = new Set((priorityRows || []).map(function (r) { return String(r.hotelNo); }));
+    const filtered = entries.filter(function (e) {
+      if (e.id != null && priIds.has(String(e.id))) return true;
+      if (e.hotelNo && priNos.has(String(e.hotelNo))) return true;
+      return false;
+    });
+    const use = filtered.length ? filtered : entries;
+
+    const byHotel = new Map();
+    use.forEach(function (e) {
+      const key = e.id != null ? 'id:' + e.id : 'no:' + e.hotelNo;
+      if (!byHotel.has(key)) {
+        const nameFromPri = (priorityRows || []).find(function (r) {
+          return (e.id != null && String(r.id) === String(e.id)) ||
+            (e.hotelNo && String(r.hotelNo) === String(e.hotelNo));
+        });
+        byHotel.set(key, {
+          key: key,
+          name: e.name || (nameFromPri && nameFromPri.name) || key,
+          points: []
+        });
+      }
+      const t = e.generatedAt ? new Date(e.generatedAt).getTime() : NaN;
+      byHotel.get(key).points.push({ t: t, total: e.total, label: e.generatedAt || '' });
+    });
+
+    const series = Array.from(byHotel.values()).map(function (s) {
+      s.points.sort(function (a, b) {
+        const at = isNaN(a.t) ? 0 : a.t;
+        const bt = isNaN(b.t) ? 0 : b.t;
+        return at - bt;
+      });
+      return s;
+    }).filter(function (s) { return s.points.length > 0; });
+
+    if (!series.length) {
+      showHistoryEmpty('履歴データはまだありません');
+      return;
+    }
+
+    $('historyEmpty').hidden = true;
+    const canvas = $('historyCanvas');
+    canvas.hidden = false;
+    $('historyLegend').hidden = false;
+
+    drawChart(canvas, series);
+    $('historyLegend').innerHTML = series.map(function (s, i) {
+      const color = CHART_COLORS[i % CHART_COLORS.length];
+      return '<span><i style="background:' + color + '"></i>' + escapeHtml(s.name) + '</span>';
+    }).join('');
+  }
+
+  function drawChart(canvas, series) {
+    const dpr = window.devicePixelRatio || 1;
+    const rect = canvas.getBoundingClientRect();
+    const w = Math.max(280, Math.floor(rect.width));
+    const h = Math.max(180, Math.floor(rect.height));
+    canvas.width = Math.floor(w * dpr);
+    canvas.height = Math.floor(h * dpr);
+    const ctx = canvas.getContext('2d');
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, w, h);
+
+    const pad = { l: 48, r: 12, t: 16, b: 28 };
+    const allPts = [];
+    series.forEach(function (s) { s.points.forEach(function (p) { allPts.push(p); }); });
+    let tMin = Infinity, tMax = -Infinity, yMin = Infinity, yMax = -Infinity;
+    allPts.forEach(function (p) {
+      if (!isNaN(p.t)) { tMin = Math.min(tMin, p.t); tMax = Math.max(tMax, p.t); }
+      yMin = Math.min(yMin, p.total);
+      yMax = Math.max(yMax, p.total);
+    });
+    if (!isFinite(tMin) || tMin === tMax) { tMin = 0; tMax = 1; }
+    if (!isFinite(yMin) || yMin === yMax) { yMin = 0; yMax = yMax || 1; }
+    const yPad = (yMax - yMin) * 0.08 || 1000;
+    yMin = Math.max(0, yMin - yPad);
+    yMax = yMax + yPad;
+
+    function xOf(t) {
+      const tt = isNaN(t) ? tMin : t;
+      return pad.l + ((tt - tMin) / (tMax - tMin)) * (w - pad.l - pad.r);
+    }
+    function yOf(v) {
+      return pad.t + (1 - (v - yMin) / (yMax - yMin)) * (h - pad.t - pad.b);
+    }
+
+    ctx.strokeStyle = '#e5e7eb';
+    ctx.lineWidth = 1;
+    for (let i = 0; i <= 4; i++) {
+      const yy = pad.t + (i / 4) * (h - pad.t - pad.b);
+      ctx.beginPath();
+      ctx.moveTo(pad.l, yy);
+      ctx.lineTo(w - pad.r, yy);
+      ctx.stroke();
+      const val = yMax - (i / 4) * (yMax - yMin);
+      ctx.fillStyle = '#9ca3af';
+      ctx.font = '11px sans-serif';
+      ctx.textAlign = 'right';
+      ctx.fillText(Math.round(val).toLocaleString('ja-JP'), pad.l - 6, yy + 4);
+    }
+
+    series.forEach(function (s, si) {
+      const color = CHART_COLORS[si % CHART_COLORS.length];
+      ctx.strokeStyle = color;
+      ctx.fillStyle = color;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      s.points.forEach(function (p, i) {
+        const x = xOf(p.t);
+        const y = yOf(p.total);
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      });
+      ctx.stroke();
+      s.points.forEach(function (p) {
+        ctx.beginPath();
+        ctx.arc(xOf(p.t), yOf(p.total), 3, 0, Math.PI * 2);
+        ctx.fill();
+      });
+    });
+  }
+
+  let lastPriorityRows = [];
+
+  async function loadAll() {
+    refreshBtn.disabled = true;
+    setStatus('loading', 'CDN から取得中…');
+    try {
+      const results = await Promise.allSettled([
+        fetchJson(CDN.latest),
+        fetchJson(CDN.priority),
+        fetchJson(CDN.watch),
+        fetchTextOptional(CDN.history)
+      ]);
+
+      const latestRes = results[0];
+      const priRes = results[1];
+      const watchRes = results[2];
+      const histRes = results[3];
+
+      const errors = [];
+      if (latestRes.status !== 'fulfilled') errors.push('latest.json: ' + (latestRes.reason && latestRes.reason.message));
+      if (priRes.status !== 'fulfilled') errors.push('hotels-priority.json: ' + (priRes.reason && priRes.reason.message));
+
+      if (errors.length) {
+        setStatus('error', 'データ取得に失敗しました。\n' + errors.join('\n'));
+        renderMeta(null, watchRes.status === 'fulfilled' ? watchRes.value : null);
+        renderTable([]);
+        showHistoryEmpty('履歴データはまだありません');
+        return;
+      }
+
+      const latest = latestRes.value;
+      const priority = priRes.value;
+      const watch = watchRes.status === 'fulfilled' ? watchRes.value : null;
+
+      renderMeta(latest, watch);
+
+      const filtered = filterPriorityHotels(latest.results || [], priority);
+      const sorted = sortByTotalAsc(filtered);
+      lastPriorityRows = sorted;
+      renderTable(sorted);
+
+      // History: 404 → empty UI (no crash)
+      if (histRes.status !== 'fulfilled') {
+        showHistoryEmpty('履歴データはまだありません');
+      } else {
+        const h = histRes.value;
+        if (!h.ok || h.status === 404 || !h.text || !h.text.trim()) {
+          showHistoryEmpty('履歴データはまだありません');
+        } else {
+          const entries = parseHistoryJsonl(h.text);
+          if (!entries.length) showHistoryEmpty('履歴データはまだありません');
+          else renderHistory(entries, sorted);
+        }
+      }
+
+      const note = watch && watch.note ? ' ／ ' + watch.note : '';
+      setStatus('ok', '取得完了（優先宿 ' + sorted.length + '軒）' + note + ' · ' + VERSION);
+    } catch (e) {
+      setStatus('error', '予期しないエラー: ' + (e && e.message ? e.message : String(e)));
+      showHistoryEmpty('履歴データはまだありません');
+    } finally {
+      refreshBtn.disabled = false;
+    }
+  }
+
+  refreshBtn.addEventListener('click', loadAll);
+  window.addEventListener('resize', function () {
+    // redraw if canvas visible
+    if (!$('historyCanvas').hidden && lastPriorityRows) {
+      // no stored series — skip unless we re-fetch; keep simple
+    }
+  });
+
+  // Expose helpers for optional Node extraction / debugging
+  window.YadoPriceWatch = {
+    VERSION: VERSION,
+    filterPriorityHotels: filterPriorityHotels,
+    sortByTotalAsc: sortByTotalAsc,
+    nightCellLabel: nightCellLabel,
+    totalCellLabel: totalCellLabel,
+    parseHistoryJsonl: parseHistoryJsonl,
+    nightsCount: nightsCount,
+    formatTokyo: formatTokyo,
+    formatYen: formatYen,
+    collectNightDates: collectNightDates
+  };
+
+  loadAll();
+})();
+</script>
+</body>
+</html>

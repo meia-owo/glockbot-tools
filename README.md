@@ -33,6 +33,7 @@ Pages 有効化後のトップ（例）:
 | `apps/boss-report-assistant/` | 上司報告攻略 |
 | `apps/kawasaki-bxp-load-screen/` | 川崎BXP負荷スクリーニング |
 | `apps/mail-task-explorer/` | メールタスクエクスプローラー |
+| `apps/yado-price-watch/` | 宿値ウォッチ（閲覧専用） |
 | `apps/gantt-progress/` | ガント（Excelパッケージ） |
 
 版番号は各アプリの README / フッター（GlockBOT 0.1.0〜）。
