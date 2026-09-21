@@ -102,7 +102,7 @@
 <body>
 <header>
   <h1>軽井沢→荘川 旅ピンマップ（10/30–11/1）</h1>
-  <p class="sub">確定宿＋立ち寄る場所をピン追加していく用。晩飯候補なし。</p>
+  <p class="sub">2026-10-30(金)〜11-01(日) 2泊3日／大人3名／岡崎市発着・マイカー。シニア配慮・平坦スポット＋温泉・バイキングの無理のないドライブ。確定宿＋行程立ち寄り（Day3なし）。</p>
   <div class="legend">
     <span><i class="dot" style="background:#e11d48"></i>確定宿（stay）</span>
     <span><i class="dot" style="background:#0d9488"></i>立ち寄り（stop）</span>
@@ -113,11 +113,11 @@
   <aside id="list"></aside>
   <div id="map"></div>
 </div>
-<footer>trip-pin-base 0.1.0</footer>
+<footer>trip-pin-base 0.2.0</footer>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
 /*
- * Pin schema (add roadside stops by appending to `pins`):
+ * Pin schema (itinerary stops / stays / refs; list order = chronological):
  * {
  *   group: 'stay' | 'stop' | 'ref',
  *   name: string,
@@ -128,23 +128,71 @@
  *   url?: string,          // optional custom link
  *   rakuten?: string,      // optional Rakuten facility page
  *   bookingNo?: string,
- *   when?: string,         // e.g. check-in/out summary
+ *   when?: string,         // e.g. '10/30 12:00' or check-in summary
  *   address?: string,
- *   phone?: string
+ *   phone?: string,
+ *   section?: string       // optional list section header (shown before this pin)
  * }
  */
 const pins = [
+  // --- Day1 10/30 ---
+  {
+    group: 'stop',
+    section: 'Day1（10/30）',
+    name: '長門牧場',
+    lat: 36.1709547,
+    lon: 138.2773549,
+    note: '10/30 昼・薪窯ピザ',
+    when: '10/30 12:00',
+    address: '長野県小県郡長和町大門3539-2',
+    gmaps: 'https://www.google.com/maps/search/?api=1&query=%E9%95%B7%E9%96%80%E7%89%A7%E5%A0%B4',
+    url: 'https://nagatofarm.com/'
+  },
+  {
+    group: 'stop',
+    name: '旧軽井沢・デニムストリート',
+    lat: 36.3598831,
+    lon: 138.6368547,
+    note: '10/30 午後・平坦散策',
+    when: '10/30 15:00',
+    address: '長野県北佐久郡軽井沢町旧軽井沢（銀座通り付近）',
+    gmaps: 'https://www.google.com/maps/search/?api=1&query=%E6%97%A7%E8%BB%BD%E4%BA%95%E6%B2%A2%E9%8A%80%E5%BA%A7'
+  },
   {
     group: 'stay',
     name: 'ホテルグリーンプラザ軽井沢（奥軽井沢）',
     lat: 36.478189,
     lon: 138.5415927,
     note: '10/30→10/31・確定宿・2食バイキング・メゾネット',
-    when: 'チェックイン 2026-10-30 17:30 / チェックアウト 10-31',
+    when: '10/30 17:30 チェックイン / 10/31 チェックアウト',
     bookingNo: 'RYa0nf9v36',
     address: '群馬県吾妻郡嬬恋村大前細原2277',
     gmaps: 'https://www.google.com/maps/search/?api=1&query=%E3%83%9B%E3%83%86%E3%83%AB%E3%82%B0%E3%83%AA%E3%83%BC%E3%83%B3%E3%83%97%E3%83%A9%E3%82%B6%E8%BB%BD%E4%BA%95%E6%B2%A2',
     rakuten: 'https://travel.rakuten.co.jp/HOTEL/11009/11009.html'
+  },
+  // --- Day2 10/31 ---
+  {
+    group: 'stop',
+    section: 'Day2（10/31）',
+    name: '神明駐車場',
+    lat: 36.1396149,
+    lon: 137.2604299,
+    note: '10/31 昼・飛騨牛ランチ拠点',
+    when: '10/31 12:30',
+    address: '岐阜県高山市神明町4-18',
+    phone: '0577-32-5388',
+    gmaps: 'https://www.google.com/maps/search/?api=1&query=%E7%A5%9E%E6%98%8E%E9%A7%90%E8%BB%8A%E5%A0%B4%20%E9%AB%98%E5%B1%B1',
+    url: 'https://www.city.takayama.lg.jp/shisetsu/1004141/1004142/1004202.html'
+  },
+  {
+    group: 'stop',
+    name: '飛騨高山 古い町並み',
+    lat: 36.14169,
+    lon: 137.259514,
+    note: '10/31 午後・町家通り散策',
+    when: '10/31 14:00',
+    address: '岐阜県高山市上三之町付近',
+    gmaps: 'https://www.google.com/maps/search/?api=1&query=%E9%A3%9B%E9%A8%A8%E9%AB%98%E5%B1%B1%20%E5%8F%A4%E3%81%84%E7%94%BA%E4%B8%A6%E3%81%BF%20%E4%B8%8A%E4%B8%89%E4%B9%8B%E7%94%BA'
   },
   {
     group: 'stay',
@@ -152,16 +200,17 @@ const pins = [
     lat: 36.00531581,
     lon: 136.9619091,
     note: '10/31→11/1・確定宿・会席2食・角部屋75㎡・夕食19:00',
-    when: 'チェックイン 2026-10-31 / チェックアウト 11-01・夕食19:00',
+    when: '10/31 16:30 チェックイン / 11/01 チェックアウト・夕食19:00',
     bookingNo: 'RYa0nfb9sj',
     address: '岐阜県高山市荘川町新渕892-11',
     phone: '05769-2-2611',
     gmaps: 'https://www.google.com/maps/search/?api=1&query=%E9%BE%8D%E3%83%AA%E3%82%BE%E3%83%BC%E3%83%88%EF%BC%86%E3%82%B9%E3%83%91%20%E9%AB%98%E5%B1%B1%E9%BE%8D%E7%A5%9E%E6%B8%A9%E6%B3%89',
     rakuten: 'https://travel.rakuten.co.jp/HOTEL/8631/8631.html'
   },
-  // --- stop: roadside / sightseeing pins go here ---
+  // --- refs (Day3 empty — no return stops) ---
   {
     group: 'ref',
+    section: '目印',
     name: '高山駅',
     lat: 36.1406,
     lon: 137.2519,
@@ -180,7 +229,6 @@ const labels = {
   stop: '立ち寄り',
   ref: '起点・目印'
 };
-const order = ['stay', 'stop', 'ref'];
 
 const map = L.map('map', { zoomControl: true });
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -205,63 +253,58 @@ function linkButtons(p, stopProp) {
   return html;
 }
 
-const byGroup = {};
-pins.forEach(p => { (byGroup[p.group] ||= []).push(p); });
+// Chronological list (pins array order); section headers when set
+pins.forEach(p => {
+  if (p.section) {
+    const sec = document.createElement('div');
+    sec.className = 'section';
+    sec.textContent = p.section;
+    list.appendChild(sec);
+  }
 
-order.forEach(g => {
-  const arr = byGroup[g] || [];
-  if (!arr.length) return;
-
-  const sec = document.createElement('div');
-  sec.className = 'section';
-  sec.textContent = labels[g] || g;
-  list.appendChild(sec);
-
-  arr.forEach(p => {
-    const color = colors[p.group] || '#334155';
-    const icon = L.divIcon({
-      className: '',
-      html: '<div style="background:' + color + ';width:16px;height:16px;border-radius:50%;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.4)"></div>',
-      iconSize: [16, 16],
-      iconAnchor: [8, 8]
-    });
-
-    let popupExtra = '';
-    if (p.when) popupExtra += '<div class="extra">' + esc(p.when) + '</div>';
-    if (p.bookingNo) popupExtra += '<div class="extra">予約番号: ' + esc(p.bookingNo) + '</div>';
-    if (p.address) popupExtra += '<div class="extra">' + esc(p.address) + '</div>';
-    if (p.phone) popupExtra += '<div class="extra">TEL ' + esc(p.phone) + '</div>';
-
-    const popup =
-      '<div class="popup"><b>' + esc(p.name) + '</b>' +
-      '<div style="font-size:.72rem;color:#64748b;margin-top:2px">' + esc(labels[p.group] || '') + '</div>' +
-      (p.note ? '<div class="note">' + esc(p.note) + '</div>' : '') +
-      popupExtra +
-      '<div class="plink">' + linkButtons(p, false) + '</div></div>';
-
-    const m = L.marker([p.lat, p.lon], { icon }).addTo(map).bindPopup(popup);
-    bounds.push([p.lat, p.lon]);
-
-    const card = document.createElement('div');
-    card.className = 'card';
-    let meta = esc(p.note || '');
-    if (p.bookingNo) meta += (meta ? '・' : '') + '予約 ' + esc(p.bookingNo);
-    card.innerHTML =
-      '<div class="badge" style="background:' + color + '">' + esc(labels[p.group] || p.group) + '</div>' +
-      '<div class="name">' + esc(p.name) + '</div>' +
-      '<div class="meta">' + meta +
-      (p.when ? '<div class="when">' + esc(p.when) + '</div>' : '') +
-      '</div>' +
-      '<div class="links">' + linkButtons(p, true) + '</div>';
-
-    card.onclick = () => {
-      document.querySelectorAll('.card').forEach(c => c.classList.remove('active'));
-      card.classList.add('active');
-      map.setView([p.lat, p.lon], 13);
-      m.openPopup();
-    };
-    list.appendChild(card);
+  const color = colors[p.group] || '#334155';
+  const icon = L.divIcon({
+    className: '',
+    html: '<div style="background:' + color + ';width:16px;height:16px;border-radius:50%;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.4)"></div>',
+    iconSize: [16, 16],
+    iconAnchor: [8, 8]
   });
+
+  let popupExtra = '';
+  if (p.when) popupExtra += '<div class="extra">' + esc(p.when) + '</div>';
+  if (p.bookingNo) popupExtra += '<div class="extra">予約番号: ' + esc(p.bookingNo) + '</div>';
+  if (p.address) popupExtra += '<div class="extra">' + esc(p.address) + '</div>';
+  if (p.phone) popupExtra += '<div class="extra">TEL ' + esc(p.phone) + '</div>';
+
+  const popup =
+    '<div class="popup"><b>' + esc(p.name) + '</b>' +
+    '<div style="font-size:.72rem;color:#64748b;margin-top:2px">' + esc(labels[p.group] || '') + '</div>' +
+    (p.note ? '<div class="note">' + esc(p.note) + '</div>' : '') +
+    popupExtra +
+    '<div class="plink">' + linkButtons(p, false) + '</div></div>';
+
+  const m = L.marker([p.lat, p.lon], { icon }).addTo(map).bindPopup(popup);
+  bounds.push([p.lat, p.lon]);
+
+  const card = document.createElement('div');
+  card.className = 'card';
+  let meta = esc(p.note || '');
+  if (p.bookingNo) meta += (meta ? '・' : '') + '予約 ' + esc(p.bookingNo);
+  card.innerHTML =
+    '<div class="badge" style="background:' + color + '">' + esc(labels[p.group] || p.group) + '</div>' +
+    '<div class="name">' + esc(p.name) + '</div>' +
+    '<div class="meta">' + meta +
+    (p.when ? '<div class="when">' + esc(p.when) + '</div>' : '') +
+    '</div>' +
+    '<div class="links">' + linkButtons(p, true) + '</div>';
+
+  card.onclick = () => {
+    document.querySelectorAll('.card').forEach(c => c.classList.remove('active'));
+    card.classList.add('active');
+    map.setView([p.lat, p.lon], 13);
+    m.openPopup();
+  };
+  list.appendChild(card);
 });
 
 if (bounds.length) {
