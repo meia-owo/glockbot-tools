@@ -3,72 +3,207 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>高山まわり宿ピンマップ 10/31</title>
+<title>軽井沢→荘川 旅ピンマップ（10/30–11/1）</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <style>
   * { box-sizing: border-box; }
-  body { margin:0; font-family: system-ui, sans-serif; display:flex; flex-direction:column; height:100vh; }
-  header { padding:10px 14px; background:#0f172a; color:#fff; }
-  header h1 { margin:0; font-size:1.05rem; font-weight:700; }
-  header p { margin:4px 0 0; font-size:.8rem; opacity:.85; }
-  #wrap { flex:1; display:grid; grid-template-columns: minmax(280px,360px) 1fr; min-height:0; }
-  #list { overflow:auto; border-right:1px solid #e2e8f0; background:#f8fafc; padding:10px; }
-  .card { background:#fff; border:1px solid #e2e8f0; border-radius:10px; padding:10px; margin-bottom:8px; cursor:pointer; }
-  .card.out { opacity:.92; border-style:dashed; }
+  html, body { margin:0; height:100%; }
+  body {
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    display:flex; flex-direction:column;
+    height:100dvh; max-height:100vh;
+    color:#0f172a; background:#fff;
+  }
+  header {
+    flex:0 0 auto;
+    padding:10px 16px 12px;
+    background:#0f172a; color:#fff;
+  }
+  header h1 { margin:0; font-size:clamp(1rem, 1.1vw + .85rem, 1.35rem); font-weight:700; line-height:1.3; }
+  header .sub { margin:4px 0 0; font-size:clamp(.78rem, .4vw + .7rem, .92rem); opacity:.88; line-height:1.4; }
+  .legend { display:flex; flex-wrap:wrap; gap:10px 14px; margin-top:8px; }
+  .legend span { font-size:clamp(.7rem, .3vw + .65rem, .8rem); display:flex; align-items:center; gap:5px; opacity:.95; }
+  .dot { width:10px; height:10px; border-radius:50%; display:inline-block; flex-shrink:0; }
+  #wrap {
+    flex:1; min-height:0;
+    display:grid;
+    grid-template-columns: minmax(300px, 380px) 1fr;
+  }
+  #list {
+    overflow:auto; -webkit-overflow-scrolling:touch;
+    border-right:1px solid #e2e8f0; background:#f8fafc;
+    padding:10px 12px 16px;
+  }
+  .section {
+    font-size:.72rem; font-weight:700; color:#64748b;
+    margin:10px 0 6px; letter-spacing:.02em;
+  }
+  .section:first-child { margin-top:2px; }
+  .card {
+    background:#fff; border:1px solid #e2e8f0; border-radius:10px;
+    padding:10px 12px; margin-bottom:8px; cursor:pointer;
+    transition: border-color .12s, box-shadow .12s;
+  }
   .card:hover { border-color:#94a3b8; }
-  .card.active { border-color:#0f172a; box-shadow:0 0 0 2px #0f172a33; border-style:solid; }
-  .badge { display:inline-block; font-size:.7rem; padding:2px 6px; border-radius:999px; color:#fff; margin-bottom:4px; }
-  .name { font-weight:700; font-size:.92rem; }
-  .meta { font-size:.78rem; color:#475569; margin-top:4px; }
-  .reason { font-size:.75rem; color:#b45309; background:#fffbeb; border:1px solid #fde68a; border-radius:6px; padding:4px 6px; margin-top:6px; }
-  .links { margin-top:6px; display:flex; flex-wrap:wrap; gap:6px; }
-  .links a { font-size:.72rem; color:#bf0000; text-decoration:none; background:#fff1f0; border:1px solid #ffccc7; border-radius:6px; padding:2px 6px; }
+  .card.active { border-color:#0f172a; box-shadow:0 0 0 2px #0f172a33; }
+  .badge {
+    display:inline-block; font-size:.68rem; padding:2px 7px;
+    border-radius:999px; color:#fff; margin-bottom:4px; font-weight:600;
+  }
+  .name { font-weight:700; font-size:clamp(.9rem, .35vw + .82rem, 1.05rem); line-height:1.35; }
+  .meta { font-size:clamp(.75rem, .25vw + .7rem, .85rem); color:#475569; margin-top:4px; line-height:1.45; }
+  .meta .when { color:#334155; }
+  .links { margin-top:7px; display:flex; flex-wrap:wrap; gap:6px; }
+  .links a {
+    font-size:.72rem; text-decoration:none; border-radius:6px;
+    padding:3px 8px; border:1px solid #e2e8f0; color:#334155; background:#f1f5f9;
+  }
   .links a.maps { color:#1d4ed8; background:#eff6ff; border-color:#bfdbfe; }
-  #map { width:100%; height:100%; }
-  .legend { display:flex; flex-wrap:wrap; gap:8px; margin-top:8px; }
-  .legend span { font-size:.72rem; display:flex; align-items:center; gap:4px; }
-  .dot { width:10px; height:10px; border-radius:50%; display:inline-block; }
-  .section { font-size:.72rem; font-weight:700; color:#64748b; margin:12px 0 6px; text-transform:none; }
-  .popup a { color:#bf0000; }
+  .links a.rakuten { color:#bf0000; background:#fff1f0; border-color:#ffccc7; }
+  .links a.url { color:#0f766e; background:#f0fdfa; border-color:#99f6e4; }
+  #map { width:100%; height:100%; min-height:0; }
+  .popup { font-size:.85rem; line-height:1.45; max-width:260px; }
+  .popup b { font-size:.92rem; }
+  .popup .note { color:#475569; margin-top:4px; }
+  .popup .extra { color:#64748b; font-size:.78rem; margin-top:4px; }
+  .popup .plink { margin-top:6px; display:flex; flex-wrap:wrap; gap:6px; }
+  .popup .plink a {
+    font-size:.72rem; text-decoration:none; border-radius:6px;
+    padding:2px 6px; border:1px solid #e2e8f0; color:#334155; background:#f8fafc;
+  }
+  .popup .plink a.maps { color:#1d4ed8; background:#eff6ff; border-color:#bfdbfe; }
+  .popup .plink a.rakuten { color:#bf0000; background:#fff1f0; border-color:#ffccc7; }
+  footer {
+    flex:0 0 auto;
+    padding:4px 14px;
+    font-size:.68rem; color:#94a3b8;
+    background:#f8fafc; border-top:1px solid #e2e8f0;
+    text-align:right;
+  }
+  /* PC: widen list / bump type when space allows */
+  @media (min-width:1200px) {
+    #wrap { grid-template-columns: minmax(340px, 440px) 1fr; }
+    header { padding:12px 20px 14px; }
+    #list { padding:12px 14px 20px; }
+    .card { padding:12px 14px; }
+  }
+  @media (min-width:1600px) {
+    #wrap { grid-template-columns: minmax(380px, 480px) 1fr; }
+  }
   @media (max-width:800px) {
-    #wrap { grid-template-columns: 1fr; grid-template-rows: 42% 1fr; }
+    #wrap {
+      grid-template-columns: 1fr;
+      grid-template-rows: minmax(180px, 38%) 1fr;
+    }
     #list { border-right:none; border-bottom:1px solid #e2e8f0; }
   }
 </style>
 </head>
 <body>
 <header>
-  <h1>10/31 宿ピンマップ（候補＋候補外）</h1>
-  <p>ローズ＝本命（龍リゾート）／赤緑＝2食候補／紫＝追加／灰＝外した宿。楽天・Googleマップリンク付き。</p>
+  <h1>軽井沢→荘川 旅ピンマップ（10/30–11/1）</h1>
+  <p class="sub">確定宿＋立ち寄る場所をピン追加していく用。晩飯候補なし。</p>
   <div class="legend">
-    <span><i class="dot" style="background:#2563eb"></i>起点</span>
-    <span><i class="dot" style="background:#e11d48"></i>本命</span>
-    <span><i class="dot" style="background:#dc2626"></i>下呂候補</span>
-    <span><i class="dot" style="background:#16a34a"></i>奥飛騨候補</span>
-    <span><i class="dot" style="background:#ca8a04"></i>安い参考</span>
-    <span><i class="dot" style="background:#7c3aed"></i>追加候補</span>
-    <span><i class="dot" style="background:#64748b"></i>候補外</span>
+    <span><i class="dot" style="background:#e11d48"></i>確定宿（stay）</span>
+    <span><i class="dot" style="background:#0d9488"></i>立ち寄り（stop）</span>
+    <span><i class="dot" style="background:#2563eb"></i>起点・目印（ref）</span>
   </div>
 </header>
 <div id="wrap">
   <aside id="list"></aside>
   <div id="map"></div>
 </div>
+<footer>trip-pin-base 0.1.0</footer>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-const pins = [{"group": "ref", "name": "高山駅", "lat": 36.1406, "lon": 137.2519, "price": null, "note": "観光の起点", "hotelNo": null, "reason": null, "gmaps": "https://www.google.com/maps/search/?api=1&query=%E9%AB%98%E5%B1%B1%E9%A7%85", "rakuten": null, "rakutenPlan": null}, {"group": "honmei", "name": "龍リゾート＆スパ", "lat": 36.00531581, "lon": 136.9619091, "price": 108900, "note": "本命・龍リゾート会席2食／自家源泉かけ流し（荘川・駅車約50分）", "hotelNo": "8631", "reason": null, "gmaps": "https://www.google.com/maps/search/?api=1&query=%E9%BE%8D%E3%83%AA%E3%82%BE%E3%83%BC%E3%83%88%EF%BC%86%E3%82%B9%E3%83%91%20%E9%AB%98%E5%B1%B1%E9%BE%8D%E7%A5%9E%E6%B8%A9%E6%B3%89", "rakuten": "https://travel.rakuten.co.jp/HOTEL/8631/8631.html", "rakutenPlan": "https://hotel.travel.rakuten.co.jp/hotelinfo/plan/8631?f_camp_id=4302587&f_nen1=2026&f_tuki1=10&f_hi1=31&f_nen2=2026&f_tuki2=11&f_hi2=1&f_otona_su=3&f_heya_su=1&f_s1=0&f_s2=0&f_y1=0&f_y2=0&f_y3=0&f_y4=0"}, {"group": "gero", "name": "大江戸温泉物語 下呂別館", "lat": 35.8058, "lon": 137.2425, "price": 75600, "note": "2食バイキング", "hotelNo": "108908", "reason": null, "gmaps": "https://www.google.com/maps/search/?api=1&query=%E5%A4%A7%E6%B1%9F%E6%88%B8%E6%B8%A9%E6%B3%89%E7%89%A9%E8%AA%9E%20%E4%B8%8B%E5%91%82%E5%88%A5%E9%A4%A8", "rakuten": "https://travel.rakuten.co.jp/HOTEL/108908/108908.html", "rakutenPlan": "https://hotel.travel.rakuten.co.jp/hotelinfo/plan/108908?f_nen1=2026&f_tuki1=10&f_hi1=31&f_nen2=2026&f_tuki2=11&f_hi2=1&f_otona_su=3&f_heya_su=1&f_s1=0&f_s2=0&f_y1=0&f_y2=0&f_y3=0&f_y4=0"}, {"group": "gero", "name": "大江戸温泉物語Premium 下呂本館", "lat": 35.8042, "lon": 137.2398, "price": 93900, "note": "2食バイキング", "hotelNo": "108909", "reason": null, "gmaps": "https://www.google.com/maps/search/?api=1&query=%E5%A4%A7%E6%B1%9F%E6%88%B8%E6%B8%A9%E6%B3%89%E7%89%A9%E8%AA%9EPremium%20%E4%B8%8B%E5%91%82%E6%9C%AC%E9%A4%A8", "rakuten": "https://travel.rakuten.co.jp/HOTEL/108909/108909.html", "rakutenPlan": "https://hotel.travel.rakuten.co.jp/hotelinfo/plan/108909?f_nen1=2026&f_tuki1=10&f_hi1=31&f_nen2=2026&f_tuki2=11&f_hi2=1&f_otona_su=3&f_heya_su=1&f_s1=0&f_s2=0&f_y1=0&f_y2=0&f_y3=0&f_y4=0"}, {"group": "gero", "name": "TAOYA下呂", "lat": 35.8165, "lon": 137.2278, "price": 113100, "note": "2食バイキング・眺望", "hotelNo": "162697", "reason": null, "gmaps": "https://www.google.com/maps/search/?api=1&query=TAOYA%E4%B8%8B%E5%91%82", "rakuten": "https://travel.rakuten.co.jp/HOTEL/162697/162697.html", "rakutenPlan": "https://hotel.travel.rakuten.co.jp/hotelinfo/plan/162697?f_nen1=2026&f_tuki1=10&f_hi1=31&f_nen2=2026&f_tuki2=11&f_hi2=1&f_otona_su=3&f_heya_su=1&f_s1=0&f_s2=0&f_y1=0&f_y2=0&f_y3=0&f_y4=0"}, {"group": "gero", "name": "いずみ荘", "lat": 35.8072, "lon": 137.244, "price": 80880, "note": "和室・飛騨牛系", "hotelNo": "158354", "reason": null, "gmaps": "https://www.google.com/maps/search/?api=1&query=%E3%81%84%E3%81%9A%E3%81%BF%E8%8D%98", "rakuten": "https://travel.rakuten.co.jp/HOTEL/158354/158354.html", "rakutenPlan": "https://hotel.travel.rakuten.co.jp/hotelinfo/plan/158354?f_nen1=2026&f_tuki1=10&f_hi1=31&f_nen2=2026&f_tuki2=11&f_hi2=1&f_otona_su=3&f_heya_su=1&f_s1=0&f_s2=0&f_y1=0&f_y2=0&f_y3=0&f_y4=0"}, {"group": "gero", "name": "桜 River Side Stay 下呂温泉", "lat": 35.8035, "lon": 137.246, "price": 63360, "note": "コース夕食＋貸切温泉", "hotelNo": "181693", "reason": null, "gmaps": "https://www.google.com/maps/search/?api=1&query=%E6%A1%9C%20River%20Side%20Stay%20%E4%B8%8B%E5%91%82%E6%B8%A9%E6%B3%89", "rakuten": "https://travel.rakuten.co.jp/HOTEL/181693/181693.html", "rakutenPlan": "https://hotel.travel.rakuten.co.jp/hotelinfo/plan/181693?f_nen1=2026&f_tuki1=10&f_hi1=31&f_nen2=2026&f_tuki2=11&f_hi2=1&f_otona_su=3&f_heya_su=1&f_s1=0&f_s2=0&f_y1=0&f_y2=0&f_y3=0&f_y4=0"}, {"group": "okuhida", "name": "美山荘（新平湯）", "lat": 36.232, "lon": 137.5385, "price": 52800, "note": "和室・飛騨牛陶板", "hotelNo": "63424", "reason": null, "gmaps": "https://www.google.com/maps/search/?api=1&query=%E7%BE%8E%E5%B1%B1%E8%8D%98%EF%BC%88%E6%96%B0%E5%B9%B3%E6%B9%AF%EF%BC%89", "rakuten": "https://travel.rakuten.co.jp/HOTEL/63424/63424.html", "rakutenPlan": "https://hotel.travel.rakuten.co.jp/hotelinfo/plan/63424?f_nen1=2026&f_tuki1=10&f_hi1=31&f_nen2=2026&f_tuki2=11&f_hi2=1&f_otona_su=3&f_heya_su=1&f_s1=0&f_s2=0&f_y1=0&f_y2=0&f_y3=0&f_y4=0"}, {"group": "okuhida", "name": "のりくら一休（平湯）", "lat": 36.1835, "lon": 137.551, "price": 66000, "note": "和洋室・しゃぶ", "hotelNo": "107811", "reason": null, "gmaps": "https://www.google.com/maps/search/?api=1&query=%E3%81%AE%E3%82%8A%E3%81%8F%E3%82%89%E4%B8%80%E4%BC%91%EF%BC%88%E5%B9%B3%E6%B9%AF%EF%BC%89", "rakuten": "https://travel.rakuten.co.jp/HOTEL/107811/107811.html", "rakutenPlan": "https://hotel.travel.rakuten.co.jp/hotelinfo/plan/107811?f_nen1=2026&f_tuki1=10&f_hi1=31&f_nen2=2026&f_tuki2=11&f_hi2=1&f_otona_su=3&f_heya_su=1&f_s1=0&f_s2=0&f_y1=0&f_y2=0&f_y3=0&f_y4=0"}, {"group": "okuhida", "name": "ひなの湯宿 松乃井", "lat": 36.2335, "lon": 137.541, "price": 75900, "note": "和室・個室食", "hotelNo": "9166", "reason": null, "gmaps": "https://www.google.com/maps/search/?api=1&query=%E3%81%B2%E3%81%AA%E3%81%AE%E6%B9%AF%E5%AE%BF%20%E6%9D%BE%E4%B9%83%E4%BA%95", "rakuten": "https://travel.rakuten.co.jp/HOTEL/9166/9166.html", "rakutenPlan": "https://hotel.travel.rakuten.co.jp/hotelinfo/plan/9166?f_nen1=2026&f_tuki1=10&f_hi1=31&f_nen2=2026&f_tuki2=11&f_hi2=1&f_otona_su=3&f_heya_su=1&f_s1=0&f_s2=0&f_y1=0&f_y2=0&f_y3=0&f_y4=0"}, {"group": "okuhida", "name": "宝山荘", "lat": 36.248, "lon": 137.518, "price": 40350, "note": "奥飛騨・2食", "hotelNo": "104587", "reason": null, "gmaps": "https://www.google.com/maps/search/?api=1&query=%E5%AE%9D%E5%B1%B1%E8%8D%98", "rakuten": "https://travel.rakuten.co.jp/HOTEL/104587/104587.html", "rakutenPlan": "https://hotel.travel.rakuten.co.jp/hotelinfo/plan/104587?f_nen1=2026&f_tuki1=10&f_hi1=31&f_nen2=2026&f_tuki2=11&f_hi2=1&f_otona_su=3&f_heya_su=1&f_s1=0&f_s2=0&f_y1=0&f_y2=0&f_y3=0&f_y4=0"}, {"group": "budget", "name": "ひがくの湯と登山者食堂", "lat": 36.261, "lon": 137.548, "price": 29550, "note": "最安帯・登山者向け", "hotelNo": "198820", "reason": null, "gmaps": "https://www.google.com/maps/search/?api=1&query=%E3%81%B2%E3%81%8C%E3%81%8F%E3%81%AE%E6%B9%AF%E3%81%A8%E7%99%BB%E5%B1%B1%E8%80%85%E9%A3%9F%E5%A0%82", "rakuten": "https://travel.rakuten.co.jp/HOTEL/198820/198820.html", "rakutenPlan": "https://hotel.travel.rakuten.co.jp/hotelinfo/plan/198820?f_nen1=2026&f_tuki1=10&f_hi1=31&f_nen2=2026&f_tuki2=11&f_hi2=1&f_otona_su=3&f_heya_su=1&f_s1=0&f_s2=0&f_y1=0&f_y2=0&f_y3=0&f_y4=0"}, {"group": "pick", "name": "リゾートヴィラ高山", "lat": 36.0040684, "lon": 136.9642806, "price": 70290, "note": "荘川・同敷地の貸別荘・創作鍋2食あり（本命は龍リゾート）", "hotelNo": "141696", "reason": null, "gmaps": "https://www.google.com/maps/search/?api=1&query=%E3%83%AA%E3%82%BE%E3%83%BC%E3%83%88%E3%83%B4%E3%82%A3%E3%83%A9%E9%AB%98%E5%B1%B1%20%E8%8D%98%E5%B7%9D%E7%94%BA%E6%96%B0%E6%B8%95", "rakuten": "https://travel.rakuten.co.jp/HOTEL/141696/141696.html", "rakutenPlan": "https://hotel.travel.rakuten.co.jp/hotelinfo/plan/141696?f_nen1=2026&f_tuki1=10&f_hi1=31&f_nen2=2026&f_tuki2=11&f_hi2=1&f_otona_su=3&f_heya_su=1&f_s1=0&f_s2=0&f_y1=0&f_y2=0&f_y3=0&f_y4=0"}, {"group": "out", "name": "飛騨花里の湯 高山桜庵", "lat": 36.1425, "lon": 137.2535, "price": 90300, "note": "温泉・駅徒歩約5分", "hotelNo": "76847", "reason": "3名空きはあるが夕食なし（素泊まり最安）", "gmaps": "https://www.google.com/maps/search/?api=1&query=%E9%A3%9B%E9%A8%A8%E8%8A%B1%E9%87%8C%E3%81%AE%E6%B9%AF%20%E9%AB%98%E5%B1%B1%E6%A1%9C%E5%BA%B5", "rakuten": "https://travel.rakuten.co.jp/HOTEL/76847/76847.html", "rakutenPlan": "https://hotel.travel.rakuten.co.jp/hotelinfo/plan/76847?f_nen1=2026&f_tuki1=10&f_hi1=31&f_nen2=2026&f_tuki2=11&f_hi2=1&f_otona_su=3&f_heya_su=1&f_s1=0&f_s2=0&f_y1=0&f_y2=0&f_y3=0&f_y4=0"}, {"group": "out", "name": "ルートイングランティア飛騨高山 和蔵の宿", "lat": 36.128, "lon": 137.265, "price": null, "note": "高山のルートイン", "hotelNo": "13454", "reason": "10/31・大人3名で空きなし", "gmaps": "https://www.google.com/maps/search/?api=1&query=%E3%83%AB%E3%83%BC%E3%83%88%E3%82%A4%E3%83%B3%E3%82%B0%E3%83%A9%E3%83%B3%E3%83%86%E3%82%A3%E3%82%A2%E9%A3%9B%E9%A8%A8%E9%AB%98%E5%B1%B1%20%E5%92%8C%E8%94%B5%E3%81%AE%E5%AE%BF", "rakuten": "https://travel.rakuten.co.jp/HOTEL/13454/13454.html", "rakutenPlan": "https://hotel.travel.rakuten.co.jp/hotelinfo/plan/13454?f_nen1=2026&f_tuki1=10&f_hi1=31&f_nen2=2026&f_tuki2=11&f_hi2=1&f_otona_su=3&f_heya_su=1&f_s1=0&f_s2=0&f_y1=0&f_y2=0&f_y3=0&f_y4=0"}, {"group": "out", "name": "高山グリーンホテル", "lat": 36.146, "lon": 137.255, "price": null, "note": "当初候補", "hotelNo": "8626", "reason": "10/31・大人3名で空きなし", "gmaps": "https://www.google.com/maps/search/?api=1&query=%E9%AB%98%E5%B1%B1%E3%82%B0%E3%83%AA%E3%83%BC%E3%83%B3%E3%83%9B%E3%83%86%E3%83%AB", "rakuten": "https://travel.rakuten.co.jp/HOTEL/8626/8626.html", "rakutenPlan": "https://hotel.travel.rakuten.co.jp/hotelinfo/plan/8626?f_nen1=2026&f_tuki1=10&f_hi1=31&f_nen2=2026&f_tuki2=11&f_hi2=1&f_otona_su=3&f_heya_su=1&f_s1=0&f_s2=0&f_y1=0&f_y2=0&f_y3=0&f_y4=0"}, {"group": "out", "name": "ひだホテルプラザ", "lat": 36.141, "lon": 137.2545, "price": null, "note": "当初候補", "hotelNo": "4931", "reason": "10/31・大人3名で空きなし", "gmaps": "https://www.google.com/maps/search/?api=1&query=%E3%81%B2%E3%81%A0%E3%83%9B%E3%83%86%E3%83%AB%E3%83%97%E3%83%A9%E3%82%B6", "rakuten": "https://travel.rakuten.co.jp/HOTEL/4931/4931.html", "rakutenPlan": "https://hotel.travel.rakuten.co.jp/hotelinfo/plan/4931?f_nen1=2026&f_tuki1=10&f_hi1=31&f_nen2=2026&f_tuki2=11&f_hi2=1&f_otona_su=3&f_heya_su=1&f_s1=0&f_s2=0&f_y1=0&f_y2=0&f_y3=0&f_y4=0"}, {"group": "out", "name": "ヒルトン高山リゾート", "lat": 36.155, "lon": 137.268, "price": null, "note": "当初候補", "hotelNo": "13444", "reason": "3名で空きなし（2名なら素泊まりあり）", "gmaps": "https://www.google.com/maps/search/?api=1&query=%E3%83%92%E3%83%AB%E3%83%88%E3%83%B3%E9%AB%98%E5%B1%B1%E3%83%AA%E3%82%BE%E3%83%BC%E3%83%88", "rakuten": "https://travel.rakuten.co.jp/HOTEL/13444/13444.html", "rakutenPlan": "https://hotel.travel.rakuten.co.jp/hotelinfo/plan/13444?f_nen1=2026&f_tuki1=10&f_hi1=31&f_nen2=2026&f_tuki2=11&f_hi2=1&f_otona_su=3&f_heya_su=1&f_s1=0&f_s2=0&f_y1=0&f_y2=0&f_y3=0&f_y4=0"}, {"group": "out", "name": "小さな料理旅館 こまくさ", "lat": 36.1505, "lon": 137.2555, "price": 41800, "note": "和室・飛騨牛懐石・貸切風呂", "hotelNo": "39984", "reason": "2食ありだが大人2名のみ空き（3名なし）", "gmaps": "https://www.google.com/maps/search/?api=1&query=%E5%B0%8F%E3%81%95%E3%81%AA%E6%96%99%E7%90%86%E6%97%85%E9%A4%A8%20%E3%81%93%E3%81%BE%E3%81%8F%E3%81%95", "rakuten": "https://travel.rakuten.co.jp/HOTEL/39984/39984.html", "rakutenPlan": "https://hotel.travel.rakuten.co.jp/hotelinfo/plan/39984?f_nen1=2026&f_tuki1=10&f_hi1=31&f_nen2=2026&f_tuki2=11&f_hi2=1&f_otona_su=3&f_heya_su=1&f_s1=0&f_s2=0&f_y1=0&f_y2=0&f_y3=0&f_y4=0"}, {"group": "out", "name": "ワットホテル＆スパ飛騨高山", "lat": 36.1418, "lon": 137.2505, "price": 79410, "note": "貸切露天・朝食あり", "hotelNo": "166277", "reason": "夕食なし（朝食のみ・8万円内）", "gmaps": "https://www.google.com/maps/search/?api=1&query=%E3%83%AF%E3%83%83%E3%83%88%E3%83%9B%E3%83%86%E3%83%AB%EF%BC%86%E3%82%B9%E3%83%91%E9%A3%9B%E9%A8%A8%E9%AB%98%E5%B1%B1", "rakuten": "https://travel.rakuten.co.jp/HOTEL/166277/166277.html", "rakutenPlan": "https://hotel.travel.rakuten.co.jp/hotelinfo/plan/166277?f_nen1=2026&f_tuki1=10&f_hi1=31&f_nen2=2026&f_tuki2=11&f_hi2=1&f_otona_su=3&f_heya_su=1&f_s1=0&f_s2=0&f_y1=0&f_y2=0&f_y3=0&f_y4=0"}, {"group": "out", "name": "fav 飛騨高山", "lat": 36.14, "lon": 137.249, "price": 75999, "note": "駅徒歩約5分", "hotelNo": "181402", "reason": "夕食なし（素泊まり）", "gmaps": "https://www.google.com/maps/search/?api=1&query=fav%20%E9%A3%9B%E9%A8%A8%E9%AB%98%E5%B1%B1", "rakuten": "https://travel.rakuten.co.jp/HOTEL/181402/181402.html", "rakutenPlan": "https://hotel.travel.rakuten.co.jp/hotelinfo/plan/181402?f_nen1=2026&f_tuki1=10&f_hi1=31&f_nen2=2026&f_tuki2=11&f_hi2=1&f_otona_su=3&f_heya_su=1&f_s1=0&f_s2=0&f_y1=0&f_y2=0&f_y3=0&f_y4=0"}, {"group": "out", "name": "TempleHotel 高山善光寺", "lat": 36.1435, "lon": 137.258, "price": 94725, "note": "和室あり", "hotelNo": "179812", "reason": "夕食なし（素泊まり）", "gmaps": "https://www.google.com/maps/search/?api=1&query=TempleHotel%20%E9%AB%98%E5%B1%B1%E5%96%84%E5%85%89%E5%AF%BA", "rakuten": "https://travel.rakuten.co.jp/HOTEL/179812/179812.html", "rakutenPlan": "https://hotel.travel.rakuten.co.jp/hotelinfo/plan/179812?f_nen1=2026&f_tuki1=10&f_hi1=31&f_nen2=2026&f_tuki2=11&f_hi2=1&f_otona_su=3&f_heya_su=1&f_s1=0&f_s2=0&f_y1=0&f_y2=0&f_y3=0&f_y4=0"}, {"group": "out", "name": "匠の宿 深山桜庵（平湯）", "lat": 36.1855, "lon": 137.553, "price": 148200, "note": "奥飛騨・最初に当たった宿のひとつ", "hotelNo": "65440", "reason": "3名だと素泊まりのみ（2食プランなし）", "gmaps": "https://www.google.com/maps/search/?api=1&query=%E5%8C%A0%E3%81%AE%E5%AE%BF%20%E6%B7%B1%E5%B1%B1%E6%A1%9C%E5%BA%B5%EF%BC%88%E5%B9%B3%E6%B9%AF%EF%BC%89", "rakuten": "https://travel.rakuten.co.jp/HOTEL/65440/65440.html", "rakutenPlan": "https://hotel.travel.rakuten.co.jp/hotelinfo/plan/65440?f_nen1=2026&f_tuki1=10&f_hi1=31&f_nen2=2026&f_tuki2=11&f_hi2=1&f_otona_su=3&f_heya_su=1&f_s1=0&f_s2=0&f_y1=0&f_y2=0&f_y3=0&f_y4=0"}];
-const colors = {"ref": "#2563eb", "honmei": "#e11d48", "gero": "#dc2626", "okuhida": "#16a34a", "budget": "#ca8a04", "pick": "#7c3aed", "out": "#64748b"};
-const labels = {"ref": "起点", "honmei": "本命", "gero": "下呂候補", "okuhida": "奥飛騨候補", "budget": "安い参考", "pick": "追加候補", "out": "候補外（空きなし／夕食なし等）"};
-const order = ['ref','honmei','gero','okuhida','budget','pick','out'];
-const map = L.map('map');
+/*
+ * Pin schema (add roadside stops by appending to `pins`):
+ * {
+ *   group: 'stay' | 'stop' | 'ref',
+ *   name: string,
+ *   lat: number,
+ *   lon: number,
+ *   note: string,          // short card/popup note
+ *   gmaps: string,         // required Google Maps URL
+ *   url?: string,          // optional custom link
+ *   rakuten?: string,      // optional Rakuten facility page
+ *   bookingNo?: string,
+ *   when?: string,         // e.g. check-in/out summary
+ *   address?: string,
+ *   phone?: string
+ * }
+ */
+const pins = [
+  {
+    group: 'stay',
+    name: 'ホテルグリーンプラザ軽井沢（奥軽井沢）',
+    lat: 36.478189,
+    lon: 138.5415927,
+    note: '10/30→10/31・確定宿・2食バイキング・メゾネット',
+    when: 'チェックイン 2026-10-30 17:30 / チェックアウト 10-31',
+    bookingNo: 'RYa0nf9v36',
+    address: '群馬県吾妻郡嬬恋村大前細原2277',
+    gmaps: 'https://www.google.com/maps/search/?api=1&query=%E3%83%9B%E3%83%86%E3%83%AB%E3%82%B0%E3%83%AA%E3%83%BC%E3%83%B3%E3%83%97%E3%83%A9%E3%82%B6%E8%BB%BD%E4%BA%95%E6%B2%A2',
+    rakuten: 'https://travel.rakuten.co.jp/HOTEL/11009/11009.html'
+  },
+  {
+    group: 'stay',
+    name: '龍リゾート＆スパ',
+    lat: 36.00531581,
+    lon: 136.9619091,
+    note: '10/31→11/1・確定宿・会席2食・角部屋75㎡・夕食19:00',
+    when: 'チェックイン 2026-10-31 / チェックアウト 11-01・夕食19:00',
+    bookingNo: 'RYa0nfb9sj',
+    address: '岐阜県高山市荘川町新渕892-11',
+    phone: '05769-2-2611',
+    gmaps: 'https://www.google.com/maps/search/?api=1&query=%E9%BE%8D%E3%83%AA%E3%82%BE%E3%83%BC%E3%83%88%EF%BC%86%E3%82%B9%E3%83%91%20%E9%AB%98%E5%B1%B1%E9%BE%8D%E7%A5%9E%E6%B8%A9%E6%B3%89',
+    rakuten: 'https://travel.rakuten.co.jp/HOTEL/8631/8631.html'
+  },
+  // --- stop: roadside / sightseeing pins go here ---
+  {
+    group: 'ref',
+    name: '高山駅',
+    lat: 36.1406,
+    lon: 137.2519,
+    note: '観光の目印',
+    gmaps: 'https://www.google.com/maps/search/?api=1&query=%E9%AB%98%E5%B1%B1%E9%A7%85'
+  }
+];
+
+const colors = {
+  stay: '#e11d48',
+  stop: '#0d9488',
+  ref: '#2563eb'
+};
+const labels = {
+  stay: '確定宿',
+  stop: '立ち寄り',
+  ref: '起点・目印'
+};
+const order = ['stay', 'stop', 'ref'];
+
+const map = L.map('map', { zoomControl: true });
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
   maxZoom: 18,
   attribution: '&copy; OpenStreetMap'
 }).addTo(map);
-const bounds = [];
+
 const list = document.getElementById('list');
-function yen(n) { return n == null ? '' : '¥' + n.toLocaleString('ja-JP'); }
-function esc(s) { return String(s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]); }
+const bounds = [];
+
+function esc(s) {
+  return String(s || '').replace(/[&<>"']/g, c =>
+    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]
+  );
+}
+
+function linkButtons(p, stopProp) {
+  const stop = stopProp ? ' onclick="event.stopPropagation()"' : '';
+  let html = '<a class="maps" href="' + esc(p.gmaps) + '" target="_blank" rel="noopener"' + stop + '>Googleマップ</a>';
+  if (p.rakuten) html += '<a class="rakuten" href="' + esc(p.rakuten) + '" target="_blank" rel="noopener"' + stop + '>楽天（施設）</a>';
+  if (p.url) html += '<a class="url" href="' + esc(p.url) + '" target="_blank" rel="noopener"' + stop + '>リンク</a>';
+  return html;
+}
 
 const byGroup = {};
 pins.forEach(p => { (byGroup[p.group] ||= []).push(p); });
@@ -76,49 +211,64 @@ pins.forEach(p => { (byGroup[p.group] ||= []).push(p); });
 order.forEach(g => {
   const arr = byGroup[g] || [];
   if (!arr.length) return;
+
   const sec = document.createElement('div');
   sec.className = 'section';
   sec.textContent = labels[g] || g;
   list.appendChild(sec);
+
   arr.forEach(p => {
     const color = colors[p.group] || '#334155';
     const icon = L.divIcon({
       className: '',
-      html: '<div style="background:'+color+';width:'+(p.group==='out'?'12':'16')+'px;height:'+(p.group==='out'?'12':'16')+'px;border-radius:50%;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.4);'+(p.group==='out'?'opacity:.85':'')+'"></div>',
-      iconSize: [16,16], iconAnchor: [8,8]
+      html: '<div style="background:' + color + ';width:16px;height:16px;border-radius:50%;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.4)"></div>',
+      iconSize: [16, 16],
+      iconAnchor: [8, 8]
     });
-    const price = yen(p.price);
-    let links = '<a href="'+p.gmaps+'" target="_blank" rel="noopener">Googleマップ</a>';
-    if (p.rakuten) links += ' · <a href="'+p.rakuten+'" target="_blank" rel="noopener">楽天（施設）</a>';
-    if (p.rakutenPlan) links += ' · <a href="'+p.rakutenPlan+'" target="_blank" rel="noopener">楽天（10/31・3名）</a>';
-    const popup = '<div class="popup"><b>'+esc(p.name)+'</b><br>'+esc(labels[p.group]||'') +
-      (price ? '<br><b>'+price+'</b>（3名目安）' : '') +
-      (p.note ? '<br>'+esc(p.note) : '') +
-      (p.reason ? '<br><span style="color:#b45309">外した理由: '+esc(p.reason)+'</span>' : '') +
-      '<br>'+links+'</div>';
-    const m = L.marker([p.lat, p.lon], {icon}).addTo(map).bindPopup(popup);
+
+    let popupExtra = '';
+    if (p.when) popupExtra += '<div class="extra">' + esc(p.when) + '</div>';
+    if (p.bookingNo) popupExtra += '<div class="extra">予約番号: ' + esc(p.bookingNo) + '</div>';
+    if (p.address) popupExtra += '<div class="extra">' + esc(p.address) + '</div>';
+    if (p.phone) popupExtra += '<div class="extra">TEL ' + esc(p.phone) + '</div>';
+
+    const popup =
+      '<div class="popup"><b>' + esc(p.name) + '</b>' +
+      '<div style="font-size:.72rem;color:#64748b;margin-top:2px">' + esc(labels[p.group] || '') + '</div>' +
+      (p.note ? '<div class="note">' + esc(p.note) + '</div>' : '') +
+      popupExtra +
+      '<div class="plink">' + linkButtons(p, false) + '</div></div>';
+
+    const m = L.marker([p.lat, p.lon], { icon }).addTo(map).bindPopup(popup);
     bounds.push([p.lat, p.lon]);
+
     const card = document.createElement('div');
-    card.className = 'card' + (p.group==='out' ? ' out' : '');
-    let linkHtml = '<div class="links"><a class="maps" href="'+p.gmaps+'" target="_blank" rel="noopener" onclick="event.stopPropagation()">Googleマップ</a>';
-    if (p.rakuten) linkHtml += '<a href="'+p.rakuten+'" target="_blank" rel="noopener" onclick="event.stopPropagation()">楽天（施設）</a>';
-    if (p.rakutenPlan) linkHtml += '<a href="'+p.rakutenPlan+'" target="_blank" rel="noopener" onclick="event.stopPropagation()">楽天 10/31・3名</a>';
-    linkHtml += '</div>';
-    card.innerHTML = '<div class="badge" style="background:'+color+'">'+(labels[p.group]||p.group)+'</div>'+
-      '<div class="name">'+esc(p.name)+'</div>'+
-      '<div class="meta">'+(price ? price+'・' : '')+esc(p.note||'')+'</div>'+
-      (p.reason ? '<div class="reason">'+esc(p.reason)+'</div>' : '') +
-      linkHtml;
+    card.className = 'card';
+    let meta = esc(p.note || '');
+    if (p.bookingNo) meta += (meta ? '・' : '') + '予約 ' + esc(p.bookingNo);
+    card.innerHTML =
+      '<div class="badge" style="background:' + color + '">' + esc(labels[p.group] || p.group) + '</div>' +
+      '<div class="name">' + esc(p.name) + '</div>' +
+      '<div class="meta">' + meta +
+      (p.when ? '<div class="when">' + esc(p.when) + '</div>' : '') +
+      '</div>' +
+      '<div class="links">' + linkButtons(p, true) + '</div>';
+
     card.onclick = () => {
       document.querySelectorAll('.card').forEach(c => c.classList.remove('active'));
       card.classList.add('active');
-      map.setView([p.lat, p.lon], 14);
+      map.setView([p.lat, p.lon], 13);
       m.openPopup();
     };
     list.appendChild(card);
   });
 });
-map.fitBounds(bounds, { padding: [40,40] });
+
+if (bounds.length) {
+  map.fitBounds(bounds, { padding: [48, 48], maxZoom: 11 });
+} else {
+  map.setView([36.2, 137.5], 8);
+}
 </script>
 </body>
 </html>
