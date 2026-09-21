@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>高山まわり宿ピンマップ 10/31</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<style>
+  * { box-sizing: border-box; }
+  body { margin:0; font-family: system-ui, sans-serif; display:flex; flex-direction:column; height:100vh; }
+  header { padding:10px 14px; background:#0f172a; color:#fff; }
+  header h1 { margin:0; font-size:1.05rem; font-weight:700; }
+  header p { margin:4px 0 0; font-size:.8rem; opacity:.85; }
+  #wrap { flex:1; display:grid; grid-template-columns: minmax(240px,320px) 1fr; min-height:0; }
+  #list { overflow:auto; border-right:1px solid #e2e8f0; background:#f8fafc; padding:10px; }
+  .card { background:#fff; border:1px solid #e2e8f0; border-radius:10px; padding:10px; margin-bottom:8px; cursor:pointer; }
+  .card:hover { border-color:#94a3b8; }
+  .card.active { border-color:#0f172a; box-shadow:0 0 0 2px #0f172a33; }
+  .badge { display:inline-block; font-size:.7rem; padding:2px 6px; border-radius:999px; color:#fff; margin-bottom:4px; }
+  .name { font-weight:700; font-size:.92rem; }
+  .meta { font-size:.78rem; color:#475569; margin-top:4px; }
+  #map { width:100%; height:100%; }
+  .legend { display:flex; flex-wrap:wrap; gap:8px; margin-top:8px; }
+  .legend span { font-size:.72rem; display:flex; align-items:center; gap:4px; }
+  .dot { width:10px; height:10px; border-radius:50%; display:inline-block; }
+  @media (max-width:800px) {
+    #wrap { grid-template-columns: 1fr; grid-template-rows: 38% 1fr; }
+    #list { border-right:none; border-bottom:1px solid #e2e8f0; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>10/31 宿候補ピンマップ（高山・下呂・奥飛騨）</h1>
+  <p>大人3名・2食付き候補。位置は概ねのピン（数百メートルずれることあり）。左のリストを押すと飛ぶ。</p>
+  <div class="legend">
+    <span><i class="dot" style="background:#2563eb"></i>起点</span>
+    <span><i class="dot" style="background:#dc2626"></i>下呂候補</span>
+    <span><i class="dot" style="background:#16a34a"></i>奥飛騨候補</span>
+    <span><i class="dot" style="background:#ca8a04"></i>安い参考</span>
+  </div>
+</header>
+<div id="wrap">
+  <aside id="list"></aside>
+  <div id="map"></div>
+</div>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+const pins = [{"group": "ref", "name": "高山駅", "lat": 36.1406, "lon": 137.2519, "price": null, "note": "観光の起点", "gmaps": "https://www.google.com/maps/search/?api=1&query=%E9%AB%98%E5%B1%B1%E9%A7%85"}, {"group": "gero", "name": "大江戸温泉物語 下呂別館", "lat": 35.8058, "lon": 137.2425, "price": 75600, "note": "2食バイキング", "gmaps": "https://www.google.com/maps/search/?api=1&query=%E5%A4%A7%E6%B1%9F%E6%88%B8%E6%B8%A9%E6%B3%89%E7%89%A9%E8%AA%9E%20%E4%B8%8B%E5%91%82%E5%88%A5%E9%A4%A8"}, {"group": "gero", "name": "大江戸温泉物語Premium 下呂本館", "lat": 35.8042, "lon": 137.2398, "price": 93900, "note": "2食バイキング", "gmaps": "https://www.google.com/maps/search/?api=1&query=%E5%A4%A7%E6%B1%9F%E6%88%B8%E6%B8%A9%E6%B3%89%E7%89%A9%E8%AA%9EPremium%20%E4%B8%8B%E5%91%82%E6%9C%AC%E9%A4%A8"}, {"group": "gero", "name": "TAOYA下呂", "lat": 35.8165, "lon": 137.2278, "price": 113100, "note": "2食バイキング・眺望", "gmaps": "https://www.google.com/maps/search/?api=1&query=TAOYA%E4%B8%8B%E5%91%82"}, {"group": "gero", "name": "いずみ荘", "lat": 35.8072, "lon": 137.244, "price": 80880, "note": "和室・飛騨牛系", "gmaps": "https://www.google.com/maps/search/?api=1&query=%E3%81%84%E3%81%9A%E3%81%BF%E8%8D%98"}, {"group": "gero", "name": "桜 River Side Stay 下呂温泉", "lat": 35.8035, "lon": 137.246, "price": 63360, "note": "コース夕食＋貸切温泉", "gmaps": "https://www.google.com/maps/search/?api=1&query=%E6%A1%9C%20River%20Side%20Stay%20%E4%B8%8B%E5%91%82%E6%B8%A9%E6%B3%89"}, {"group": "okuhida", "name": "美山荘（新平湯）", "lat": 36.232, "lon": 137.5385, "price": 52800, "note": "和室・飛騨牛陶板", "gmaps": "https://www.google.com/maps/search/?api=1&query=%E7%BE%8E%E5%B1%B1%E8%8D%98%EF%BC%88%E6%96%B0%E5%B9%B3%E6%B9%AF%EF%BC%89"}, {"group": "okuhida", "name": "のりくら一休（平湯）", "lat": 36.1835, "lon": 137.551, "price": 66000, "note": "和洋室・しゃぶ", "gmaps": "https://www.google.com/maps/search/?api=1&query=%E3%81%AE%E3%82%8A%E3%81%8F%E3%82%89%E4%B8%80%E4%BC%91%EF%BC%88%E5%B9%B3%E6%B9%AF%EF%BC%89"}, {"group": "okuhida", "name": "ひなの湯宿 松乃井", "lat": 36.2335, "lon": 137.541, "price": 75900, "note": "和室・個室食", "gmaps": "https://www.google.com/maps/search/?api=1&query=%E3%81%B2%E3%81%AA%E3%81%AE%E6%B9%AF%E5%AE%BF%20%E6%9D%BE%E4%B9%83%E4%BA%95"}, {"group": "okuhida", "name": "宝山荘", "lat": 36.248, "lon": 137.518, "price": 40350, "note": "奥飛騨・2食", "gmaps": "https://www.google.com/maps/search/?api=1&query=%E5%AE%9D%E5%B1%B1%E8%8D%98"}, {"group": "budget", "name": "ひがくの湯と登山者食堂", "lat": 36.261, "lon": 137.548, "price": 29550, "note": "最安帯・登山者向け", "gmaps": "https://www.google.com/maps/search/?api=1&query=%E3%81%B2%E3%81%8C%E3%81%8F%E3%81%AE%E6%B9%AF%E3%81%A8%E7%99%BB%E5%B1%B1%E8%80%85%E9%A3%9F%E5%A0%82"}];
+const colors = {"ref": "#2563eb", "gero": "#dc2626", "okuhida": "#16a34a", "budget": "#ca8a04"};
+const labels = {"ref": "起点", "gero": "下呂候補", "okuhida": "奥飛騨候補", "budget": "安い参考"};
+const map = L.map('map');
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  maxZoom: 18,
+  attribution: '&copy; OpenStreetMap'
+}).addTo(map);
+const bounds = [];
+const list = document.getElementById('list');
+function yen(n) { return n == null ? '' : '¥' + n.toLocaleString('ja-JP'); }
+pins.forEach((p, i) => {
+  const color = colors[p.group] || '#334155';
+  const icon = L.divIcon({
+    className: '',
+    html: '<div style="background:'+color+';width:16px;height:16px;border-radius:50%;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.4)"></div>',
+    iconSize: [16,16], iconAnchor: [8,8]
+  });
+  const price = yen(p.price);
+  const popup = '<b>'+p.name+'</b><br>'+(labels[p.group]||'') +
+    (price ? '<br><b>'+price+'</b>（3名目安）' : '') +
+    (p.note ? '<br>'+p.note : '') +
+    '<br><a href="'+p.gmaps+'" target="_blank" rel="noopener">Googleマップで開く</a>';
+  const m = L.marker([p.lat, p.lon], {icon}).addTo(map).bindPopup(popup);
+  bounds.push([p.lat, p.lon]);
+  const card = document.createElement('div');
+  card.className = 'card';
+  card.innerHTML = '<div class="badge" style="background:'+color+'">'+(labels[p.group]||p.group)+'</div>'+
+    '<div class="name">'+p.name+'</div>'+
+    '<div class="meta">'+(price ? price+'・' : '')+(p.note||'')+'</div>';
+  card.onclick = () => {
+    document.querySelectorAll('.card').forEach(c => c.classList.remove('active'));
+    card.classList.add('active');
+    map.setView([p.lat, p.lon], 13);
+    m.openPopup();
+  };
+  list.appendChild(card);
+});
+map.fitBounds(bounds, { padding: [40,40] });
+</script>
+</body>
+</html>
