@@ -1,0 +1,952 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>ヤバチバ メモ — GlockBOT 0.1.0</title>
+<style>
+:root {
+  --bg: #0f1419;
+  --panel: #1a2332;
+  --panel2: #243044;
+  --ink: #f0f4f8;
+  --muted: #9aa8b8;
+  --line: #3a4a5c;
+  --g: #3db8ff;
+  --g-soft: #1a3a52;
+  --cherry: #ff6b8a;
+  --cherry-soft: #4a1f2e;
+  --warm: #ffb020;
+  --warm-soft: #4a3810;
+  --ok: #5ecf7a;
+  --danger: #ff5c5c;
+  --thumb: 28px;
+  --radius: 12px;
+  --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; min-height: 100%; }
+body {
+  font-family: "Hiragino Kaku Gothic ProN", "Yu Gothic UI", "Yu Gothic", "Meiryo", system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--ink);
+  font-size: clamp(14px, 1.1vw, 18px);
+  line-height: 1.4;
+}
+button, input, label { font: inherit; }
+button {
+  cursor: pointer;
+  border: 1px solid var(--line);
+  background: var(--panel2);
+  color: var(--ink);
+  border-radius: 10px;
+  padding: 0.55em 0.9em;
+  min-height: 44px;
+  touch-action: manipulation;
+}
+button:active { transform: scale(0.98); }
+button.primary {
+  background: var(--cherry);
+  color: #1a0a10;
+  border-color: #ff8aa5;
+  font-weight: 700;
+}
+button.ghost { background: transparent; }
+button.danger-soft {
+  background: #3a2020;
+  border-color: #6a3030;
+  color: #ffb0b0;
+}
+.app {
+  max-width: min(1400px, 100%);
+  margin: 0 auto;
+  padding: clamp(10px, 1.5vw, 28px) clamp(12px, 2vw, 36px) 20px;
+  display: flex;
+  flex-direction: column;
+  gap: clamp(10px, 1.2vw, 16px);
+  min-height: 100vh;
+}
+header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 14px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--line);
+}
+header h1 {
+  margin: 0;
+  font-size: clamp(1.15rem, 2.2vw, 1.65rem);
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+.badge {
+  font-size: clamp(0.7rem, 0.9vw, 0.85rem);
+  color: var(--muted);
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 0.25em 0.75em;
+}
+.notice-short {
+  color: var(--muted);
+  font-size: clamp(0.72rem, 0.95vw, 0.88rem);
+  flex: 1 1 12rem;
+}
+.toggle-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 6px 12px 6px 8px;
+  user-select: none;
+  cursor: pointer;
+}
+.toggle-wrap input {
+  width: 1.25em;
+  height: 1.25em;
+  accent-color: var(--warm);
+}
+.toggle-wrap.on {
+  border-color: var(--warm);
+  background: var(--warm-soft);
+  color: var(--warm);
+  font-weight: 700;
+}
+
+/* ===== State board ===== */
+.board {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: clamp(12px, 1.5vw, 20px);
+  display: grid;
+  gap: clamp(10px, 1.2vw, 16px);
+}
+.big-nums {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: clamp(8px, 1.5vw, 20px);
+}
+.num-card {
+  background: var(--panel2);
+  border: 2px solid var(--line);
+  border-radius: var(--radius);
+  padding: clamp(10px, 1.2vw, 16px);
+  text-align: center;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.num-card.lead {
+  border-width: 3px;
+  box-shadow: 0 0 0 2px rgba(255, 176, 32, 0.35);
+}
+.num-card.lead-g {
+  border-color: var(--g);
+  background: linear-gradient(180deg, var(--g-soft), var(--panel2));
+}
+.num-card.lead-cherry {
+  border-color: var(--cherry);
+  background: linear-gradient(180deg, var(--cherry-soft), var(--panel2));
+}
+.num-card .label {
+  font-size: clamp(0.75rem, 1vw, 0.95rem);
+  color: var(--muted);
+  font-weight: 600;
+}
+.num-card .value {
+  font-family: var(--mono);
+  font-size: clamp(2.2rem, 6vw, 3.8rem);
+  font-weight: 800;
+  line-height: 1.05;
+  margin: 4px 0;
+}
+.num-card.lead-g .value { color: var(--g); }
+.num-card.lead-cherry .value { color: var(--cherry); }
+.num-card .remain {
+  font-size: clamp(0.8rem, 1.1vw, 1rem);
+  color: var(--muted);
+}
+.num-card .tag-sen {
+  display: none;
+  margin-top: 6px;
+  font-size: clamp(0.75rem, 1vw, 0.9rem);
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  padding: 2px 10px;
+  border-radius: 6px;
+  background: var(--warm);
+  color: #1a1200;
+}
+.num-card.lead .tag-sen { display: inline-block; }
+
+.lead-banner {
+  text-align: center;
+  font-size: clamp(1.1rem, 2.4vw, 1.7rem);
+  font-weight: 800;
+  padding: 0.45em 0.8em;
+  border-radius: 10px;
+  border: 2px solid var(--line);
+  background: var(--panel2);
+  letter-spacing: 0.04em;
+}
+.lead-banner.g { border-color: var(--g); color: var(--g); background: var(--g-soft); }
+.lead-banner.cherry { border-color: var(--cherry); color: var(--cherry); background: var(--cherry-soft); }
+.lead-banner.both { border-color: var(--ok); color: var(--ok); }
+.lead-banner.tie { border-color: var(--warm); color: var(--warm); background: var(--warm-soft); }
+
+.bars {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: clamp(10px, 1.5vw, 18px);
+}
+.bar-block {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.bar-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: clamp(0.75rem, 1vw, 0.9rem);
+  color: var(--muted);
+  font-weight: 600;
+}
+.bar-track {
+  height: clamp(18px, 2.2vw, 26px);
+  background: #0a1018;
+  border-radius: 999px;
+  overflow: hidden;
+  border: 2px solid var(--line);
+  position: relative;
+}
+.bar-block.lead .bar-track {
+  border-width: 3px;
+  border-color: var(--warm);
+}
+.bar-block.lead-g .bar-track { border-color: var(--g); }
+.bar-block.lead-cherry .bar-track { border-color: var(--cherry); }
+.bar-fill {
+  height: 100%;
+  width: 0%;
+  border-radius: 999px;
+  transition: width 0.12s ease-out;
+  min-width: 0;
+}
+.bar-fill.g { background: linear-gradient(90deg, #1a6a9a, var(--g)); }
+.bar-fill.cherry { background: linear-gradient(90deg, #9a3050, var(--cherry)); }
+.bar-pct {
+  font-family: var(--mono);
+  font-size: clamp(0.7rem, 0.95vw, 0.85rem);
+  color: var(--muted);
+}
+
+/* ===== Input band ===== */
+.inputs {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  gap: clamp(10px, 1.5vw, 18px);
+}
+.input-panel {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: clamp(10px, 1.2vw, 16px);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.input-panel h2 {
+  margin: 0;
+  font-size: clamp(0.9rem, 1.2vw, 1.1rem);
+  font-weight: 700;
+}
+.slider-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: var(--thumb);
+  background: transparent;
+  margin: 4px 0;
+}
+input[type="range"]::-webkit-slider-runnable-track {
+  height: 10px;
+  background: #0a1018;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: var(--thumb);
+  height: var(--thumb);
+  margin-top: -10px;
+  border-radius: 50%;
+  background: var(--g);
+  border: 3px solid #fff;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.45);
+  cursor: grab;
+}
+input[type="range"].cherry::-webkit-slider-thumb { background: var(--cherry); }
+input[type="range"]::-moz-range-track {
+  height: 10px;
+  background: #0a1018;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+}
+input[type="range"]::-moz-range-thumb {
+  width: var(--thumb);
+  height: var(--thumb);
+  border-radius: 50%;
+  background: var(--g);
+  border: 3px solid #fff;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.45);
+  cursor: grab;
+}
+input[type="range"].cherry::-moz-range-thumb { background: var(--cherry); }
+
+.btn-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+.btn-row .spacer { flex: 1; }
+.num-input {
+  width: 5.5em;
+  min-height: 44px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: #0a1018;
+  color: var(--ink);
+  font-family: var(--mono);
+  font-size: 1.1em;
+  text-align: center;
+  padding: 0.3em;
+}
+.cherry-btns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.cherry-btns button {
+  font-size: clamp(1.3rem, 2.5vw, 1.8rem);
+  font-weight: 800;
+  min-height: 64px;
+  padding: 0.4em;
+}
+.cherry-btns .plus {
+  background: var(--cherry);
+  color: #1a0a10;
+  border-color: #ff8aa5;
+}
+.cherry-btns .minus {
+  background: var(--cherry-soft);
+  color: var(--cherry);
+  border-color: var(--cherry);
+}
+.thin-slider { opacity: 0.85; }
+.thin-slider input[type="range"] { height: 22px; }
+.thin-slider input[type="range"]::-webkit-slider-thumb {
+  width: 22px; height: 22px; margin-top: -7px;
+}
+.reset-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 2px;
+}
+.reset-row button { font-size: 0.85em; min-height: 40px; }
+
+/* ===== Secondary (collapsed) ===== */
+details.sec {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 0;
+}
+details.sec > summary {
+  cursor: pointer;
+  list-style: none;
+  padding: clamp(10px, 1.2vw, 14px) clamp(12px, 1.4vw, 16px);
+  font-weight: 700;
+  font-size: clamp(0.9rem, 1.15vw, 1.05rem);
+  color: var(--muted);
+  user-select: none;
+}
+details.sec > summary::-webkit-details-marker { display: none; }
+details.sec > summary::before {
+  content: "▸ ";
+  color: var(--warm);
+}
+details.sec[open] > summary::before { content: "▾ "; }
+details.sec[open] > summary { color: var(--ink); border-bottom: 1px solid var(--line); }
+.sec-body {
+  padding: clamp(10px, 1.2vw, 16px);
+  display: grid;
+  gap: 14px;
+}
+.sec-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+}
+.field label {
+  display: block;
+  font-size: 0.85em;
+  color: var(--muted);
+  margin-bottom: 4px;
+  font-weight: 600;
+}
+.field input[type="number"] {
+  width: 100%;
+  min-height: 40px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: #0a1018;
+  color: var(--ink);
+  font-family: var(--mono);
+  padding: 0.35em 0.6em;
+}
+table.rates {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: clamp(0.78rem, 1vw, 0.92rem);
+}
+table.rates th, table.rates td {
+  border: 1px solid var(--line);
+  padding: 0.45em 0.6em;
+  text-align: center;
+}
+table.rates th { background: var(--panel2); color: var(--muted); font-weight: 600; }
+table.rates td { font-family: var(--mono); }
+.notes {
+  font-size: clamp(0.8rem, 1vw, 0.95rem);
+  color: var(--muted);
+  margin: 0;
+  padding-left: 1.2em;
+}
+.notes li { margin-bottom: 0.35em; }
+
+.session-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 10px 12px;
+}
+.session-bar .hint {
+  color: var(--muted);
+  font-size: 0.85em;
+  flex: 1 1 10rem;
+}
+footer {
+  margin-top: auto;
+  padding-top: 8px;
+  border-top: 1px solid var(--line);
+  font-size: clamp(0.7rem, 0.9vw, 0.82rem);
+  color: var(--muted);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  align-items: baseline;
+}
+footer strong { color: var(--ink); }
+
+@media (max-width: 720px) {
+  .inputs { grid-template-columns: 1fr; }
+  .bars { grid-template-columns: 1fr; }
+  .big-nums { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 420px) {
+  .big-nums { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <h1>ヤバチバ メモ</h1>
+    <span class="badge">GlockBOT 0.1.0</span>
+    <span class="notice-short">非公式・解析値は変動しうる／店内メモ用</span>
+    <label class="toggle-wrap" id="settingChangeWrap" title="設定変更後はチェリー天井が30回">
+      <input type="checkbox" id="settingChange" />
+      <span>設定変更（チェリー天井30）</span>
+    </label>
+  </header>
+
+  <section class="board" aria-label="状態ボード">
+    <div class="big-nums">
+      <div class="num-card" id="cardG">
+        <div class="label">現在G</div>
+        <div class="value" id="displayG">0</div>
+        <div class="remain">残り <span id="remainG">999</span> G ／ 天井 999</div>
+        <span class="tag-sen">先</span>
+      </div>
+      <div class="num-card" id="cardCherry">
+        <div class="label">チェリー回数</div>
+        <div class="value" id="displayCherry">0</div>
+        <div class="remain">残り <span id="remainCherry">40</span> ／ 天井 <span id="cherryCapLabel">40</span></div>
+        <span class="tag-sen">先</span>
+      </div>
+    </div>
+
+    <div class="lead-banner both" id="leadBanner" role="status">どちらも余裕</div>
+
+    <div class="bars">
+      <div class="bar-block" id="barGBlock">
+        <div class="bar-head">
+          <span>G進捗（→999）</span>
+          <span class="bar-pct" id="pctG">0%</span>
+        </div>
+        <div class="bar-track"><div class="bar-fill g" id="fillG"></div></div>
+      </div>
+      <div class="bar-block" id="barCherryBlock">
+        <div class="bar-head">
+          <span>チェリー進捗（→<span id="cherryCapLabel2">40</span>）</span>
+          <span class="bar-pct" id="pctCherry">0%</span>
+        </div>
+        <div class="bar-track"><div class="bar-fill cherry" id="fillCherry"></div></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="inputs" aria-label="入力">
+    <div class="input-panel">
+      <h2>ゲーム数（スライダー主）</h2>
+      <div class="slider-row">
+        <input type="range" id="gSlider" min="0" max="1200" value="0" step="1" aria-label="ゲーム数スライダー" />
+      </div>
+      <div class="btn-row">
+        <button type="button" data-g="-10">−10</button>
+        <button type="button" data-g="-1">−1</button>
+        <button type="button" data-g="1">+1</button>
+        <button type="button" data-g="10">+10</button>
+        <span class="spacer"></span>
+        <input type="number" class="num-input" id="gInput" min="0" max="9999" value="0" inputmode="numeric" aria-label="ゲーム数直接入力" />
+      </div>
+    </div>
+    <div class="input-panel">
+      <h2>チェリー（+1/−1 主）</h2>
+      <div class="cherry-btns">
+        <button type="button" class="minus" id="cherryMinus" aria-label="チェリー−1">−1</button>
+        <button type="button" class="plus" id="cherryPlus" aria-label="チェリー+1">+1</button>
+      </div>
+      <div class="thin-slider slider-row">
+        <input type="range" class="cherry" id="cherrySlider" min="0" max="50" value="0" step="1" aria-label="チェリースライダー" />
+      </div>
+    </div>
+  </section>
+
+  <div class="reset-row">
+    <button type="button" class="ghost" id="resetG">Gのみリセット</button>
+    <button type="button" class="ghost" id="resetCherry">チェリーのみリセット</button>
+    <button type="button" class="danger-soft" id="resetBoth">両方リセット</button>
+  </div>
+
+  <details class="sec">
+    <summary>副次メモ（ベル集中・花笠・虹7・設定表・立ち回り）</summary>
+    <div class="sec-body">
+      <div class="sec-grid">
+        <div class="field">
+          <label for="bellCount">ベル集中 突入回数（任意）</label>
+          <input type="number" id="bellCount" min="0" max="99" value="0" inputmode="numeric" />
+        </div>
+        <div class="field">
+          <label for="hanagasa">花笠（0〜10・任意）</label>
+          <input type="number" id="hanagasa" min="0" max="10" value="0" inputmode="numeric" />
+        </div>
+        <div class="field">
+          <label for="niji7">虹7チャレンジ 残り（任意）</label>
+          <input type="number" id="niji7" min="0" max="99" value="0" inputmode="numeric" />
+        </div>
+      </div>
+
+      <div>
+        <strong style="display:block;margin-bottom:6px;font-size:0.95em;">設定別 ベル集中突入率・機械割（解析値・参考）</strong>
+        <table class="rates" id="ratesTable">
+          <thead>
+            <tr><th>設定</th><th>ベル集中突入率（約）</th><th>機械割</th></tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+        <p style="margin:6px 0 0;font-size:0.8em;color:var(--muted);">設定3は未公表のため「—」。初当りは全設定共通 1/398（判別に使わない）。</p>
+      </div>
+
+      <div>
+        <strong style="display:block;margin-bottom:6px;font-size:0.95em;">立ち回りメモ（短く・煽りなし）</strong>
+        <ul class="notes">
+          <li>天井は <strong>999G+α</strong> または <strong>チェリー40回</strong>（先着）。設定変更後はチェリー天井 <strong>30回</strong>。</li>
+          <li>本機は内部モード／ゾーンが表に出にくい。主に G×チェリーの進捗で状態を把握する。</li>
+          <li>ハイエナは「残りが少ない側」を優先して判断材料にする。断定はしない。</li>
+          <li>やめどき・資金管理は個人のルールに従う。勝てる保証はない。</li>
+        </ul>
+      </div>
+    </div>
+  </details>
+
+  <div class="session-bar">
+    <span class="hint">セッションは端末の localStorage のみ（クラウド送信なし）</span>
+    <button type="button" class="ghost" id="sessionReset">セッションリセット</button>
+    <button type="button" class="ghost" id="exportJson">JSON書出</button>
+    <button type="button" class="ghost" id="importJson">JSON読込</button>
+    <input type="file" id="importFile" accept="application/json,.json" hidden />
+  </div>
+
+  <footer>
+    <strong>GlockBOT 0.1.0</strong>
+    <span>Lヤバチバ（非公式メモ）・解析値は変動しうる・メーカー公式の全数値公表ではない</span>
+    <span>煽り／「勝てる」断定禁止・個人収支・店舗名は送信しない</span>
+  </footer>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  /**
+   * Lead / close logic (documented for selfcheck):
+   * - remainingG = max(0, G_CAP - g)
+   * - remainingCherry = max(0, cherryCap - cherry)
+   * - progress = current / cap (clamped 0..1+ for display width max 100%)
+   * - "close": remaining ≤ 10% of cap  OR  ≤50G / ≤5 cherry
+   * - Compare progress ratios: higher = closer to ceiling → that side leads
+   * - If ratios nearly equal (|diff| < 0.03):
+   *     both close → 「ほぼ同時」
+   *     else → 「どちらも余裕」
+   * - If neither side is close AND both progress < 0.55 → 「どちらも余裕」
+   * - Else higher progress wins: 「G先」 / 「チェリー先」
+   */
+  var VERSION = "GlockBOT 0.1.0";
+  var STORAGE_KEY = "yabachiba-memo-0.1";
+
+  var MACHINE = {
+    name: "Lヤバチバ",
+    formalName: "LヤバチバZM",
+    maker: "ネット／製造オーゼキ",
+    type: "スマスロ AT",
+    pureInc: "約6.0枚/G",
+    coinYen: "約5.7円",
+    introNote: "2026-07-06 前後",
+    firstHit: "1/398（全設定共通・判別に使わない）",
+    gCap: 999,
+    cherryCapNormal: 40,
+    cherryCapAfterSettingChange: 30,
+    bellFocusRates: {
+      "1": "1/7163",
+      "2": "1/6509",
+      "3": "—",
+      "4": "1/3643",
+      "5": "1/2906",
+      "6": "1/1767"
+    },
+    payout: {
+      "1": "97.1%",
+      "2": "98.3%",
+      "3": "—",
+      "4": "102.9%",
+      "5": "105.1%",
+      "6": "110.1%"
+    }
+  };
+
+  var CLOSE_G_ABS = 50;
+  var CLOSE_CHERRY_ABS = 5;
+  var CLOSE_RATIO = 0.10;
+  var EQUAL_EPS = 0.03;
+  var ROOMY_PROGRESS = 0.55;
+
+  function remainingG(g) {
+    return Math.max(0, MACHINE.gCap - (Number(g) || 0));
+  }
+  function remainingCherry(cherry, cherryCap) {
+    return Math.max(0, cherryCap - (Number(cherry) || 0));
+  }
+  function isCloseG(remG) {
+    return remG <= CLOSE_G_ABS || remG <= MACHINE.gCap * CLOSE_RATIO;
+  }
+  function isCloseCherry(remC, cherryCap) {
+    return remC <= CLOSE_CHERRY_ABS || remC <= cherryCap * CLOSE_RATIO;
+  }
+
+  /**
+   * @returns {{ label: string, lead: 'g'|'cherry'|'both'|'tie', remG: number, remC: number, ratioG: number, ratioC: number }}
+   */
+  function computeLead(g, cherry, cherryCap) {
+    var gg = Math.max(0, Number(g) || 0);
+    var cc = Math.max(0, Number(cherry) || 0);
+    var cap = cherryCap || MACHINE.cherryCapNormal;
+    var remG = remainingG(gg);
+    var remC = remainingCherry(cc, cap);
+    var ratioG = gg / MACHINE.gCap;
+    var ratioC = cc / cap;
+    var closeG = isCloseG(remG);
+    var closeC = isCloseCherry(remC, cap);
+    var diff = Math.abs(ratioG - ratioC);
+
+    if (diff < EQUAL_EPS) {
+      if (closeG && closeC) {
+        return { label: "ほぼ同時", lead: "tie", remG: remG, remC: remC, ratioG: ratioG, ratioC: ratioC };
+      }
+      return { label: "どちらも余裕", lead: "both", remG: remG, remC: remC, ratioG: ratioG, ratioC: ratioC };
+    }
+
+    if (!closeG && !closeC && ratioG < ROOMY_PROGRESS && ratioC < ROOMY_PROGRESS) {
+      return { label: "どちらも余裕", lead: "both", remG: remG, remC: remC, ratioG: ratioG, ratioC: ratioC };
+    }
+
+    if (ratioC > ratioG) {
+      return { label: "チェリー先", lead: "cherry", remG: remG, remC: remC, ratioG: ratioG, ratioC: ratioC };
+    }
+    return { label: "G先", lead: "g", remG: remG, remC: remC, ratioG: ratioG, ratioC: ratioC };
+  }
+
+  function cherryCapFromFlag(settingChange) {
+    return settingChange ? MACHINE.cherryCapAfterSettingChange : MACHINE.cherryCapNormal;
+  }
+
+  // Expose for selfcheck / console
+  var API = {
+    VERSION: VERSION,
+    MACHINE: MACHINE,
+    remainingG: remainingG,
+    remainingCherry: remainingCherry,
+    computeLead: computeLead,
+    cherryCapFromFlag: cherryCapFromFlag,
+    CLOSE_G_ABS: CLOSE_G_ABS,
+    CLOSE_CHERRY_ABS: CLOSE_CHERRY_ABS,
+    CLOSE_RATIO: CLOSE_RATIO,
+    EQUAL_EPS: EQUAL_EPS
+  };
+  if (typeof window !== "undefined") {
+    window.YabachibaMemo = API;
+  }
+  if (typeof module !== "undefined" && module.exports) {
+    module.exports = API;
+  }
+
+  // ---- DOM wiring (skipped in bare Node vm without elements) ----
+  function $(id) { return document.getElementById(id); }
+  if (typeof document === "undefined" || !$("gSlider")) {
+    return;
+  }
+
+  var state = {
+    g: 0,
+    cherry: 0,
+    settingChange: false,
+    bellCount: 0,
+    hanagasa: 0,
+    niji7: 0
+  };
+
+  function clampInt(v, min, max) {
+    var n = parseInt(v, 10);
+    if (isNaN(n)) n = min;
+    return Math.max(min, Math.min(max, n));
+  }
+
+  function renderRates() {
+    var tb = document.querySelector("#ratesTable tbody");
+    if (!tb) return;
+    var order = ["1", "2", "3", "4", "5", "6"];
+    tb.innerHTML = order.map(function (s) {
+      return "<tr><td>" + s + "</td><td>" + MACHINE.bellFocusRates[s] + "</td><td>" + MACHINE.payout[s] + "</td></tr>";
+    }).join("");
+  }
+
+  function render() {
+    var cap = cherryCapFromFlag(state.settingChange);
+    var lead = computeLead(state.g, state.cherry, cap);
+
+    $("displayG").textContent = String(state.g);
+    $("displayCherry").textContent = String(state.cherry);
+    $("remainG").textContent = String(lead.remG);
+    $("remainCherry").textContent = String(lead.remC);
+    $("cherryCapLabel").textContent = String(cap);
+    $("cherryCapLabel2").textContent = String(cap);
+
+    var pctG = Math.min(100, (state.g / MACHINE.gCap) * 100);
+    var pctC = Math.min(100, (state.cherry / cap) * 100);
+    $("fillG").style.width = pctG.toFixed(2) + "%";
+    $("fillCherry").style.width = pctC.toFixed(2) + "%";
+    $("pctG").textContent = Math.round(pctG) + "%";
+    $("pctCherry").textContent = Math.round(pctC) + "%";
+
+    $("gSlider").value = String(Math.min(1200, state.g));
+    $("gInput").value = String(state.g);
+    $("cherrySlider").max = String(Math.max(50, cap + 10));
+    $("cherrySlider").value = String(state.cherry);
+    $("settingChange").checked = !!state.settingChange;
+    $("settingChangeWrap").classList.toggle("on", !!state.settingChange);
+    $("bellCount").value = String(state.bellCount);
+    $("hanagasa").value = String(state.hanagasa);
+    $("niji7").value = String(state.niji7);
+
+    var banner = $("leadBanner");
+    banner.textContent = lead.label;
+    banner.className = "lead-banner " + (lead.lead === "g" ? "g" : lead.lead === "cherry" ? "cherry" : lead.lead === "tie" ? "tie" : "both");
+
+    var cardG = $("cardG");
+    var cardC = $("cardCherry");
+    var barG = $("barGBlock");
+    var barC = $("barCherryBlock");
+    [cardG, cardC, barG, barC].forEach(function (el) {
+      el.classList.remove("lead", "lead-g", "lead-cherry");
+    });
+    if (lead.lead === "g") {
+      cardG.classList.add("lead", "lead-g");
+      barG.classList.add("lead", "lead-g");
+    } else if (lead.lead === "cherry") {
+      cardC.classList.add("lead", "lead-cherry");
+      barC.classList.add("lead", "lead-cherry");
+    } else if (lead.lead === "tie") {
+      cardG.classList.add("lead", "lead-g");
+      cardC.classList.add("lead", "lead-cherry");
+      barG.classList.add("lead", "lead-g");
+      barC.classList.add("lead", "lead-cherry");
+    }
+  }
+
+  function save() {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    } catch (e) { /* ignore quota */ }
+  }
+
+  function load() {
+    try {
+      var raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return;
+      var o = JSON.parse(raw);
+      if (o && typeof o === "object") {
+        state.g = clampInt(o.g, 0, 9999);
+        state.cherry = clampInt(o.cherry, 0, 99);
+        state.settingChange = !!o.settingChange;
+        state.bellCount = clampInt(o.bellCount, 0, 99);
+        state.hanagasa = clampInt(o.hanagasa, 0, 10);
+        state.niji7 = clampInt(o.niji7, 0, 99);
+      }
+    } catch (e) { /* ignore */ }
+  }
+
+  function setG(v) {
+    state.g = clampInt(v, 0, 9999);
+    render();
+    save();
+  }
+  function setCherry(v) {
+    state.cherry = clampInt(v, 0, 99);
+    render();
+    save();
+  }
+
+  $("gSlider").addEventListener("input", function () {
+    setG(this.value);
+  });
+  $("gInput").addEventListener("change", function () {
+    setG(this.value);
+  });
+  $("gInput").addEventListener("keydown", function (e) {
+    if (e.key === "Enter") setG(this.value);
+  });
+  document.querySelectorAll("[data-g]").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      setG(state.g + Number(btn.getAttribute("data-g")));
+    });
+  });
+  $("cherryPlus").addEventListener("click", function () { setCherry(state.cherry + 1); });
+  $("cherryMinus").addEventListener("click", function () { setCherry(state.cherry - 1); });
+  $("cherrySlider").addEventListener("input", function () {
+    setCherry(this.value);
+  });
+  $("settingChange").addEventListener("change", function () {
+    state.settingChange = !!this.checked;
+    render();
+    save();
+  });
+  $("bellCount").addEventListener("change", function () {
+    state.bellCount = clampInt(this.value, 0, 99);
+    save();
+  });
+  $("hanagasa").addEventListener("change", function () {
+    state.hanagasa = clampInt(this.value, 0, 10);
+    save();
+  });
+  $("niji7").addEventListener("change", function () {
+    state.niji7 = clampInt(this.value, 0, 99);
+    save();
+  });
+
+  $("resetG").addEventListener("click", function () { setG(0); });
+  $("resetCherry").addEventListener("click", function () { setCherry(0); });
+  $("resetBoth").addEventListener("click", function () {
+    state.g = 0;
+    state.cherry = 0;
+    render();
+    save();
+  });
+
+  $("sessionReset").addEventListener("click", function () {
+    state = { g: 0, cherry: 0, settingChange: false, bellCount: 0, hanagasa: 0, niji7: 0 };
+    try { localStorage.removeItem(STORAGE_KEY); } catch (e) {}
+    render();
+  });
+
+  $("exportJson").addEventListener("click", function () {
+    var blob = new Blob([JSON.stringify({ version: VERSION, machine: MACHINE.name, state: state }, null, 2)], { type: "application/json" });
+    var a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "yabachiba-memo-session.json";
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(function () {
+      URL.revokeObjectURL(a.href);
+      a.remove();
+    }, 500);
+  });
+
+  $("importJson").addEventListener("click", function () {
+    $("importFile").click();
+  });
+  $("importFile").addEventListener("change", function () {
+    var file = this.files && this.files[0];
+    this.value = "";
+    if (!file) return;
+    var reader = new FileReader();
+    reader.onload = function () {
+      try {
+        var o = JSON.parse(String(reader.result));
+        var s = o.state || o;
+        state.g = clampInt(s.g, 0, 9999);
+        state.cherry = clampInt(s.cherry, 0, 99);
+        state.settingChange = !!s.settingChange;
+        state.bellCount = clampInt(s.bellCount, 0, 99);
+        state.hanagasa = clampInt(s.hanagasa, 0, 10);
+        state.niji7 = clampInt(s.niji7, 0, 99);
+        render();
+        save();
+      } catch (err) {
+        alert("JSONの読み込みに失敗しました");
+      }
+    };
+    reader.readAsText(file);
+  });
+
+  renderRates();
+  load();
+  render();
+})();
+</script>
+</body>
+</html>
