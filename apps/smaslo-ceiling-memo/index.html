@@ -1,0 +1,1460 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>天井メモ（スマスロ） — GlockBOT 0.1.0</title>
+<style>
+:root {
+  --bg: #0f1419;
+  --panel: #1a2332;
+  --panel2: #243044;
+  --ink: #f0f4f8;
+  --muted: #9aa8b8;
+  --line: #3a4a5c;
+  --g: #3db8ff;
+  --g-soft: #1a3a52;
+  --c2: #ff6b8a;
+  --c2-soft: #4a1f2e;
+  --warm: #ffb020;
+  --warm-soft: #4a3810;
+  --ok: #5ecf7a;
+  --danger: #ff5c5c;
+  --thumb: 28px;
+  --radius: 12px;
+  --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --tab-h: 48px;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; min-height: 100%; }
+body {
+  font-family: "Hiragino Kaku Gothic ProN", "Yu Gothic UI", "Yu Gothic", "Meiryo", system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--ink);
+  font-size: clamp(14px, 1.1vw, 18px);
+  line-height: 1.4;
+}
+button, input, label, select { font: inherit; }
+button {
+  cursor: pointer;
+  border: 1px solid var(--line);
+  background: var(--panel2);
+  color: var(--ink);
+  border-radius: 10px;
+  padding: 0.55em 0.9em;
+  min-height: 44px;
+  touch-action: manipulation;
+}
+button:active { transform: scale(0.98); }
+button.primary {
+  background: var(--c2);
+  color: #1a0a10;
+  border-color: #ff8aa5;
+  font-weight: 700;
+}
+button.ghost { background: transparent; }
+button.danger-soft {
+  background: #3a2020;
+  border-color: #6a3030;
+  color: #ffb0b0;
+}
+select {
+  min-height: 40px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: #0a1018;
+  color: var(--ink);
+  padding: 0.35em 0.7em;
+}
+
+.app {
+  max-width: min(1400px, 100%);
+  margin: 0 auto;
+  padding: clamp(10px, 1.5vw, 28px) clamp(12px, 2vw, 36px) 20px;
+  display: flex;
+  flex-direction: column;
+  gap: clamp(10px, 1.2vw, 16px);
+  min-height: 100vh;
+}
+
+/* ===== Tabs (top fixed) ===== */
+.tabs {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+  background: var(--bg);
+  padding: 8px 0 10px;
+  border-bottom: 1px solid var(--line);
+  margin: 0 calc(-1 * clamp(12px, 2vw, 36px));
+  padding-left: clamp(12px, 2vw, 36px);
+  padding-right: clamp(12px, 2vw, 36px);
+}
+.tab {
+  min-height: var(--tab-h);
+  font-weight: 800;
+  font-size: clamp(0.85rem, 1.4vw, 1.05rem);
+  background: var(--panel);
+  border: 2px solid var(--line);
+  border-radius: 12px;
+  color: var(--muted);
+}
+.tab[aria-selected="true"] {
+  color: var(--ink);
+  border-color: var(--warm);
+  background: var(--warm-soft);
+  box-shadow: 0 0 0 2px rgba(255, 176, 32, 0.25);
+}
+
+header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 14px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--line);
+}
+header h1 {
+  margin: 0;
+  font-size: clamp(1.15rem, 2.2vw, 1.65rem);
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+.badge {
+  font-size: clamp(0.7rem, 0.9vw, 0.85rem);
+  color: var(--muted);
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 0.25em 0.75em;
+}
+.notice-short {
+  color: var(--muted);
+  font-size: clamp(0.72rem, 0.95vw, 0.88rem);
+  flex: 1 1 10rem;
+}
+.ceiling-ui {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.toggle-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 6px 12px 6px 8px;
+  user-select: none;
+  cursor: pointer;
+}
+.toggle-wrap input {
+  width: 1.25em;
+  height: 1.25em;
+  accent-color: var(--warm);
+}
+.toggle-wrap.on {
+  border-color: var(--warm);
+  background: var(--warm-soft);
+  color: var(--warm);
+  font-weight: 700;
+}
+.ceiling-ui label.sel-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.9em;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+/* ===== State board ===== */
+.board {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: clamp(12px, 1.5vw, 20px);
+  display: grid;
+  gap: clamp(10px, 1.2vw, 16px);
+}
+.big-nums {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: clamp(8px, 1.5vw, 20px);
+}
+.num-card {
+  background: var(--panel2);
+  border: 2px solid var(--line);
+  border-radius: var(--radius);
+  padding: clamp(10px, 1.2vw, 16px);
+  text-align: center;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.num-card.lead {
+  border-width: 3px;
+  box-shadow: 0 0 0 2px rgba(255, 176, 32, 0.35);
+}
+.num-card.lead-g {
+  border-color: var(--g);
+  background: linear-gradient(180deg, var(--g-soft), var(--panel2));
+}
+.num-card.lead-c2 {
+  border-color: var(--c2);
+  background: linear-gradient(180deg, var(--c2-soft), var(--panel2));
+}
+.num-card .label {
+  font-size: clamp(0.75rem, 1vw, 0.95rem);
+  color: var(--muted);
+  font-weight: 600;
+}
+.num-card .value {
+  font-family: var(--mono);
+  font-size: clamp(2.2rem, 6vw, 3.8rem);
+  font-weight: 800;
+  line-height: 1.05;
+  margin: 4px 0;
+}
+.num-card.lead-g .value { color: var(--g); }
+.num-card.lead-c2 .value { color: var(--c2); }
+.num-card .remain {
+  font-size: clamp(0.8rem, 1.1vw, 1rem);
+  color: var(--muted);
+}
+.num-card .tag-sen {
+  display: none;
+  margin-top: 6px;
+  font-size: clamp(0.75rem, 1vw, 0.9rem);
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  padding: 2px 10px;
+  border-radius: 6px;
+  background: var(--warm);
+  color: #1a1200;
+}
+.num-card.lead .tag-sen { display: inline-block; }
+
+.lead-banner {
+  text-align: center;
+  font-size: clamp(1.1rem, 2.4vw, 1.7rem);
+  font-weight: 800;
+  padding: 0.45em 0.8em;
+  border-radius: 10px;
+  border: 2px solid var(--line);
+  background: var(--panel2);
+  letter-spacing: 0.04em;
+}
+.lead-banner.g { border-color: var(--g); color: var(--g); background: var(--g-soft); }
+.lead-banner.c2 { border-color: var(--c2); color: var(--c2); background: var(--c2-soft); }
+.lead-banner.both { border-color: var(--ok); color: var(--ok); }
+.lead-banner.tie { border-color: var(--warm); color: var(--warm); background: var(--warm-soft); }
+
+.bars {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: clamp(10px, 1.5vw, 18px);
+}
+.bar-block {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.bar-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: clamp(0.75rem, 1vw, 0.9rem);
+  color: var(--muted);
+  font-weight: 600;
+}
+.bar-track {
+  height: clamp(18px, 2.2vw, 26px);
+  background: #0a1018;
+  border-radius: 999px;
+  overflow: hidden;
+  border: 2px solid var(--line);
+  position: relative;
+}
+.bar-block.lead .bar-track {
+  border-width: 3px;
+  border-color: var(--warm);
+}
+.bar-block.lead-g .bar-track { border-color: var(--g); }
+.bar-block.lead-c2 .bar-track { border-color: var(--c2); }
+.bar-fill {
+  height: 100%;
+  width: 0%;
+  border-radius: 999px;
+  transition: width 0.12s ease-out;
+  min-width: 0;
+}
+.bar-fill.g { background: linear-gradient(90deg, #1a6a9a, var(--g)); }
+.bar-fill.c2 { background: linear-gradient(90deg, color-mix(in srgb, var(--c2) 40%, #000), var(--c2)); }
+.bar-marks {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.bar-marks span {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: rgba(255,255,255,0.35);
+  transform: translateX(-50%);
+}
+.bar-pct {
+  font-family: var(--mono);
+  font-size: clamp(0.7rem, 0.95vw, 0.85rem);
+  color: var(--muted);
+}
+
+/* ===== Input band ===== */
+.inputs {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  gap: clamp(10px, 1.5vw, 18px);
+}
+.input-panel {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: clamp(10px, 1.2vw, 16px);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.input-panel h2 {
+  margin: 0;
+  font-size: clamp(0.9rem, 1.2vw, 1.1rem);
+  font-weight: 700;
+}
+.slider-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: var(--thumb);
+  background: transparent;
+  margin: 4px 0;
+}
+input[type="range"]::-webkit-slider-runnable-track {
+  height: 10px;
+  background: #0a1018;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: var(--thumb);
+  height: var(--thumb);
+  margin-top: -10px;
+  border-radius: 50%;
+  background: var(--g);
+  border: 3px solid #fff;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.45);
+  cursor: grab;
+}
+input[type="range"].c2::-webkit-slider-thumb { background: var(--c2); }
+input[type="range"]::-moz-range-track {
+  height: 10px;
+  background: #0a1018;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+}
+input[type="range"]::-moz-range-thumb {
+  width: var(--thumb);
+  height: var(--thumb);
+  border-radius: 50%;
+  background: var(--g);
+  border: 3px solid #fff;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.45);
+  cursor: grab;
+}
+input[type="range"].c2::-moz-range-thumb { background: var(--c2); }
+
+.btn-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+.btn-row .spacer { flex: 1; }
+.num-input {
+  width: 5.5em;
+  min-height: 44px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: #0a1018;
+  color: var(--ink);
+  font-family: var(--mono);
+  font-size: 1.1em;
+  text-align: center;
+  padding: 0.3em;
+}
+.c2-btns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.c2-btns button {
+  font-size: clamp(1.3rem, 2.5vw, 1.8rem);
+  font-weight: 800;
+  min-height: 64px;
+  padding: 0.4em;
+}
+.c2-btns .plus {
+  background: var(--c2);
+  color: #1a0a10;
+  border-color: color-mix(in srgb, var(--c2) 70%, #fff);
+}
+.c2-btns .minus {
+  background: var(--c2-soft);
+  color: var(--c2);
+  border-color: var(--c2);
+}
+.thin-slider { opacity: 0.85; }
+.thin-slider input[type="range"] { height: 22px; }
+.thin-slider input[type="range"]::-webkit-slider-thumb {
+  width: 22px; height: 22px; margin-top: -7px;
+}
+.reset-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 2px;
+}
+.reset-row button { font-size: 0.85em; min-height: 40px; }
+
+/* ===== Hints (示唆早見) ===== */
+details.hints, details.sec {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 0;
+}
+details.hints {
+  border-color: color-mix(in srgb, var(--warm) 45%, var(--line));
+}
+details.hints > summary,
+details.sec > summary {
+  cursor: pointer;
+  list-style: none;
+  padding: clamp(10px, 1.2vw, 14px) clamp(12px, 1.4vw, 16px);
+  font-weight: 700;
+  font-size: clamp(0.9rem, 1.15vw, 1.05rem);
+  color: var(--muted);
+  user-select: none;
+}
+details.hints > summary { color: var(--warm); }
+details.hints > summary::-webkit-details-marker,
+details.sec > summary::-webkit-details-marker { display: none; }
+details.hints > summary::before,
+details.sec > summary::before {
+  content: "▸ ";
+  color: var(--warm);
+}
+details.hints[open] > summary::before,
+details.sec[open] > summary::before { content: "▾ "; }
+details.hints[open] > summary,
+details.sec[open] > summary {
+  color: var(--ink);
+  border-bottom: 1px solid var(--line);
+}
+.hints-body, .sec-body {
+  padding: clamp(10px, 1.2vw, 16px);
+  display: grid;
+  gap: 14px;
+}
+.hint-section-title {
+  margin: 0;
+  font-size: 0.95em;
+  font-weight: 800;
+  color: var(--ink);
+}
+.hint-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 10px;
+}
+.hint-card {
+  background: var(--panel2);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 10px 12px;
+  display: grid;
+  gap: 6px;
+}
+.hint-card .when {
+  font-size: clamp(0.95rem, 1.3vw, 1.15rem);
+  font-weight: 800;
+  line-height: 1.25;
+}
+.hint-card .means {
+  font-size: clamp(0.8rem, 1vw, 0.95rem);
+  color: var(--muted);
+}
+.strength {
+  display: inline-block;
+  font-size: 0.72em;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  width: fit-content;
+}
+.strength.s-濃厚 { background: #4a2010; border-color: #ff8a40; color: #ffb080; }
+.strength.s-示唆 { background: #1a3a52; border-color: var(--g); color: var(--g); }
+.strength.s-弱 { background: #2a2a32; border-color: var(--muted); color: var(--muted); }
+.strength.s-調査中 { background: #3a3820; border-color: var(--warm); color: var(--warm); }
+.hint-footnote {
+  font-size: clamp(0.78rem, 0.95vw, 0.9rem);
+  color: var(--muted);
+  margin: 0;
+  padding: 8px 10px;
+  background: #0a1018;
+  border-radius: 8px;
+  border: 1px dashed var(--line);
+}
+
+.sec-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+}
+.field label {
+  display: block;
+  font-size: 0.85em;
+  color: var(--muted);
+  margin-bottom: 4px;
+  font-weight: 600;
+}
+.field input[type="number"] {
+  width: 100%;
+  min-height: 40px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: #0a1018;
+  color: var(--ink);
+  font-family: var(--mono);
+  padding: 0.35em 0.6em;
+}
+table.rates {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: clamp(0.78rem, 1vw, 0.92rem);
+}
+table.rates th, table.rates td {
+  border: 1px solid var(--line);
+  padding: 0.45em 0.6em;
+  text-align: center;
+}
+table.rates th { background: var(--panel2); color: var(--muted); font-weight: 600; }
+table.rates td { font-family: var(--mono); }
+.notes {
+  font-size: clamp(0.8rem, 1vw, 0.95rem);
+  color: var(--muted);
+  margin: 0;
+  padding-left: 1.2em;
+}
+.notes li { margin-bottom: 0.35em; }
+
+.session-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 10px 12px;
+}
+.session-bar .hint {
+  color: var(--muted);
+  font-size: 0.85em;
+  flex: 1 1 10rem;
+}
+footer {
+  margin-top: auto;
+  padding-top: 8px;
+  border-top: 1px solid var(--line);
+  font-size: clamp(0.7rem, 0.9vw, 0.82rem);
+  color: var(--muted);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  align-items: baseline;
+}
+footer strong { color: var(--ink); }
+
+@media (max-width: 720px) {
+  .inputs { grid-template-columns: 1fr; }
+  .bars { grid-template-columns: 1fr; }
+  .big-nums { grid-template-columns: 1fr 1fr; }
+  .tabs { grid-template-columns: 1fr; }
+}
+@media (max-width: 420px) {
+  .big-nums { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <nav class="tabs" role="tablist" aria-label="機種タブ">
+    <button type="button" class="tab" role="tab" data-machine="yabachiba" aria-selected="true">ヤバチバ</button>
+    <button type="button" class="tab" role="tab" data-machine="chibariyo2" aria-selected="false">チバリヨ2</button>
+    <button type="button" class="tab" role="tab" data-machine="nangoku-sp" aria-selected="false">南国SPECIAL</button>
+  </nav>
+
+  <header>
+    <h1 id="appTitle">ヤバチバ メモ</h1>
+    <span class="badge">GlockBOT 0.1.0</span>
+    <span class="notice-short">非公式・解析値は変動しうる／店内メモ用・煽り禁止</span>
+    <div class="ceiling-ui" id="ceilingUi"></div>
+  </header>
+
+  <section class="board" aria-label="状態ボード">
+    <div class="big-nums">
+      <div class="num-card" id="cardG">
+        <div class="label">現在G</div>
+        <div class="value" id="displayG">0</div>
+        <div class="remain">残り <span id="remainG">999</span> G ／ 天井 <span id="gCapLabel">999</span></div>
+        <span class="tag-sen">先</span>
+      </div>
+      <div class="num-card" id="cardC2">
+        <div class="label" id="c2CardLabel">チェリー回数</div>
+        <div class="value" id="displayC2">0</div>
+        <div class="remain">残り <span id="remainC2">40</span> ／ 天井 <span id="c2CapLabel">40</span></div>
+        <span class="tag-sen">先</span>
+      </div>
+    </div>
+
+    <div class="lead-banner both" id="leadBanner" role="status">どちらも余裕</div>
+
+    <div class="bars">
+      <div class="bar-block" id="barGBlock">
+        <div class="bar-head">
+          <span>G進捗（→<span id="gCapLabel2">999</span>）</span>
+          <span class="bar-pct" id="pctG">0%</span>
+        </div>
+        <div class="bar-track"><div class="bar-fill g" id="fillG"></div></div>
+      </div>
+      <div class="bar-block" id="barC2Block">
+        <div class="bar-head">
+          <span><span id="c2BarLabel">チェリー</span>進捗（→<span id="c2CapLabel2">40</span>）</span>
+          <span class="bar-pct" id="pctC2">0%</span>
+        </div>
+        <div class="bar-track">
+          <div class="bar-fill c2" id="fillC2"></div>
+          <div class="bar-marks" id="c2Marks" hidden></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="inputs" aria-label="入力">
+    <div class="input-panel">
+      <h2>ゲーム数（スライダー主）</h2>
+      <div class="slider-row">
+        <input type="range" id="gSlider" min="0" max="1200" value="0" step="1" aria-label="ゲーム数スライダー" />
+      </div>
+      <div class="btn-row">
+        <button type="button" data-g="-10">−10</button>
+        <button type="button" data-g="-1">−1</button>
+        <button type="button" data-g="1">+1</button>
+        <button type="button" data-g="10">+10</button>
+        <span class="spacer"></span>
+        <input type="number" class="num-input" id="gInput" min="0" max="9999" value="0" inputmode="numeric" aria-label="ゲーム数直接入力" />
+      </div>
+    </div>
+    <div class="input-panel">
+      <h2 id="c2InputTitle">チェリー（+1/−1 主）</h2>
+      <div class="c2-btns">
+        <button type="button" class="minus" id="c2Minus" aria-label="第2カウンタ−1">−1</button>
+        <button type="button" class="plus" id="c2Plus" aria-label="第2カウンタ+1">+1</button>
+      </div>
+      <div class="thin-slider slider-row">
+        <input type="range" class="c2" id="c2Slider" min="0" max="50" value="0" step="1" aria-label="第2カウンタスライダー" />
+      </div>
+    </div>
+  </section>
+
+  <div class="reset-row">
+    <button type="button" class="ghost" id="resetG">Gのみリセット</button>
+    <button type="button" class="ghost" id="resetC2">第2のみリセット</button>
+    <button type="button" class="danger-soft" id="resetBoth">両方リセット</button>
+  </div>
+
+  <details class="hints" id="hintsPanel">
+    <summary>示唆早見（見たもの → 意味）</summary>
+    <div class="hints-body" id="hintsBody"></div>
+  </details>
+
+  <details class="sec" id="deepPanel">
+    <summary>副次メモ（設定表・立ち回り・任意カウンタ）</summary>
+    <div class="sec-body" id="deepBody"></div>
+  </details>
+
+  <div class="session-bar">
+    <span class="hint">機種別 localStorage（タブ切替でも保持）／クラウド送信なし</span>
+    <button type="button" class="ghost" id="sessionReset">当該機種リセット</button>
+    <button type="button" class="ghost" id="exportJson">全機種JSON書出</button>
+    <button type="button" class="ghost" id="importJson">全機種JSON読込</button>
+    <input type="file" id="importFile" accept="application/json,.json" hidden />
+  </div>
+
+  <footer>
+    <strong>GlockBOT 0.1.0</strong>
+    <span>スマスロ天井メモ（非公式）・解析値は変動しうる・メーカー公式の全数値公表ではない</span>
+    <span>煽り禁止・「設定○」断定なし・個人収支・店舗名は送信しない</span>
+  </footer>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  /**
+   * localStorage key scheme (documented for selfcheck):
+   *   smaslo-ceiling-memo:v1:<machineId>  — per-machine counters / modes
+   *   smaslo-ceiling-memo:v1:activeTab    — last active machine id
+   * machineId ∈ { yabachiba, chibariyo2, nangoku-sp }
+   *
+   * Lead / close logic (generalized from yabachiba-memo):
+   * - remG = max(0, gCap - g); remC2 = max(0, c2Cap - c2)
+   * - progress = current / cap
+   * - close G: rem ≤ 10% of gCap OR ≤50G
+   * - close c2 cherry-scale (cap≥20): rem ≤ 10% OR ≤5
+   * - close c2 suika-scale (cap≤9): rem ≤ 10% OR ≤1
+   * - Compare progress ratios; |diff| < 0.03 → ほぼ同時 / どちらも余裕
+   * - Labels: 「G先」／「{c2Label}先」／「どちらも余裕」／「ほぼ同時」
+   */
+  var VERSION = "GlockBOT 0.1.0";
+  var LS_PREFIX = "smaslo-ceiling-memo:v1:";
+  var LS_ACTIVE = LS_PREFIX + "activeTab";
+
+  var CLOSE_G_ABS = 50;
+  var CLOSE_CHERRY_ABS = 5;
+  var CLOSE_SUIKA_ABS = 1;
+  var CLOSE_RATIO = 0.10;
+  var EQUAL_EPS = 0.03;
+  var ROOMY_PROGRESS = 0.55;
+
+  var MACHINES = {
+    yabachiba: {
+      id: "yabachiba",
+      label: "ヤバチバ",
+      title: "ヤバチバ メモ",
+      formalName: "LヤバチバZM",
+      colorC2: "#ff6b8a",
+      colorC2Soft: "#4a1f2e",
+      gCapModes: [{ id: "normal999", label: "通常999", gCap: 999 }],
+      defaultGCapMode: "normal999",
+      counter2: {
+        label: "チェリー",
+        unit: "回",
+        max: 50,
+        capNormal: 40,
+        settingChangeCap: 30,
+        hasSettingChangeToggle: true,
+        marks: null
+      },
+      hints: [
+        { when: "花笠ランプ 点灯／点滅", means: "ストック・継続・次回ボーナス寄り示唆（パターンで強弱）", strength: "示唆", section: "mode" },
+        { when: "ボーナス入賞時 バックランプ色", means: "継続・次回ボーナスの色示唆", strength: "示唆", section: "mode" },
+        { when: "終了時 トップランプ色", means: "次回モード／継続寄り（色で差）", strength: "示唆", section: "mode" },
+        { when: "虹7関連演出", means: "上位AT寄り（短い目安・断定しない）", strength: "弱", section: "mode" },
+        { when: "花笠詳細パターン表", means: "サイト間で揺れあり・本メモは概要のみ", strength: "調査中", section: "mode" }
+      ],
+      footnotes: ["天井は 999G+α または チェリー40（設定変更後30）の先着。"],
+      deep: {
+        optionalCounters: [
+          { key: "bellCount", label: "ベル集中 突入回数（任意）", min: 0, max: 99 },
+          { key: "hanagasa", label: "花笠（0〜10・任意）", min: 0, max: 10 },
+          { key: "niji7", label: "虹7チャレンジ 残り（任意）", min: 0, max: 99 }
+        ],
+        ratesTitle: "設定別 ベル集中突入率・機械割（解析値・参考）",
+        ratesHeaders: ["設定", "ベル集中突入率（約）", "機械割"],
+        rates: [
+          ["1", "1/7163", "97.1%"],
+          ["2", "1/6509", "98.3%"],
+          ["3", "—", "—"],
+          ["4", "1/3643", "102.9%"],
+          ["5", "1/2906", "105.1%"],
+          ["6", "1/1767", "110.1%"]
+        ],
+        ratesNote: "設定3は未公表のため「—」。初当りは全設定共通 1/398（判別に使わない）。",
+        strategy: [
+          "天井は 999G+α または チェリー40回（先着）。設定変更後はチェリー天井 30回。",
+          "本機は内部モード／ゾーンが表に出にくい。主に G×チェリーの進捗で状態を把握する。",
+          "ハイエナは「残りが少ない側」を優先して判断材料にする。断定はしない。",
+          "やめどき・資金管理は個人のルールに従う。勝てる保証はない。"
+        ]
+      }
+    },
+    chibariyo2: {
+      id: "chibariyo2",
+      label: "チバリヨ2",
+      title: "チバリヨ2 メモ",
+      formalName: "Lチバリヨ2ZB",
+      colorC2: "#ff6b8a",
+      colorC2Soft: "#4a1f2e",
+      gCapModes: [
+        { id: "normal999", label: "通常999", gCap: 999 },
+        { id: "reset350", label: "リセット350", gCap: 350 },
+        { id: "reset600", label: "リセット600", gCap: 600 }
+      ],
+      defaultGCapMode: "normal999",
+      counter2: {
+        label: "チェリー",
+        unit: "回",
+        max: 55,
+        capNormal: 45,
+        altCap: 40,
+        altCapToggleLabel: "通常系40",
+        hasAltCapToggle: true,
+        marks: null
+      },
+      hints: [
+        { when: "花笠点灯時ボイス", means: "ループ率帯・SBB寄りなどボイスで差（照合用）", strength: "示唆", section: "mode" },
+        { when: "トップランプ 青点滅", means: "継続寄り", strength: "示唆", section: "mode" },
+        { when: "トップランプ 虹", means: "継続かつ高ループ寄り", strength: "濃厚", section: "mode" },
+        { when: "単チェ／SBB／小スベリ非当選", means: "通常B以上寄り（断定しない）", strength: "示唆", section: "mode" },
+        { when: "詳細ボイス一覧", means: "サイト間で揺れ・調査中", strength: "調査中", section: "mode" }
+      ],
+      footnotes: ["ボーナス後32Gやめ目安（疑似も数える／データカウンタ非反映の注意）。"],
+      deep: {
+        optionalCounters: [],
+        ratesTitle: "機械割・初当り（プレースホルダ・解析値は要確認）",
+        ratesHeaders: ["設定", "初当り（約）", "機械割"],
+        rates: [
+          ["1", "要確認", "—"],
+          ["2", "要確認", "—"],
+          ["4", "要確認", "—"],
+          ["5", "要確認", "—"],
+          ["6", "要確認", "—"],
+          ["L", "要確認", "—"]
+        ],
+        ratesNote: "設定表はプレースホルダ。最新解析で埋めること。",
+        strategy: [
+          "天井: 通常999G+α または チェリー45（通常系40説あり・トグル可）。リセット後は350 or 600。",
+          "狙い目目安（暫定・煽りなし）: 等価・持ちメダル 550G〜、現金5.6枚 600G〜 等。自己判断。",
+          "電源OFF→ONは天井・内部状態を引き継ぐ（注記のみ）。",
+          "チバリヨ2プラス（アゲイン等）は別機種。本タブ対象外。"
+        ]
+      }
+    },
+    "nangoku-sp": {
+      id: "nangoku-sp",
+      label: "南国SPECIAL",
+      title: "南国 SPECIAL メモ",
+      formalName: "L南国育ちSPM1",
+      colorC2: "#5ecf7a",
+      colorC2Soft: "#1a3a28",
+      gCapModes: [
+        { id: "normal799", label: "通常799", gCap: 799 },
+        { id: "short500", label: "短縮500", gCap: 500 }
+      ],
+      defaultGCapMode: "normal799",
+      counter2: {
+        label: "スイカ",
+        unit: "回",
+        max: 9,
+        capNormal: 9,
+        marks: [3, 5, 7],
+        markNote: "3/5/7 期待度約33%・9=濃厚（解析値）"
+      },
+      hints: [
+        { when: "バタフライ終了 リールフラッシュ 青", means: "弱示唆（モード寄りは小さい）", strength: "弱", section: "mode" },
+        { when: "バタフライ終了 リールフラッシュ 緑", means: "強示唆", strength: "示唆", section: "mode" },
+        { when: "バタフライ終了 リールフラッシュ 赤", means: "通常B以上寄り", strength: "示唆", section: "mode" },
+        { when: "バタフライ終了 リールフラッシュ 虹", means: "（超）飛翔寄り", strength: "濃厚", section: "mode" },
+        { when: "PUSHボイス「可!」", means: "設定示唆（判別用・モードではない）", strength: "弱", section: "setting" },
+        { when: "PUSHボイス「良!」", means: "設定示唆（判別用）", strength: "示唆", section: "setting" },
+        { when: "PUSHボイス「極み!」", means: "高設定寄り示唆（断定しない）", strength: "濃厚", section: "setting" },
+        { when: "リプフラ発生率表", means: "調査・参考（サイト間揺れ）", strength: "調査中", section: "mode" }
+      ],
+      footnotes: ["ときめき後やめ目安／赤・虹フラッシュは続行寄り（自己判断）。"],
+      deep: {
+        optionalCounters: [
+          { key: "throughCount", label: "スルー回数（任意・絶対天井なし）", min: 0, max: 99 }
+        ],
+        ratesTitle: "機械割・初当り（プレースホルダ・設3なし）",
+        ratesHeaders: ["設定", "初当り（約）", "機械割"],
+        rates: [
+          ["1", "要確認", "—"],
+          ["2", "要確認", "—"],
+          ["4", "要確認", "—"],
+          ["5", "要確認", "—"],
+          ["6", "要確認", "—"],
+          ["L", "要確認", "—"]
+        ],
+        ratesNote: "設定表はプレースホルダ。最新解析で埋めること。",
+        strategy: [
+          "天井: 通常799G+α／リセット・（超）飛翔後は500G+α。スイカ9回目ボーナス濃厚。",
+          "狙い目目安（暫定）: 等価 通常450〜500G〜／短縮時250G〜／5〜6スルー〜。煽りなし・自己判断。",
+          "スルーに絶対天井はない。任意カウンタはメモ用のみ。",
+          "やめどき・資金管理は個人のルールに従う。"
+        ]
+      }
+    }
+  };
+
+  function machineIds() {
+    return Object.keys(MACHINES);
+  }
+
+  function getMachine(id) {
+    return MACHINES[id] || MACHINES.yabachiba;
+  }
+
+  function resolveGCap(m, gCapMode) {
+    var modes = m.gCapModes || [];
+    for (var i = 0; i < modes.length; i++) {
+      if (modes[i].id === gCapMode) return modes[i].gCap;
+    }
+    return modes[0] ? modes[0].gCap : 999;
+  }
+
+  function resolveC2Cap(m, state) {
+    var c = m.counter2;
+    if (c.hasSettingChangeToggle && state.settingChange) {
+      return c.settingChangeCap;
+    }
+    if (c.hasAltCapToggle && state.altCap) {
+      return c.altCap;
+    }
+    return c.capNormal;
+  }
+
+  function remainingG(g, gCap) {
+    return Math.max(0, gCap - (Number(g) || 0));
+  }
+  function remainingC2(c2, c2Cap) {
+    return Math.max(0, c2Cap - (Number(c2) || 0));
+  }
+  function isCloseG(remG, gCap) {
+    return remG <= CLOSE_G_ABS || remG <= gCap * CLOSE_RATIO;
+  }
+  function isCloseC2(remC, c2Cap) {
+    var abs = c2Cap <= 9 ? CLOSE_SUIKA_ABS : CLOSE_CHERRY_ABS;
+    return remC <= abs || remC <= c2Cap * CLOSE_RATIO;
+  }
+
+  /**
+   * @returns {{ label: string, lead: 'g'|'c2'|'both'|'tie', remG: number, remC: number, ratioG: number, ratioC: number }}
+   */
+  function computeLead(g, c2, gCap, c2Cap, c2Label) {
+    var gg = Math.max(0, Number(g) || 0);
+    var cc = Math.max(0, Number(c2) || 0);
+    var gC = gCap || 999;
+    var cC = c2Cap || 40;
+    var labelC2 = c2Label || "第2";
+    var remG = remainingG(gg, gC);
+    var remC = remainingC2(cc, cC);
+    var ratioG = gC > 0 ? gg / gC : 0;
+    var ratioC = cC > 0 ? cc / cC : 0;
+    var closeG = isCloseG(remG, gC);
+    var closeC = isCloseC2(remC, cC);
+    var diff = Math.abs(ratioG - ratioC);
+
+    if (diff < EQUAL_EPS) {
+      if (closeG && closeC) {
+        return { label: "ほぼ同時", lead: "tie", remG: remG, remC: remC, ratioG: ratioG, ratioC: ratioC };
+      }
+      return { label: "どちらも余裕", lead: "both", remG: remG, remC: remC, ratioG: ratioG, ratioC: ratioC };
+    }
+
+    if (!closeG && !closeC && ratioG < ROOMY_PROGRESS && ratioC < ROOMY_PROGRESS) {
+      return { label: "どちらも余裕", lead: "both", remG: remG, remC: remC, ratioG: ratioG, ratioC: ratioC };
+    }
+
+    if (ratioC > ratioG) {
+      return { label: labelC2 + "先", lead: "c2", remG: remG, remC: remC, ratioG: ratioG, ratioC: ratioC };
+    }
+    return { label: "G先", lead: "g", remG: remG, remC: remC, ratioG: ratioG, ratioC: ratioC };
+  }
+
+  function defaultState(m) {
+    var s = {
+      g: 0,
+      c2: 0,
+      gCapMode: m.defaultGCapMode,
+      settingChange: false,
+      altCap: false
+    };
+    var opts = (m.deep && m.deep.optionalCounters) || [];
+    for (var i = 0; i < opts.length; i++) {
+      s[opts[i].key] = 0;
+    }
+    return s;
+  }
+
+  var API = {
+    VERSION: VERSION,
+    LS_PREFIX: LS_PREFIX,
+    LS_ACTIVE: LS_ACTIVE,
+    MACHINES: MACHINES,
+    machineIds: machineIds,
+    resolveGCap: resolveGCap,
+    resolveC2Cap: resolveC2Cap,
+    remainingG: remainingG,
+    remainingC2: remainingC2,
+    isCloseG: isCloseG,
+    isCloseC2: isCloseC2,
+    computeLead: computeLead,
+    defaultState: defaultState,
+    CLOSE_G_ABS: CLOSE_G_ABS,
+    CLOSE_CHERRY_ABS: CLOSE_CHERRY_ABS,
+    CLOSE_SUIKA_ABS: CLOSE_SUIKA_ABS,
+    CLOSE_RATIO: CLOSE_RATIO,
+    EQUAL_EPS: EQUAL_EPS
+  };
+  if (typeof window !== "undefined") {
+    window.SmasloCeilingMemo = API;
+  }
+  if (typeof module !== "undefined" && module.exports) {
+    module.exports = API;
+  }
+
+  function $(id) { return document.getElementById(id); }
+  if (typeof document === "undefined" || !$("gSlider")) {
+    return;
+  }
+
+  var activeId = "yabachiba";
+  var states = {};
+  machineIds().forEach(function (id) {
+    states[id] = defaultState(MACHINES[id]);
+  });
+
+  function clampInt(v, min, max) {
+    var n = parseInt(v, 10);
+    if (isNaN(n)) n = min;
+    return Math.max(min, Math.min(max, n));
+  }
+
+  function lsKey(id) { return LS_PREFIX + id; }
+
+  function saveMachine(id) {
+    try {
+      localStorage.setItem(lsKey(id), JSON.stringify(states[id]));
+    } catch (e) { /* ignore */ }
+  }
+  function saveActive() {
+    try {
+      localStorage.setItem(LS_ACTIVE, activeId);
+    } catch (e) { /* ignore */ }
+  }
+  function loadMachine(id) {
+    try {
+      var raw = localStorage.getItem(lsKey(id));
+      if (!raw) return;
+      var o = JSON.parse(raw);
+      if (!o || typeof o !== "object") return;
+      var m = MACHINES[id];
+      var s = states[id];
+      s.g = clampInt(o.g, 0, 9999);
+      s.c2 = clampInt(o.c2, 0, m.counter2.max);
+      if (o.gCapMode) s.gCapMode = String(o.gCapMode);
+      s.settingChange = !!o.settingChange;
+      s.altCap = !!o.altCap;
+      var opts = (m.deep && m.deep.optionalCounters) || [];
+      for (var i = 0; i < opts.length; i++) {
+        var k = opts[i].key;
+        s[k] = clampInt(o[k], opts[i].min, opts[i].max);
+      }
+    } catch (e) { /* ignore */ }
+  }
+  function loadAll() {
+    machineIds().forEach(loadMachine);
+    try {
+      var a = localStorage.getItem(LS_ACTIVE);
+      if (a && MACHINES[a]) activeId = a;
+    } catch (e) { /* ignore */ }
+  }
+
+  function applyC2Theme(m) {
+    document.documentElement.style.setProperty("--c2", m.colorC2 || "#ff6b8a");
+    document.documentElement.style.setProperty("--c2-soft", m.colorC2Soft || "#4a1f2e");
+  }
+
+  function renderCeilingUi(m, state) {
+    var wrap = $("ceilingUi");
+    wrap.innerHTML = "";
+    if (m.gCapModes && m.gCapModes.length > 1) {
+      var lab = document.createElement("label");
+      lab.className = "sel-label";
+      lab.innerHTML = "天井モード ";
+      var sel = document.createElement("select");
+      sel.id = "gCapModeSelect";
+      sel.setAttribute("aria-label", "天井モード");
+      m.gCapModes.forEach(function (mode) {
+        var opt = document.createElement("option");
+        opt.value = mode.id;
+        opt.textContent = mode.label;
+        if (mode.id === state.gCapMode) opt.selected = true;
+        sel.appendChild(opt);
+      });
+      sel.addEventListener("change", function () {
+        states[activeId].gCapMode = sel.value;
+        render();
+        saveMachine(activeId);
+      });
+      lab.appendChild(sel);
+      wrap.appendChild(lab);
+    }
+    if (m.counter2.hasSettingChangeToggle) {
+      var tw = document.createElement("label");
+      tw.className = "toggle-wrap" + (state.settingChange ? " on" : "");
+      tw.id = "settingChangeWrap";
+      tw.title = "設定変更後はチェリー天井が30回";
+      tw.innerHTML = '<input type="checkbox" id="settingChange" /> <span>設定変更（チェリー天井30）</span>';
+      wrap.appendChild(tw);
+      var cb = tw.querySelector("input");
+      cb.checked = !!state.settingChange;
+      cb.addEventListener("change", function () {
+        states[activeId].settingChange = !!cb.checked;
+        render();
+        saveMachine(activeId);
+      });
+    }
+    if (m.counter2.hasAltCapToggle) {
+      var tw2 = document.createElement("label");
+      tw2.className = "toggle-wrap" + (state.altCap ? " on" : "");
+      tw2.id = "altCapWrap";
+      tw2.title = "通常系チェリー天井40説";
+      tw2.innerHTML = '<input type="checkbox" id="altCap" /> <span>' + (m.counter2.altCapToggleLabel || "通常系40") + "</span>";
+      wrap.appendChild(tw2);
+      var cb2 = tw2.querySelector("input");
+      cb2.checked = !!state.altCap;
+      cb2.addEventListener("change", function () {
+        states[activeId].altCap = !!cb2.checked;
+        render();
+        saveMachine(activeId);
+      });
+    }
+  }
+
+  function strengthClass(s) {
+    return "strength s-" + (s || "調査中");
+  }
+
+  function renderHints(m) {
+    var body = $("hintsBody");
+    var modeHints = [];
+    var settingHints = [];
+    (m.hints || []).forEach(function (h) {
+      if (h.section === "setting") settingHints.push(h);
+      else modeHints.push(h);
+    });
+    var html = "";
+    function cards(list) {
+      return '<div class="hint-cards">' + list.map(function (h) {
+        return '<div class="hint-card">' +
+          '<span class="' + strengthClass(h.strength) + '">' + h.strength + "</span>" +
+          '<div class="when">' + h.when + "</div>" +
+          '<div class="means">' + h.means + "</div>" +
+          "</div>";
+      }).join("") + "</div>";
+    }
+    if (modeHints.length) {
+      html += '<p class="hint-section-title">モード・演出示唆</p>' + cards(modeHints);
+    }
+    if (settingHints.length) {
+      html += '<p class="hint-section-title">設定示唆（モードとは別）</p>' + cards(settingHints);
+    }
+    (m.footnotes || []).forEach(function (f) {
+      html += '<p class="hint-footnote">' + f + "</p>";
+    });
+    body.innerHTML = html || "<p class=\"hint-footnote\">示唆データなし</p>";
+  }
+
+  function renderDeep(m, state) {
+    var body = $("deepBody");
+    var html = "";
+    var opts = (m.deep && m.deep.optionalCounters) || [];
+    if (opts.length) {
+      html += '<div class="sec-grid">';
+      opts.forEach(function (o) {
+        html += '<div class="field"><label for="opt_' + o.key + '">' + o.label + "</label>" +
+          '<input type="number" id="opt_' + o.key + '" min="' + o.min + '" max="' + o.max +
+          '" value="' + clampInt(state[o.key], o.min, o.max) + '" inputmode="numeric" data-opt="' + o.key + '" /></div>';
+      });
+      html += "</div>";
+    }
+    if (m.deep && m.deep.rates) {
+      html += "<div><strong style=\"display:block;margin-bottom:6px;font-size:0.95em;\">" + m.deep.ratesTitle + "</strong>";
+      html += '<table class="rates"><thead><tr>';
+      m.deep.ratesHeaders.forEach(function (h) { html += "<th>" + h + "</th>"; });
+      html += "</tr></thead><tbody>";
+      m.deep.rates.forEach(function (row) {
+        html += "<tr>" + row.map(function (c) { return "<td>" + c + "</td>"; }).join("") + "</tr>";
+      });
+      html += "</tbody></table>";
+      if (m.deep.ratesNote) {
+        html += '<p style="margin:6px 0 0;font-size:0.8em;color:var(--muted);">' + m.deep.ratesNote + "</p>";
+      }
+      html += "</div>";
+    }
+    if (m.deep && m.deep.strategy) {
+      html += "<div><strong style=\"display:block;margin-bottom:6px;font-size:0.95em;\">立ち回りメモ（短く・煽りなし）</strong>";
+      html += '<ul class="notes">';
+      m.deep.strategy.forEach(function (t) { html += "<li>" + t + "</li>"; });
+      html += "</ul></div>";
+    }
+    body.innerHTML = html || "<p class=\"hint-footnote\">副次なし</p>";
+    body.querySelectorAll("[data-opt]").forEach(function (inp) {
+      inp.addEventListener("change", function () {
+        var key = inp.getAttribute("data-opt");
+        var meta = opts.filter(function (o) { return o.key === key; })[0];
+        if (!meta) return;
+        states[activeId][key] = clampInt(inp.value, meta.min, meta.max);
+        saveMachine(activeId);
+      });
+    });
+  }
+
+  function renderMarks(m, c2Cap) {
+    var el = $("c2Marks");
+    var marks = m.counter2.marks;
+    if (!marks || !marks.length || !c2Cap) {
+      el.hidden = true;
+      el.innerHTML = "";
+      return;
+    }
+    el.hidden = false;
+    el.innerHTML = marks.map(function (mk) {
+      var pct = Math.min(100, (mk / c2Cap) * 100);
+      return '<span style="left:' + pct + '%" title="' + mk + '"></span>';
+    }).join("");
+  }
+
+  function setTabs() {
+    document.querySelectorAll(".tab").forEach(function (btn) {
+      var id = btn.getAttribute("data-machine");
+      btn.setAttribute("aria-selected", id === activeId ? "true" : "false");
+    });
+  }
+
+  function switchMachine(id) {
+    if (!MACHINES[id]) return;
+    saveMachine(activeId);
+    activeId = id;
+    saveActive();
+    setTabs();
+    $("hintsPanel").open = false;
+    $("deepPanel").open = false;
+    render(true);
+  }
+
+  function render(rebuildPanels) {
+    var m = getMachine(activeId);
+    var state = states[activeId];
+    var gCap = resolveGCap(m, state.gCapMode);
+    var c2Cap = resolveC2Cap(m, state);
+    var lead = computeLead(state.g, state.c2, gCap, c2Cap, m.counter2.label);
+
+    applyC2Theme(m);
+    $("appTitle").textContent = m.title;
+    if (rebuildPanels) {
+      renderCeilingUi(m, state);
+      renderHints(m);
+      renderDeep(m, state);
+    } else {
+      // keep ceiling toggles in sync without full rebuild when possible
+      var sc = $("settingChange");
+      if (sc) {
+        sc.checked = !!state.settingChange;
+        var scw = $("settingChangeWrap");
+        if (scw) scw.classList.toggle("on", !!state.settingChange);
+      }
+      var ac = $("altCap");
+      if (ac) {
+        ac.checked = !!state.altCap;
+        var acw = $("altCapWrap");
+        if (acw) acw.classList.toggle("on", !!state.altCap);
+      }
+      var gsel = $("gCapModeSelect");
+      if (gsel && gsel.value !== state.gCapMode) gsel.value = state.gCapMode;
+    }
+
+    $("c2CardLabel").textContent = m.counter2.label + "回数";
+    $("c2BarLabel").textContent = m.counter2.label;
+    $("c2InputTitle").textContent = m.counter2.label + "（+1/−1 主）";
+    $("resetC2").textContent = m.counter2.label + "のみリセット";
+
+    $("displayG").textContent = String(state.g);
+    $("displayC2").textContent = String(state.c2);
+    $("remainG").textContent = String(lead.remG);
+    $("remainC2").textContent = String(lead.remC);
+    $("gCapLabel").textContent = String(gCap);
+    $("gCapLabel2").textContent = String(gCap);
+    $("c2CapLabel").textContent = String(c2Cap);
+    $("c2CapLabel2").textContent = String(c2Cap);
+
+    var pctG = Math.min(100, (state.g / gCap) * 100);
+    var pctC = Math.min(100, (state.c2 / c2Cap) * 100);
+    $("fillG").style.width = pctG.toFixed(2) + "%";
+    $("fillC2").style.width = pctC.toFixed(2) + "%";
+    $("pctG").textContent = Math.round(pctG) + "%";
+    $("pctC2").textContent = Math.round(pctC) + "%";
+
+    var gSliderMax = Math.max(1200, gCap + 200);
+    $("gSlider").max = String(gSliderMax);
+    $("gSlider").value = String(Math.min(gSliderMax, state.g));
+    $("gInput").value = String(state.g);
+    $("c2Slider").max = String(m.counter2.max);
+    $("c2Slider").value = String(state.c2);
+
+    renderMarks(m, c2Cap);
+
+    var banner = $("leadBanner");
+    banner.textContent = lead.label;
+    banner.className = "lead-banner " + (lead.lead === "g" ? "g" : lead.lead === "c2" ? "c2" : lead.lead === "tie" ? "tie" : "both");
+
+    var cardG = $("cardG");
+    var cardC = $("cardC2");
+    var barG = $("barGBlock");
+    var barC = $("barC2Block");
+    [cardG, cardC, barG, barC].forEach(function (el) {
+      el.classList.remove("lead", "lead-g", "lead-c2");
+    });
+    if (lead.lead === "g") {
+      cardG.classList.add("lead", "lead-g");
+      barG.classList.add("lead", "lead-g");
+    } else if (lead.lead === "c2") {
+      cardC.classList.add("lead", "lead-c2");
+      barC.classList.add("lead", "lead-c2");
+    } else if (lead.lead === "tie") {
+      cardG.classList.add("lead", "lead-g");
+      cardC.classList.add("lead", "lead-c2");
+      barG.classList.add("lead", "lead-g");
+      barC.classList.add("lead", "lead-c2");
+    }
+  }
+
+  function setG(v) {
+    states[activeId].g = clampInt(v, 0, 9999);
+    render();
+    saveMachine(activeId);
+  }
+  function setC2(v) {
+    var m = getMachine(activeId);
+    states[activeId].c2 = clampInt(v, 0, m.counter2.max);
+    render();
+    saveMachine(activeId);
+  }
+
+  document.querySelectorAll(".tab").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      switchMachine(btn.getAttribute("data-machine"));
+    });
+  });
+
+  $("gSlider").addEventListener("input", function () { setG(this.value); });
+  $("gInput").addEventListener("change", function () { setG(this.value); });
+  $("gInput").addEventListener("keydown", function (e) {
+    if (e.key === "Enter") setG(this.value);
+  });
+  document.querySelectorAll("[data-g]").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      setG(states[activeId].g + Number(btn.getAttribute("data-g")));
+    });
+  });
+  $("c2Plus").addEventListener("click", function () { setC2(states[activeId].c2 + 1); });
+  $("c2Minus").addEventListener("click", function () { setC2(states[activeId].c2 - 1); });
+  $("c2Slider").addEventListener("input", function () { setC2(this.value); });
+
+  $("resetG").addEventListener("click", function () { setG(0); });
+  $("resetC2").addEventListener("click", function () { setC2(0); });
+  $("resetBoth").addEventListener("click", function () {
+    states[activeId].g = 0;
+    states[activeId].c2 = 0;
+    render();
+    saveMachine(activeId);
+  });
+
+  $("sessionReset").addEventListener("click", function () {
+    states[activeId] = defaultState(getMachine(activeId));
+    try { localStorage.removeItem(lsKey(activeId)); } catch (e) {}
+    render(true);
+  });
+
+  $("exportJson").addEventListener("click", function () {
+    var payload = {
+      version: VERSION,
+      activeTab: activeId,
+      machines: {}
+    };
+    machineIds().forEach(function (id) {
+      payload.machines[id] = states[id];
+    });
+    var blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+    var a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "smaslo-ceiling-memo-session.json";
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(function () {
+      URL.revokeObjectURL(a.href);
+      a.remove();
+    }, 500);
+  });
+
+  $("importJson").addEventListener("click", function () {
+    $("importFile").click();
+  });
+  $("importFile").addEventListener("change", function () {
+    var file = this.files && this.files[0];
+    this.value = "";
+    if (!file) return;
+    var reader = new FileReader();
+    reader.onload = function () {
+      try {
+        var o = JSON.parse(String(reader.result));
+        var map = o.machines || o;
+        machineIds().forEach(function (id) {
+          if (!map[id]) return;
+          var m = MACHINES[id];
+          var s = map[id].state || map[id];
+          var st = defaultState(m);
+          st.g = clampInt(s.g, 0, 9999);
+          st.c2 = clampInt(s.c2 != null ? s.c2 : s.cherry, 0, m.counter2.max);
+          if (s.gCapMode) st.gCapMode = String(s.gCapMode);
+          st.settingChange = !!s.settingChange;
+          st.altCap = !!s.altCap;
+          var opts = (m.deep && m.deep.optionalCounters) || [];
+          opts.forEach(function (opt) {
+            st[opt.key] = clampInt(s[opt.key], opt.min, opt.max);
+          });
+          states[id] = st;
+          saveMachine(id);
+        });
+        if (o.activeTab && MACHINES[o.activeTab]) activeId = o.activeTab;
+        saveActive();
+        setTabs();
+        render(true);
+      } catch (err) {
+        alert("JSONの読み込みに失敗しました");
+      }
+    };
+    reader.readAsText(file);
+  });
+
+  loadAll();
+  setTabs();
+  render(true);
+})();
+</script>
+</body>
+</html>
