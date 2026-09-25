@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>天井メモ（スマスロ） — GlockBOT 0.2.0</title>
+<title>天井メモ（スマスロ） — GlockBOT 0.2.1</title>
 <style>
 :root {
   --bg: #0f1419;
@@ -788,7 +788,169 @@ table.rates td { font-family: var(--mono); }
   color: var(--muted);
   margin-bottom: 10px;
 }
+
 .set-through-ro strong { color: var(--ink); font-family: var(--mono); }
+
+/* ===== Hint log (nangoku 0.2.1) ===== */
+.set-hint-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin-top: 10px;
+}
+.set-hint-bar .hint-log-btn {
+  flex: 1 1 8rem;
+  min-height: 48px;
+  font-weight: 800;
+  background: #1a3048;
+  border-color: #4a8ab0;
+  color: #c8e8ff;
+}
+.set-seg-label {
+  font-size: 0.78em;
+  color: var(--muted);
+  font-weight: 700;
+}
+.set-hint-recent {
+  margin-top: 8px;
+  display: grid;
+  gap: 4px;
+}
+.set-hint-recent .he-row {
+  font-size: 0.78em;
+  color: var(--muted);
+  background: rgba(0,0,0,0.22);
+  border-radius: 8px;
+  padding: 4px 8px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+  align-items: baseline;
+}
+.set-hint-recent .he-when { color: var(--ink); font-weight: 700; }
+.set-waiting {
+  background: var(--panel2);
+  border: 2px dashed #4a8ab0;
+  border-radius: var(--radius);
+  padding: 12px;
+}
+.set-waiting .wait-title {
+  font-weight: 800;
+  font-size: 0.95em;
+  margin: 0 0 6px;
+  color: #c8e8ff;
+}
+.hint-picker {
+  background: #0a1018;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 10px;
+  margin-top: 8px;
+  display: grid;
+  gap: 8px;
+  max-height: min(46vh, 420px);
+  overflow: auto;
+}
+.hint-picker[hidden] { display: none !important; }
+.hint-picker .picker-head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+  align-items: center;
+  justify-content: space-between;
+}
+.hint-picker .picker-head strong { font-size: 0.9em; }
+.hint-picker .picker-note {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.hint-picker .picker-note label {
+  font-size: 0.75em;
+  color: var(--muted);
+  font-weight: 600;
+}
+.hint-picker .picker-note input {
+  min-height: 40px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: var(--panel2);
+  color: var(--ink);
+  padding: 0.3em 0.6em;
+  font-size: 0.9em;
+}
+.hint-picker .picker-group-title {
+  margin: 6px 0 2px;
+  font-size: 0.78em;
+  font-weight: 800;
+  color: var(--muted);
+}
+.hint-picker .picker-list {
+  display: grid;
+  gap: 4px;
+}
+.hint-picker .picker-item {
+  text-align: left;
+  min-height: 44px;
+  padding: 6px 10px;
+  font-weight: 600;
+  font-size: 0.85em;
+  background: var(--panel2);
+  border: 1px solid var(--line);
+  color: var(--ink);
+  display: grid;
+  gap: 2px;
+}
+.hint-picker .picker-item .pi-when { font-weight: 800; }
+.hint-picker .picker-item .pi-means {
+  font-size: 0.85em;
+  color: var(--muted);
+  font-weight: 500;
+}
+.set-ended {
+  cursor: pointer;
+}
+.set-ended .hint-detail {
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px dashed var(--line);
+  display: none;
+  gap: 4px;
+}
+.set-ended.expanded .hint-detail { display: grid; }
+.set-ended .hint-detail .seg-block {
+  margin-top: 4px;
+}
+.set-ended .hint-detail .seg-label {
+  font-size: 0.75em;
+  font-weight: 800;
+  color: var(--warm);
+}
+.set-ended .hint-detail .he-row {
+  font-size: 0.76em;
+  color: var(--muted);
+  padding: 2px 0;
+}
+.set-ended .expand-hint {
+  font-size: 0.72em;
+  color: var(--muted);
+  font-weight: 600;
+}
+.hint-card {
+  position: relative;
+}
+.hint-card .log-row-btn {
+  margin-top: 6px;
+  min-height: 36px;
+  font-size: 0.78em;
+  font-weight: 700;
+  width: 100%;
+  background: #1a3048;
+  border-color: #3a6a88;
+  color: #b8d8f0;
+}
+
 
 .session-bar {
   display: flex;
@@ -839,7 +1001,7 @@ footer strong { color: var(--ink); }
 
   <header>
     <h1 id="appTitle">ヤバチバ メモ</h1>
-    <span class="badge">GlockBOT 0.2.0</span>
+    <span class="badge">GlockBOT 0.2.1</span>
     <span class="notice-short">非公式・解析値は変動しうる／店内メモ用・煽り禁止</span>
     <div class="ceiling-ui" id="ceilingUi"></div>
   </header>
@@ -920,7 +1082,7 @@ footer strong { color: var(--ink); }
   <section class="set-log" id="setLogPanel" aria-label="初当たりセットログ" hidden>
     <div class="set-log-head">
       <h2>初当たりセット</h2>
-      <span class="sub">連チャン中と終了を分けて記録（スルー＝飛翔に繋がらず終了）</span>
+      <span class="sub">連チャン・スルー・示唆ログ（照合用・断定しない）</span>
     </div>
     <div class="set-stats" id="setStats" aria-live="polite"></div>
     <div id="setActiveArea"></div>
@@ -950,7 +1112,7 @@ footer strong { color: var(--ink); }
   </div>
 
   <footer>
-    <strong>GlockBOT 0.2.0</strong>
+    <strong>GlockBOT 0.2.1</strong>
     <span>スマスロ天井メモ（非公式）・解析値は変動しうる・メーカー公式の全数値公表ではない</span>
     <span>煽り禁止・「設定○」断定なし・個人収支・店舗名は送信しない</span>
   </footer>
@@ -964,7 +1126,7 @@ footer strong { color: var(--ink); }
    * localStorage key scheme (documented for selfcheck):
    *   smaslo-ceiling-memo:v1:<machineId>  — per-machine counters / modes
    *   smaslo-ceiling-memo:v1:activeTab    — last active machine id
-   *   smaslo-ceiling-memo:v2:nangoku-sp:sets — 初当たりセット／連チャン／スルー (0.2)
+   *   smaslo-ceiling-memo:v2:nangoku-sp:sets — 初当たりセット／連チャン／スルー／示唆ログ (0.2.1)
    * machineId ∈ { yabachiba, chibariyo2, nangoku-sp }
    *
    * Lead / close logic (generalized from yabachiba-memo):
@@ -979,7 +1141,7 @@ footer strong { color: var(--ink); }
    * スルー = セット単位。終了時 linkedHisho===false のみ今日スルー+1。
    * 飛翔終了 (linkedHisho===true) はスルーに数えない。日次マニュアル+1なし。
    */
-  var VERSION = "GlockBOT 0.2.0";
+  var VERSION = "GlockBOT 0.2.1";
   var LS_PREFIX = "smaslo-ceiling-memo:v1:";
   var LS_ACTIVE = LS_PREFIX + "activeTab";
   var LS_SETS_KEY = "smaslo-ceiling-memo:v2:nangoku-sp:sets";
@@ -1252,7 +1414,7 @@ footer strong { color: var(--ink); }
   }
 
 
-  /* ===== 0.2 set / through helpers (pure; selfcheck) ===== */
+  /* ===== 0.2 / 0.2.1 set / through / hint-segment helpers (pure; selfcheck) ===== */
   function localDateKey(d) {
     if (d == null) d = new Date();
     if (typeof d === "string") d = new Date(d);
@@ -1264,13 +1426,61 @@ footer strong { color: var(--ink); }
   }
 
   function emptySetsStore(now) {
-    return { dayKey: localDateKey(now), activeId: null, sets: [] };
+    return {
+      dayKey: localDateKey(now),
+      activeId: null,
+      sets: [],
+      waitingHints: null,
+      openSegment: null
+    };
+  }
+
+  function normalizeHintEvent(e) {
+    if (!e || typeof e !== "object") return null;
+    return {
+      id: String(e.id || ""),
+      segmentKey: String(e.segmentKey || ""),
+      segmentLabel: String(e.segmentLabel || ""),
+      when: String(e.when || ""),
+      means: String(e.means || ""),
+      strength: String(e.strength || ""),
+      section: e.section === "setting" ? "setting" : "mode",
+      group: e.group ? String(e.group) : "",
+      note: e.note ? String(e.note) : "",
+      at: e.at || null
+    };
+  }
+
+  function normalizeWaitingHints(raw) {
+    if (!raw || typeof raw !== "object") return null;
+    var events = Array.isArray(raw.events)
+      ? raw.events.map(normalizeHintEvent).filter(Boolean)
+      : [];
+    return {
+      segmentKey: "post-set",
+      segmentLabel: raw.segmentLabel || "セット後〜次初当",
+      endedSetId: raw.endedSetId || null,
+      events: events,
+      openedAt: raw.openedAt || null
+    };
+  }
+
+  function normalizeOpenSegment(raw) {
+    if (!raw || typeof raw !== "object" || !raw.segmentKey) return null;
+    return {
+      segmentKey: String(raw.segmentKey),
+      segmentLabel: String(raw.segmentLabel || ""),
+      setId: raw.setId == null ? null : String(raw.setId)
+    };
   }
 
   function normalizeSetsStore(raw, now) {
     var store = emptySetsStore(now);
     if (!raw || typeof raw !== "object") return store;
     store.sets = Array.isArray(raw.sets) ? raw.sets.map(function (s) {
+      var hintEvents = Array.isArray(s.hintEvents)
+        ? s.hintEvents.map(normalizeHintEvent).filter(Boolean)
+        : [];
       return {
         id: String(s.id || ""),
         startedAt: s.startedAt || null,
@@ -1285,7 +1495,8 @@ footer strong { color: var(--ink); }
           };
         }) : [],
         linkedHisho: s.linkedHisho === true ? true : s.linkedHisho === false ? false : null,
-        note: s.note ? String(s.note) : ""
+        note: s.note ? String(s.note) : "",
+        hintEvents: hintEvents
       };
     }) : [];
     var aid = raw.activeId || null;
@@ -1293,8 +1504,14 @@ footer strong { color: var(--ink); }
       aid = null;
     }
     store.activeId = aid;
+    store.waitingHints = normalizeWaitingHints(raw.waitingHints);
+    store.openSegment = normalizeOpenSegment(raw.openSegment);
     // dayKey always rolls to today; history kept; 「今日」 filters by date
     store.dayKey = localDateKey(now);
+    // If openSegment missing, derive from active / waiting
+    if (!store.openSegment) {
+      store.openSegment = deriveOpenSegment(store);
+    }
     return store;
   }
 
@@ -1355,6 +1572,11 @@ footer strong { color: var(--ink); }
     return "set_" + t + "_" + Math.floor(Math.random() * 1e6);
   }
 
+  function makeHintEventId(now) {
+    var t = now ? new Date(now).getTime() : Date.now();
+    return "he_" + t + "_" + Math.floor(Math.random() * 1e6);
+  }
+
   function getActiveSet(store) {
     if (!store || !store.activeId) return null;
     for (var i = 0; i < store.sets.length; i++) {
@@ -1363,12 +1585,101 @@ footer strong { color: var(--ink); }
     return null;
   }
 
+  function findSetById(store, id) {
+    if (!store || !id) return null;
+    for (var i = 0; i < store.sets.length; i++) {
+      if (store.sets[i].id === id) return store.sets[i];
+    }
+    return null;
+  }
+
+  /** Segment after first-hit start (1 bonus). */
+  function segmentAfterStart(setId) {
+    return { segmentKey: "after-start", segmentLabel: "1連目中", setId: setId || null };
+  }
+
+  /**
+   * After recording the n-th bonus (n = bonuses.length, n >= 2),
+   * open between-(n-1)-n e.g. between-1-2 / 「1→2連のあいだ」.
+   */
+  function segmentAfterBonus(setId, bonusCount) {
+    var n = Number(bonusCount) || 0;
+    if (n < 2) return segmentAfterStart(setId);
+    var prev = n - 1;
+    return {
+      segmentKey: "between-" + prev + "-" + n,
+      segmentLabel: prev + "→" + n + "連のあいだ",
+      setId: setId || null
+    };
+  }
+
+  function segmentPostSet(setId) {
+    return { segmentKey: "post-set", segmentLabel: "セット後〜次初当", setId: setId || null };
+  }
+
+  function deriveOpenSegment(store) {
+    if (!store) return null;
+    var active = getActiveSet(store);
+    if (active) {
+      var n = renchanCount(active);
+      if (n <= 1) return segmentAfterStart(active.id);
+      return segmentAfterBonus(active.id, n);
+    }
+    if (store.waitingHints) {
+      return segmentPostSet(store.waitingHints.endedSetId || null);
+    }
+    return null;
+  }
+
+  /** Archive waitingHints.events onto the ended set as post-set, then clear waiting. */
+  function archiveWaitingHints(store) {
+    if (!store || !store.waitingHints) return store;
+    var wh = store.waitingHints;
+    var target = findSetById(store, wh.endedSetId);
+    if (!target) {
+      // fallback: most recent ended set
+      var ended = (store.sets || []).filter(function (s) { return !!s.endedAt; });
+      ended.sort(function (a, b) {
+        return String(b.endedAt).localeCompare(String(a.endedAt));
+      });
+      target = ended[0] || null;
+    }
+    if (target && Array.isArray(wh.events) && wh.events.length) {
+      if (!Array.isArray(target.hintEvents)) target.hintEvents = [];
+      wh.events.forEach(function (ev) {
+        var copy = normalizeHintEvent(ev);
+        if (!copy) return;
+        copy.segmentKey = "post-set";
+        copy.segmentLabel = copy.segmentLabel || "セット後〜次初当";
+        target.hintEvents.push(copy);
+      });
+    }
+    store.waitingHints = null;
+    return store;
+  }
+
+  function ensureWaitingHints(store, endedSetId, now) {
+    now = now || new Date();
+    if (store.waitingHints) return store.waitingHints;
+    store.waitingHints = {
+      segmentKey: "post-set",
+      segmentLabel: "セット後〜次初当",
+      endedSetId: endedSetId || null,
+      events: [],
+      openedAt: new Date(now).toISOString()
+    };
+    store.openSegment = segmentPostSet(endedSetId || null);
+    return store.waitingHints;
+  }
+
   function startSet(store, opts, now) {
     now = now || new Date();
     store = store || emptySetsStore(now);
     if (getActiveSet(store)) throw new Error("active set exists");
     var type = opts && opts.firstBonus;
     if (type !== "BIG" && type !== "REG") throw new Error("firstBonus BIG|REG required");
+    // Close post-set waiting: archive onto previous ended set
+    archiveWaitingHints(store);
     var iso = new Date(now).toISOString();
     var set = {
       id: makeSetId(now),
@@ -1377,7 +1688,8 @@ footer strong { color: var(--ink); }
       firstHitG: Number(opts.firstHitG) || 0,
       bonuses: [{ n: 1, type: type, at: iso }],
       linkedHisho: null,
-      note: ""
+      note: "",
+      hintEvents: []
     };
     if (opts.firstHitSuika != null && opts.firstHitSuika !== "") {
       set.firstHitSuika = Number(opts.firstHitSuika);
@@ -1385,6 +1697,7 @@ footer strong { color: var(--ink); }
     store.sets.push(set);
     store.activeId = set.id;
     store.dayKey = localDateKey(now);
+    store.openSegment = segmentAfterStart(set.id);
     return store;
   }
 
@@ -1398,12 +1711,15 @@ footer strong { color: var(--ink); }
       type: type,
       at: new Date(now).toISOString()
     });
+    // Close previous segment conceptually; open between-(n-1)-n
+    store.openSegment = segmentAfterBonus(set.id, set.bonuses.length);
     return store;
   }
 
   /**
    * linkedHisho: true=飛翔に繋がった / false=スルーで終了 / null=判定保留
    * スルー集計は linkedHisho===false のみ。
+   * Ends set segments and opens post-set waitingHints.
    */
   function endSet(store, linkedHisho, note, now) {
     now = now || new Date();
@@ -1414,8 +1730,85 @@ footer strong { color: var(--ink); }
     else if (linkedHisho === false) set.linkedHisho = false;
     else set.linkedHisho = null;
     if (note != null && note !== "") set.note = String(note);
+    if (!Array.isArray(set.hintEvents)) set.hintEvents = [];
     store.activeId = null;
+    store.waitingHints = {
+      segmentKey: "post-set",
+      segmentLabel: "セット後〜次初当",
+      endedSetId: set.id,
+      events: [],
+      openedAt: new Date(now).toISOString()
+    };
+    store.openSegment = segmentPostSet(set.id);
     return store;
+  }
+
+  /**
+   * Add a hint event into the current open segment.
+   * hint: { when, means, strength, section, group? } from MACHINES hints[].
+   * When no active set and no waiting: create waitingHints on first log.
+   */
+  function addHintEvent(store, hint, note, now) {
+    now = now || new Date();
+    store = store || emptySetsStore(now);
+    if (!hint || !hint.when) throw new Error("hint.when required");
+    var active = getActiveSet(store);
+    var seg = store.openSegment || deriveOpenSegment(store);
+    var targetEvents = null;
+
+    if (active) {
+      if (!Array.isArray(active.hintEvents)) active.hintEvents = [];
+      if (!seg || seg.setId !== active.id) {
+        seg = deriveOpenSegment(store);
+        store.openSegment = seg;
+      }
+      targetEvents = active.hintEvents;
+    } else {
+      // waiting / post-set (or create on first log)
+      var wh = store.waitingHints;
+      if (!wh) {
+        // attach to most recent ended set if any
+        var ended = (store.sets || []).filter(function (s) { return !!s.endedAt; });
+        ended.sort(function (a, b) {
+          return String(b.endedAt).localeCompare(String(a.endedAt));
+        });
+        var lastId = ended[0] ? ended[0].id : null;
+        wh = ensureWaitingHints(store, lastId, now);
+      }
+      seg = store.openSegment || segmentPostSet(wh.endedSetId);
+      store.openSegment = seg;
+      targetEvents = wh.events;
+    }
+
+    var ev = {
+      id: makeHintEventId(now),
+      segmentKey: seg.segmentKey,
+      segmentLabel: seg.segmentLabel,
+      when: String(hint.when),
+      means: String(hint.means || ""),
+      strength: String(hint.strength || ""),
+      section: hint.section === "setting" ? "setting" : "mode",
+      group: hint.group ? String(hint.group) : "",
+      note: note ? String(note) : "",
+      at: new Date(now).toISOString()
+    };
+    targetEvents.push(ev);
+    return ev;
+  }
+
+  function currentSegmentEvents(store) {
+    var seg = (store && store.openSegment) || deriveOpenSegment(store);
+    if (!store || !seg) return [];
+    var active = getActiveSet(store);
+    var list = [];
+    if (active && Array.isArray(active.hintEvents)) {
+      list = active.hintEvents.filter(function (e) {
+        return e.segmentKey === seg.segmentKey;
+      });
+    } else if (store.waitingHints && Array.isArray(store.waitingHints.events)) {
+      list = store.waitingHints.events.slice();
+    }
+    return list;
   }
 
   function clearAllSets(now) {
@@ -1459,7 +1852,17 @@ footer strong { color: var(--ink); }
     startSet: startSet,
     addBonus: addBonus,
     endSet: endSet,
-    clearAllSets: clearAllSets
+    clearAllSets: clearAllSets,
+    segmentAfterStart: segmentAfterStart,
+    segmentAfterBonus: segmentAfterBonus,
+    segmentPostSet: segmentPostSet,
+    deriveOpenSegment: deriveOpenSegment,
+    archiveWaitingHints: archiveWaitingHints,
+    ensureWaitingHints: ensureWaitingHints,
+    addHintEvent: addHintEvent,
+    currentSegmentEvents: currentSegmentEvents,
+    makeHintEventId: makeHintEventId,
+    findSetById: findSetById
   };
   if (typeof window !== "undefined") {
     window.SmasloCeilingMemo = API;
@@ -1920,9 +2323,12 @@ footer strong { color: var(--ink); }
   });
 
 
-  /* ===== nangoku set-log UI (0.2) ===== */
+  /* ===== nangoku set-log UI (0.2 / 0.2.1 hint log) ===== */
   var setsStore = emptySetsStore();
   var showOlderEnded = false;
+  var hintPickerOpen = false;
+  var hintPickerNote = "";
+  var expandedEndedIds = {};
 
   function loadSetsStore() {
     try {
@@ -1942,6 +2348,122 @@ footer strong { color: var(--ink); }
       setsStore.dayKey = localDateKey();
       localStorage.setItem(LS_SETS_KEY, JSON.stringify(setsStore));
     } catch (e) { /* ignore */ }
+  }
+
+  function escapeHtml(s) {
+    return String(s == null ? "" : s)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
+  }
+
+  function renderHintRecentHtml(events, segLabel) {
+    var recent = (events || []).slice(-4).reverse();
+    var html = '<div class="set-hint-recent">';
+    if (segLabel) {
+      html += '<div class="set-seg-label">区間: ' + escapeHtml(segLabel) + "</div>";
+    }
+    if (!recent.length) {
+      html += '<div class="he-row" style="opacity:0.7;">この区間の示唆はまだなし</div>';
+    } else {
+      recent.forEach(function (ev) {
+        html += '<div class="he-row"><span class="' + strengthClass(ev.strength) + '">' +
+          escapeHtml(ev.strength) + '</span><span class="he-when">' + escapeHtml(ev.when) + "</span>" +
+          (ev.note ? '<span>・' + escapeHtml(ev.note) + "</span>" : "") +
+          "</div>";
+      });
+    }
+    html += "</div>";
+    return html;
+  }
+
+  function renderHintPickerHtml() {
+    if (!hintPickerOpen) return '<div class="hint-picker" id="hintPicker" hidden></div>';
+    var m = getMachine(SETS_MACHINE_ID);
+    var modeHints = [];
+    var settingHints = [];
+    (m.hints || []).forEach(function (h) {
+      if (h.section === "setting") settingHints.push(h);
+      else modeHints.push(h);
+    });
+    var html = '<div class="hint-picker" id="hintPicker">';
+    html += '<div class="picker-head"><strong>示唆を選ぶ（照合用・断定しない）</strong>' +
+      '<button type="button" class="ghost" data-set-act="hint-picker-close">閉じる</button></div>';
+    html += '<div class="picker-note"><label for="hintNoteInput">メモ（任意）</label>' +
+      '<input type="text" id="hintNoteInput" maxlength="80" placeholder="短く任意" value="' +
+      escapeHtml(hintPickerNote) + '" /></div>';
+
+    // Mode groups — reuse renderHints grouping style
+    var grouped = {};
+    modeHints.forEach(function (h) {
+      var g = h.group || "";
+      if (!grouped[g]) grouped[g] = [];
+      grouped[g].push(h);
+    });
+    var groupOrder = ["終了時", "途中", "ボーナス中"];
+    // Flatten with index into full machine.hints for reliable lookup
+    function renderGroup(group, list) {
+      if (!list || !list.length) return;
+      html += '<p class="picker-group-title">' + escapeHtml(group) + "</p>";
+      html += '<div class="picker-list">' + list.map(function (h) {
+        var hi = (m.hints || []).indexOf(h);
+        return '<button type="button" class="picker-item" data-set-act="pick-hint" data-hint-i="' +
+          hi + '">' +
+          '<span class="' + strengthClass(h.strength) + '">' + escapeHtml(h.strength) + "</span>" +
+          '<span class="pi-when">' + escapeHtml(h.when) + "</span>" +
+          '<span class="pi-means">' + escapeHtml(h.means) + "</span>" +
+          "</button>";
+      }).join("") + "</div>";
+    }
+    groupOrder.forEach(function (g) { renderGroup(g, grouped[g]); delete grouped[g]; });
+    Object.keys(grouped).forEach(function (g) {
+      if (g) renderGroup(g, grouped[g]);
+    });
+    if (grouped[""]) renderGroup("その他", grouped[""]);
+    if (settingHints.length) {
+      html += '<p class="picker-group-title">設定</p>';
+      html += '<div class="picker-list">' + settingHints.map(function (h) {
+        var hi = (m.hints || []).indexOf(h);
+        return '<button type="button" class="picker-item" data-set-act="pick-hint" data-hint-i="' +
+          hi + '">' +
+          '<span class="' + strengthClass(h.strength) + '">' + escapeHtml(h.strength) + "</span>" +
+          '<span class="pi-when">' + escapeHtml(h.when) + "</span>" +
+          '<span class="pi-means">' + escapeHtml(h.means) + "</span>" +
+          "</button>";
+      }).join("") + "</div>";
+    }
+    html += "</div>";
+    return html;
+  }
+
+  function renderEndedHintDetail(s) {
+    var events = Array.isArray(s.hintEvents) ? s.hintEvents : [];
+    if (!events.length) {
+      return '<div class="hint-detail"><div class="he-row">示唆ログなし</div></div>';
+    }
+    var order = [];
+    var bySeg = {};
+    events.forEach(function (ev) {
+      var key = ev.segmentLabel || ev.segmentKey || "?";
+      if (!bySeg[key]) {
+        bySeg[key] = [];
+        order.push(key);
+      }
+      bySeg[key].push(ev);
+    });
+    var html = '<div class="hint-detail">';
+    order.forEach(function (lab) {
+      html += '<div class="seg-block"><div class="seg-label">' + escapeHtml(lab) + "</div>";
+      bySeg[lab].forEach(function (ev) {
+        html += '<div class="he-row"><span class="' + strengthClass(ev.strength) + '">' +
+          escapeHtml(ev.strength) + "</span> " + escapeHtml(ev.when) +
+          (ev.note ? " ・" + escapeHtml(ev.note) : "") + "</div>";
+      });
+      html += "</div>";
+    });
+    html += "</div>";
+    return html;
   }
 
   function renderSetLog() {
@@ -1965,6 +2487,10 @@ footer strong { color: var(--ink); }
 
     var active = getActiveSet(setsStore);
     var area = $("setActiveArea");
+    var seg = setsStore.openSegment || deriveOpenSegment(setsStore);
+    var segLabel = seg ? seg.segmentLabel : "";
+    var recentEvents = currentSegmentEvents(setsStore);
+
     if (active) {
       var ren = renchanCount(active);
       area.innerHTML =
@@ -1977,11 +2503,31 @@ footer strong { color: var(--ink); }
         '<button type="button" class="end-hisho" data-set-act="end-hisho">飛翔に繋がった</button>' +
         '<button type="button" class="end-through" data-set-act="end-through">スルーで終了</button>' +
         '<button type="button" class="end-hold" data-set-act="end-hold">やめた（判定保留）</button>' +
-        "</div></div>";
+        "</div>" +
+        '<div class="set-hint-bar">' +
+        '<button type="button" class="hint-log-btn" data-set-act="hint-picker-open">示唆を残す</button>' +
+        "</div>" +
+        renderHintRecentHtml(recentEvents, segLabel) +
+        renderHintPickerHtml() +
+        "</div>";
     } else {
       var curG = states[SETS_MACHINE_ID] ? states[SETS_MACHINE_ID].g : 0;
       var curSuika = states[SETS_MACHINE_ID] ? states[SETS_MACHINE_ID].c2 : 0;
+      var waitingBlock = "";
+      // Waiting / post-set UI (also when no waiting yet — allow first hint to create)
+      waitingBlock =
+        '<div class="set-waiting">' +
+        '<p class="wait-title">セット後〜次初当（通常待ち）</p>' +
+        '<div class="set-seg-label">区間: ' + escapeHtml(segLabel || "セット後〜次初当") +
+        (setsStore.waitingHints ? "" : "（示唆を残すと開始）") + "</div>" +
+        '<div class="set-hint-bar">' +
+        '<button type="button" class="hint-log-btn" data-set-act="hint-picker-open">示唆を残す</button>' +
+        "</div>" +
+        renderHintRecentHtml(recentEvents, null) +
+        renderHintPickerHtml() +
+        "</div>";
       area.innerHTML =
+        waitingBlock +
         '<div class="set-form">' +
         '<p class="form-title">初当たりを記録</p>' +
         '<div class="form-row">' +
@@ -1996,29 +2542,42 @@ footer strong { color: var(--ink); }
         "</div></div>";
     }
 
+    // keep note field live if picker open
+    var noteEl = $("hintNoteInput");
+    if (noteEl) {
+      noteEl.addEventListener("input", function () {
+        hintPickerNote = noteEl.value;
+      });
+    }
+
     var ended = todayEndedSets(setsStore).slice().sort(function (a, b) {
       return String(b.endedAt).localeCompare(String(a.endedAt));
     });
     var list = $("setEndedList");
     var openN = 3;
-    var htmlE = '<p class="list-title">今日の終了セット（新しい順）</p>';
+    var htmlE = '<p class="list-title">今日の終了セット（新しい順・タップで示唆詳細）</p>';
     if (!ended.length) {
       htmlE += '<p class="list-title" style="font-weight:500;">まだ終了セットなし</p>';
     } else {
       ended.forEach(function (s, idx) {
         var tagClass = s.linkedHisho === false ? "through" : s.linkedHisho === true ? "hisho" : "hold";
         var collapsed = (!showOlderEnded && idx >= openN) ? " collapsed" : "";
+        var exp = expandedEndedIds[s.id] ? " expanded" : "";
+        var heN = Array.isArray(s.hintEvents) ? s.hintEvents.length : 0;
         htmlE +=
-          '<div class="set-ended' + collapsed + '">' +
+          '<div class="set-ended' + collapsed + exp + '" data-ended-id="' + escapeHtml(s.id) + '">' +
           '<div class="row1">' +
           "<span>初当 " + s.firstHitG + "G</span>" +
           "<span>" + renchanCount(s) + "連</span>" +
           '<span class="badge-tag ' + tagClass + '">' + linkedLabel(s.linkedHisho) + "</span>" +
+          '<span class="expand-hint">示唆' + heN + (exp ? " ▲" : " ▼") + "</span>" +
           "</div>" +
           '<div class="chain">' + bonusChain(s) +
           (s.firstHitSuika != null ? "　／　スイカ" + s.firstHitSuika : "") +
-          (s.note ? "　／　" + s.note : "") +
-          "</div></div>";
+          (s.note ? "　／　" + escapeHtml(s.note) : "") +
+          "</div>" +
+          renderEndedHintDetail(s) +
+          "</div>";
       });
     }
     list.innerHTML = htmlE;
@@ -2034,11 +2593,46 @@ footer strong { color: var(--ink); }
     }
   }
 
+  function pickHintByIndex(i) {
+    var m = getMachine(SETS_MACHINE_ID);
+    var h = (m.hints || [])[i];
+    if (!h) return;
+    var noteEl = $("hintNoteInput");
+    var note = noteEl ? noteEl.value : hintPickerNote;
+    addHintEvent(setsStore, h, note);
+    hintPickerNote = "";
+    hintPickerOpen = false;
+    saveSetsStore();
+    renderSetLog();
+  }
+
   function onSetLogClick(e) {
+    var endedRow = e.target.closest(".set-ended[data-ended-id]");
+    if (endedRow && !e.target.closest("[data-set-act]")) {
+      var eid = endedRow.getAttribute("data-ended-id");
+      expandedEndedIds[eid] = !expandedEndedIds[eid];
+      renderSetLog();
+      return;
+    }
     var btn = e.target.closest("[data-set-act]");
     if (!btn) return;
     var act = btn.getAttribute("data-set-act");
     try {
+      if (act === "hint-picker-open") {
+        hintPickerOpen = true;
+        renderSetLog();
+        return;
+      }
+      if (act === "hint-picker-close") {
+        hintPickerOpen = false;
+        renderSetLog();
+        return;
+      }
+      if (act === "pick-hint") {
+        var hi = parseInt(btn.getAttribute("data-hint-i"), 10);
+        pickHintByIndex(hi);
+        return;
+      }
       if (act === "start-BIG" || act === "start-REG") {
         var gEl = $("setFirstG");
         var sEl = $("setFirstSuika");
@@ -2051,17 +2645,18 @@ footer strong { color: var(--ink); }
         if (suikaRaw !== "" && suikaRaw != null) {
           opts.firstHitSuika = clampInt(suikaRaw, 0, 9);
         }
+        hintPickerOpen = false;
         startSet(setsStore, opts);
         saveSetsStore();
         renderSetLog();
         if ($("deepThroughRo")) $("deepThroughRo").textContent = String(todayThroughCount(setsStore));
         return;
       }
-      if (act === "add-BIG") { addBonus(setsStore, "BIG"); saveSetsStore(); renderSetLog(); return; }
-      if (act === "add-REG") { addBonus(setsStore, "REG"); saveSetsStore(); renderSetLog(); return; }
-      if (act === "end-hisho") { endSet(setsStore, true); saveSetsStore(); renderSetLog(); syncDeepThrough(); return; }
-      if (act === "end-through") { endSet(setsStore, false); saveSetsStore(); renderSetLog(); syncDeepThrough(); return; }
-      if (act === "end-hold") { endSet(setsStore, null); saveSetsStore(); renderSetLog(); syncDeepThrough(); return; }
+      if (act === "add-BIG") { addBonus(setsStore, "BIG"); hintPickerOpen = false; saveSetsStore(); renderSetLog(); return; }
+      if (act === "add-REG") { addBonus(setsStore, "REG"); hintPickerOpen = false; saveSetsStore(); renderSetLog(); return; }
+      if (act === "end-hisho") { endSet(setsStore, true); hintPickerOpen = false; saveSetsStore(); renderSetLog(); syncDeepThrough(); return; }
+      if (act === "end-through") { endSet(setsStore, false); hintPickerOpen = false; saveSetsStore(); renderSetLog(); syncDeepThrough(); return; }
+      if (act === "end-hold") { endSet(setsStore, null); hintPickerOpen = false; saveSetsStore(); renderSetLog(); syncDeepThrough(); return; }
     } catch (err) {
       alert("セット操作に失敗しました: " + (err && err.message ? err.message : err));
     }
@@ -2081,6 +2676,8 @@ footer strong { color: var(--ink); }
       setsStore = clearAllSets();
       saveSetsStore();
       showOlderEnded = false;
+      hintPickerOpen = false;
+      expandedEndedIds = {};
       renderSetLog();
       syncDeepThrough();
     });
@@ -2091,6 +2688,52 @@ footer strong { color: var(--ink); }
       renderSetLog();
     });
   }
+
+  /** Optional: 「この行をログへ」 on 示唆早見 cards when nangoku + (active or waiting-capable). */
+  function enhanceHintsWithLogButtons(m) {
+    if (activeId !== SETS_MACHINE_ID) return;
+    var body = $("hintsBody");
+    if (!body) return;
+    var cards = body.querySelectorAll(".hint-card");
+    var hints = m.hints || [];
+    cards.forEach(function (card) {
+      if (card.querySelector(".log-row-btn")) return;
+      var whenEl = card.querySelector(".when");
+      if (!whenEl) return;
+      var when = whenEl.textContent;
+      var hi = -1;
+      for (var i = 0; i < hints.length; i++) {
+        if (hints[i].when === when) { hi = i; break; }
+      }
+      if (hi < 0) return;
+      var b = document.createElement("button");
+      b.type = "button";
+      b.className = "log-row-btn";
+      b.setAttribute("data-hint-i", String(hi));
+      b.textContent = "この行をログへ";
+      b.addEventListener("click", function (ev) {
+        ev.preventDefault();
+        ev.stopPropagation();
+        try {
+          var h = hints[parseInt(b.getAttribute("data-hint-i"), 10)];
+          if (!h) return;
+          addHintEvent(setsStore, h, "");
+          saveSetsStore();
+          renderSetLog();
+        } catch (err) {
+          alert("示唆ログに失敗: " + (err && err.message ? err.message : err));
+        }
+      });
+      card.appendChild(b);
+    });
+  }
+
+  // Wrap renderHints to add log buttons after paint when nangoku
+  var _renderHintsOrig = renderHints;
+  renderHints = function (m) {
+    _renderHintsOrig(m);
+    enhanceHintsWithLogButtons(m);
+  };
 
 
   loadAll();

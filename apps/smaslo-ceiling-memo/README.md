@@ -1,10 +1,11 @@
 # スマスロ天井・状態把握メモ（3機種タブ）
 
-版: **GlockBOT 0.2.0**（趣味枠／Pages可）
+版: **GlockBOT 0.2.1**（趣味枠／Pages可）
 
 ホールでその場で使える **天井・状態把握メモ**。機種タブ切替で定数・示唆早見・天井モードを差し替える。  
 正の仕様: `/workspace/specs/smaslo-ceiling-memo-0.1.md`（親UX）  
 0.2 追加: `/workspace/specs/smaslo-ceiling-memo-0.2-session-log.md`（南国SPECIAL 初当たりセット／連チャン／スルー）  
+0.2.1 追加: `/workspace/specs/smaslo-ceiling-memo-0.2.1-hint-log.md`（南国 示唆ログ・ボーナス間／通常待ち）  
 旧単機 `apps/yabachiba-memo/` は本アプリへ統合（誘導ページのみ残置）。
 
 ## 開き方
@@ -33,6 +34,7 @@
 | Gスライダー | 大ドラッグ ＋ ±1/±10 ＋ 数値直入 |
 | 第2 +1/−1 | 大きいボタン主（細いスライダー可） |
 | **初当たりセット**（南国のみ 0.2） | ボード＋入力の下、示唆早見の上。進行中と終了を分けて記録 |
+| **示唆を残す**（南国のみ 0.2.1） | 進行中カード／通常待ちから hints 選択で区間付きログ。終了セットはタップで区間別一覧 |
 | 示唆早見 | 状態ボード直下の折りたたみ（初期閉じ可）。見たもの→意味・強度ラベル |
 | 副次メモ | さらに奥。設定表・立ち回り。南国の今日スルーはセット由来（読取専用） |
 | 当該機種リセット | アクティブ機種のカウンタのみクリア（セット履歴は別キー） |
@@ -59,6 +61,15 @@
 
 他2機種タブにはセットログUIを出さない。
 
+### 示唆ログ（南国のみ・0.2.1）
+
+1. 進行中カード（または通常待ちカード）の「示唆を残す」→ 既存 `hints[]` を group／設定見出し付きで選択
+2. 現在開いている区間に1件追加（任意メモ可）。断定UIなし
+3. カード直下に今区間の直近数件を小さく表示
+4. 終了セット行をタップすると区間ラベルごとの示唆一覧
+5. 示唆早見カードにも「この行をログへ」（進行中／待ち中）
+
+
 ## localStorage キー
 
 ```
@@ -73,14 +84,24 @@ smaslo-ceiling-memo:v2:nangoku-sp:sets     # 南国 初当たりセット履歴�
 
 ```js
 {
-  dayKey: "YYYY-MM-DD",   // ローカル日付。「今日」集計の切断面
+  dayKey: "YYYY-MM-DD",
   activeId: "set_..." | null,
+  openSegment: { segmentKey, segmentLabel, setId|null } | null,
+  waitingHints: null | {
+    segmentKey: "post-set",
+    segmentLabel: "セット後〜次初当",
+    endedSetId, events: hintEvent[], openedAt
+  },
   sets: [{
     id, startedAt, endedAt: null|ISO,
     firstHitG, firstHitSuika?,
     bonuses: [{ n, type: "BIG"|"REG", at }],
-    linkedHisho: true|false|null, // true=飛翔 / false=スルー / null=保留
-    note: ""
+    linkedHisho: true|false|null,
+    note: "",
+    hintEvents: [{
+      id, segmentKey, segmentLabel,
+      when, means, strength, section, group, note, at
+    }]
   }]
 }
 ```
@@ -88,6 +109,8 @@ smaslo-ceiling-memo:v2:nangoku-sp:sets     # 南国 初当たりセット履歴�
 - `renchanCount = bonuses.length`
 - 今日スルー = 今日に属する終了セットで `linkedHisho === false` の件数
 - 日付跨ぎ: `dayKey` を今日に更新し履歴は保持。「今日」表示は `startedAt`／`endedAt` のローカル日付でフィルタ
+- **区間**: 初当開始 → `after-start`（1連目中）／ボーナス追加ごとに `between-n-(n+1)`／セット終了 → `waitingHints`（post-set）／次初当で waiting を前セットへアーカイブ
+- 旧セット（hintEvents なし）は読込時に `[]` へマイグレーション（破壊しない）
 
 ## 先着ラベル（リード論理）
 
@@ -130,6 +153,7 @@ smaslo-ceiling-memo:v2:nangoku-sp:sets     # 南国 初当たりセット履歴�
 - 脚注: ときめき後やめ／赤虹続行寄り
 - 設定表・狙い目はプレースホルダ（自己判断）
 - **0.2**: 初当たりセットログ（スルー＝飛翔に繋がらず終了）
+- **0.2.1**: 示唆ログ（ボーナス間／セット後〜次初当の通常待ち）
 
 ## 共通免責
 
@@ -144,16 +168,17 @@ smaslo-ceiling-memo:v2:nangoku-sp:sets     # 南国 初当たりセット履歴�
 node _selfcheck/run.js
 ```
 
-3機種 id・hints 非空、リードラベル、天井モード切替、LSキー（v1+v2）、CDN/fetch なし、版文字列、セット／スルー集計ヘルパを検証。
+3機種 id・hints 非空、リードラベル、天井モード切替、LSキー（v1+v2）、CDN/fetch なし、版文字列、セット／スルー集計、示唆区間開閉ヘルパを検証。
 
-## やらないこと（0.2）
+## やらないこと（0.2 / 0.2.1）
 
 - 他機種タブへのログUI展開
 - カメラ／音声の自動ボーナス検知
 - 「設定○です」断定 UI
 - CDN・外部通信・店舗連携・クラウド同期
 - スルーの日次マニュアル +1（セット単位が正）
-- 示唆早見の大幅改修
+- 示唆早見の大幅改修・他機種への示唆ログ展開
+- 「だから通常B」等のアプリ断定
 
 ## ファイル構成
 
@@ -161,6 +186,7 @@ node _selfcheck/run.js
 smaslo-ceiling-memo/
   index.html
   README.md
+  VERSION
   _selfcheck/
     run.js
 ```
@@ -170,5 +196,5 @@ smaslo-ceiling-memo/
 - 天井「+α」の詳細は機種仕様に依存し、表示は各 gCap 基準
 - チバリヨ2／南国の設定表はプレースホルダ
 - 解析値の正しさは保証しない。判断は人が行う
-- セットログは南国のみ。全機種JSON書出にはセット履歴を含めない（v2キー別）
+- セット／示唆ログは南国のみ。全機種JSON書出にはセット履歴を含めない（v2キー別）
 - 日付跨ぎの「今日」は端末ローカル日付依存
