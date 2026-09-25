@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>天井メモ（スマスロ） — GlockBOT 0.1.1</title>
+<title>天井メモ（スマスロ） — GlockBOT 0.2.0</title>
 <style>
 :root {
   --bg: #0f1419;
@@ -574,6 +574,222 @@ table.rates td { font-family: var(--mono); }
 }
 .notes li { margin-bottom: 0.35em; }
 
+
+/* ===== Set log (nangoku 0.2) ===== */
+.set-log {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: clamp(10px, 1.2vw, 16px);
+  display: grid;
+  gap: 10px;
+  max-height: min(52vh, 520px);
+  overflow: auto;
+}
+.set-log[hidden] { display: none !important; }
+.set-log-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px 12px;
+}
+.set-log-head h2 {
+  margin: 0;
+  font-size: clamp(0.95rem, 1.4vw, 1.15rem);
+  font-weight: 800;
+}
+.set-log-head .sub {
+  color: var(--muted);
+  font-size: 0.82em;
+}
+.set-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.set-stat {
+  background: var(--panel2);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 0.82em;
+  font-weight: 700;
+  color: var(--muted);
+}
+.set-stat strong { color: var(--ink); font-family: var(--mono); margin-left: 4px; }
+.set-stat.through strong { color: var(--danger); }
+.set-active {
+  background: var(--warm-soft);
+  border: 3px solid var(--warm);
+  border-radius: var(--radius);
+  padding: 12px;
+  box-shadow: 0 0 0 2px rgba(255, 176, 32, 0.28);
+}
+.set-active .now-label {
+  display: inline-block;
+  background: var(--warm);
+  color: #1a1200;
+  font-weight: 900;
+  font-size: 0.75em;
+  border-radius: 6px;
+  padding: 2px 8px;
+  margin-right: 6px;
+  letter-spacing: 0.04em;
+}
+.set-active .active-line {
+  font-size: clamp(1rem, 1.6vw, 1.2rem);
+  font-weight: 800;
+  margin: 6px 0 10px;
+  font-family: var(--mono);
+  word-break: break-word;
+}
+.set-btns {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.set-btns button {
+  flex: 1 1 7rem;
+  min-height: 48px;
+  font-weight: 800;
+}
+.set-btns .big-bonus {
+  background: #2a4a7a;
+  border-color: #5a8ad0;
+  color: #dcecff;
+}
+.set-btns .reg-bonus {
+  background: #3a2a5a;
+  border-color: #9a7ad0;
+  color: #f0e0ff;
+}
+.set-btns .end-hisho {
+  background: #1a3a28;
+  border-color: var(--ok);
+  color: #b8f0c8;
+}
+.set-btns .end-through {
+  background: #3a2020;
+  border-color: #ff5c5c;
+  color: #ffb0b0;
+}
+.set-btns .end-hold {
+  background: transparent;
+  border-style: dashed;
+  color: var(--muted);
+  font-weight: 600;
+  min-height: 40px;
+  flex: 1 1 100%;
+}
+.set-form {
+  display: grid;
+  gap: 8px;
+  background: var(--panel2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 12px;
+}
+.set-form .form-title {
+  font-weight: 800;
+  font-size: 0.95em;
+  margin: 0;
+}
+.set-form .form-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: end;
+}
+.set-form .field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1 1 6rem;
+  min-width: 5.5rem;
+}
+.set-form label {
+  font-size: 0.78em;
+  color: var(--muted);
+  font-weight: 600;
+}
+.set-form input[type="number"] {
+  min-height: 44px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: #0a1018;
+  color: var(--ink);
+  padding: 0.35em 0.6em;
+  font-family: var(--mono);
+  width: 100%;
+}
+.set-form .bonus-pick {
+  display: flex;
+  gap: 8px;
+  flex: 1 1 100%;
+}
+.set-form .bonus-pick button {
+  flex: 1;
+  min-height: 48px;
+  font-weight: 800;
+}
+.set-ended-list {
+  display: grid;
+  gap: 6px;
+}
+.set-ended-list .list-title {
+  font-size: 0.82em;
+  color: var(--muted);
+  font-weight: 700;
+  margin: 4px 0 0;
+}
+.set-ended {
+  background: var(--panel2);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 8px 10px;
+  font-size: 0.88em;
+  display: grid;
+  gap: 2px;
+}
+.set-ended .row1 {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+  align-items: baseline;
+  font-weight: 700;
+  font-family: var(--mono);
+}
+.set-ended .badge-tag {
+  font-family: sans-serif;
+  font-size: 0.75em;
+  border-radius: 999px;
+  padding: 2px 8px;
+  border: 1px solid var(--line);
+  font-weight: 800;
+}
+.set-ended .badge-tag.through { color: #ffb0b0; border-color: #6a3030; background: #3a2020; }
+.set-ended .badge-tag.hisho { color: #b8f0c8; border-color: #2a5a38; background: #1a3a28; }
+.set-ended .badge-tag.hold { color: var(--muted); }
+.set-ended .chain { color: var(--muted); font-size: 0.9em; font-family: var(--mono); }
+.set-ended.collapsed { display: none; }
+.set-log-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+.set-log-actions .ghost { font-size: 0.85em; min-height: 40px; }
+.set-through-ro {
+  background: var(--panel2);
+  border: 1px dashed var(--line);
+  border-radius: 10px;
+  padding: 8px 12px;
+  font-size: 0.9em;
+  color: var(--muted);
+  margin-bottom: 10px;
+}
+.set-through-ro strong { color: var(--ink); font-family: var(--mono); }
+
 .session-bar {
   display: flex;
   flex-wrap: wrap;
@@ -623,7 +839,7 @@ footer strong { color: var(--ink); }
 
   <header>
     <h1 id="appTitle">ヤバチバ メモ</h1>
-    <span class="badge">GlockBOT 0.1.1</span>
+    <span class="badge">GlockBOT 0.2.0</span>
     <span class="notice-short">非公式・解析値は変動しうる／店内メモ用・煽り禁止</span>
     <div class="ceiling-ui" id="ceilingUi"></div>
   </header>
@@ -700,6 +916,21 @@ footer strong { color: var(--ink); }
     <button type="button" class="danger-soft" id="resetBoth">両方リセット</button>
   </div>
 
+
+  <section class="set-log" id="setLogPanel" aria-label="初当たりセットログ" hidden>
+    <div class="set-log-head">
+      <h2>初当たりセット</h2>
+      <span class="sub">連チャン中と終了を分けて記録（スルー＝飛翔に繋がらず終了）</span>
+    </div>
+    <div class="set-stats" id="setStats" aria-live="polite"></div>
+    <div id="setActiveArea"></div>
+    <div class="set-ended-list" id="setEndedList"></div>
+    <div class="set-log-actions">
+      <button type="button" class="ghost danger-soft" id="setClearAll">セット全クリア</button>
+      <button type="button" class="ghost" id="setToggleOlder" hidden>古い終了を表示</button>
+    </div>
+  </section>
+
   <details class="hints" id="hintsPanel">
     <summary>示唆早見（見たもの → 意味）</summary>
     <div class="hints-body" id="hintsBody"></div>
@@ -719,7 +950,7 @@ footer strong { color: var(--ink); }
   </div>
 
   <footer>
-    <strong>GlockBOT 0.1.1</strong>
+    <strong>GlockBOT 0.2.0</strong>
     <span>スマスロ天井メモ（非公式）・解析値は変動しうる・メーカー公式の全数値公表ではない</span>
     <span>煽り禁止・「設定○」断定なし・個人収支・店舗名は送信しない</span>
   </footer>
@@ -733,6 +964,7 @@ footer strong { color: var(--ink); }
    * localStorage key scheme (documented for selfcheck):
    *   smaslo-ceiling-memo:v1:<machineId>  — per-machine counters / modes
    *   smaslo-ceiling-memo:v1:activeTab    — last active machine id
+   *   smaslo-ceiling-memo:v2:nangoku-sp:sets — 初当たりセット／連チャン／スルー (0.2)
    * machineId ∈ { yabachiba, chibariyo2, nangoku-sp }
    *
    * Lead / close logic (generalized from yabachiba-memo):
@@ -743,10 +975,15 @@ footer strong { color: var(--ink); }
    * - close c2 suika-scale (cap≤9): rem ≤ 10% OR ≤1
    * - Compare progress ratios; |diff| < 0.03 → ほぼ同時 / どちらも余裕
    * - Labels: 「G先」／「{c2Label}先」／「どちらも余裕」／「ほぼ同時」
+   *
+   * スルー = セット単位。終了時 linkedHisho===false のみ今日スルー+1。
+   * 飛翔終了 (linkedHisho===true) はスルーに数えない。日次マニュアル+1なし。
    */
-  var VERSION = "GlockBOT 0.1.1";
+  var VERSION = "GlockBOT 0.2.0";
   var LS_PREFIX = "smaslo-ceiling-memo:v1:";
   var LS_ACTIVE = LS_PREFIX + "activeTab";
+  var LS_SETS_KEY = "smaslo-ceiling-memo:v2:nangoku-sp:sets";
+  var SETS_MACHINE_ID = "nangoku-sp";
 
   var CLOSE_G_ABS = 50;
   var CLOSE_CHERRY_ABS = 5;
@@ -901,9 +1138,8 @@ footer strong { color: var(--ink); }
       ],
       footnotes: ["ときめき32G後やめ／赤・虹なら続行"],
       deep: {
-        optionalCounters: [
-          { key: "throughCount", label: "スルー回数（任意・絶対天井なし）", min: 0, max: 99 }
-        ],
+        optionalCounters: [],
+        throughFromSets: true,
         ratesTitle: "機械割・初当り（プレースホルダ・設3なし）",
         ratesHeaders: ["設定", "初当り（約）", "機械割"],
         rates: [
@@ -918,7 +1154,7 @@ footer strong { color: var(--ink); }
         strategy: [
           "天井: 通常799G+α／リセット・（超）飛翔後は500G+α。スイカ9回目ボーナス濃厚。",
           "狙い目目安（暫定）: 等価 通常450〜500G〜／短縮時250G〜／5〜6スルー〜。煽りなし・自己判断。",
-          "スルーに絶対天井はない。任意カウンタはメモ用のみ。",
+          "スルーに絶対天井はない。今日スルーは初当たりセット終了（飛翔に繋がらず）から集計。",
           "やめどき・資金管理は個人のルールに従う。"
         ]
       }
@@ -1015,6 +1251,177 @@ footer strong { color: var(--ink); }
     return s;
   }
 
+
+  /* ===== 0.2 set / through helpers (pure; selfcheck) ===== */
+  function localDateKey(d) {
+    if (d == null) d = new Date();
+    if (typeof d === "string") d = new Date(d);
+    if (!(d instanceof Date) || isNaN(d.getTime())) d = new Date();
+    var y = d.getFullYear();
+    var mo = ("0" + (d.getMonth() + 1)).slice(-2);
+    var da = ("0" + d.getDate()).slice(-2);
+    return y + "-" + mo + "-" + da;
+  }
+
+  function emptySetsStore(now) {
+    return { dayKey: localDateKey(now), activeId: null, sets: [] };
+  }
+
+  function normalizeSetsStore(raw, now) {
+    var store = emptySetsStore(now);
+    if (!raw || typeof raw !== "object") return store;
+    store.sets = Array.isArray(raw.sets) ? raw.sets.map(function (s) {
+      return {
+        id: String(s.id || ""),
+        startedAt: s.startedAt || null,
+        endedAt: s.endedAt == null ? null : s.endedAt,
+        firstHitG: Number(s.firstHitG) || 0,
+        firstHitSuika: s.firstHitSuika != null && s.firstHitSuika !== "" ? Number(s.firstHitSuika) : undefined,
+        bonuses: Array.isArray(s.bonuses) ? s.bonuses.map(function (b, i) {
+          return {
+            n: Number(b.n) || (i + 1),
+            type: b.type === "REG" ? "REG" : "BIG",
+            at: b.at || null
+          };
+        }) : [],
+        linkedHisho: s.linkedHisho === true ? true : s.linkedHisho === false ? false : null,
+        note: s.note ? String(s.note) : ""
+      };
+    }) : [];
+    var aid = raw.activeId || null;
+    if (aid && !store.sets.some(function (s) { return s.id === aid && !s.endedAt; })) {
+      aid = null;
+    }
+    store.activeId = aid;
+    // dayKey always rolls to today; history kept; 「今日」 filters by date
+    store.dayKey = localDateKey(now);
+    return store;
+  }
+
+  function setBelongsToDay(set, dayKey) {
+    if (!set || !dayKey) return false;
+    var startDay = set.startedAt ? localDateKey(set.startedAt) : null;
+    var endDay = set.endedAt ? localDateKey(set.endedAt) : null;
+    return startDay === dayKey || endDay === dayKey;
+  }
+
+  function renchanCount(set) {
+    return set && Array.isArray(set.bonuses) ? set.bonuses.length : 0;
+  }
+
+  function bonusChain(set) {
+    return ((set && set.bonuses) || []).map(function (b) { return b.type; }).join("→");
+  }
+
+  function linkedLabel(linkedHisho) {
+    if (linkedHisho === true) return "飛翔";
+    if (linkedHisho === false) return "スルー";
+    return "保留";
+  }
+
+  function todaySets(store, now) {
+    var day = localDateKey(now);
+    return ((store && store.sets) || []).filter(function (s) {
+      return setBelongsToDay(s, day);
+    });
+  }
+
+  function todayEndedSets(store, now) {
+    return todaySets(store, now).filter(function (s) { return !!s.endedAt; });
+  }
+
+  /** スルー = 終了セットかつ linkedHisho === false（飛翔終了は数えない） */
+  function todayThroughCount(store, now) {
+    return todayEndedSets(store, now).filter(function (s) {
+      return s.linkedHisho === false;
+    }).length;
+  }
+
+  function todaySetCount(store, now) {
+    return todaySets(store, now).length;
+  }
+
+  function todayMaxRen(store, now) {
+    var max = 0;
+    todaySets(store, now).forEach(function (s) {
+      var n = renchanCount(s);
+      if (n > max) max = n;
+    });
+    return max;
+  }
+
+  function makeSetId(now) {
+    var t = now ? new Date(now).getTime() : Date.now();
+    return "set_" + t + "_" + Math.floor(Math.random() * 1e6);
+  }
+
+  function getActiveSet(store) {
+    if (!store || !store.activeId) return null;
+    for (var i = 0; i < store.sets.length; i++) {
+      if (store.sets[i].id === store.activeId && !store.sets[i].endedAt) return store.sets[i];
+    }
+    return null;
+  }
+
+  function startSet(store, opts, now) {
+    now = now || new Date();
+    store = store || emptySetsStore(now);
+    if (getActiveSet(store)) throw new Error("active set exists");
+    var type = opts && opts.firstBonus;
+    if (type !== "BIG" && type !== "REG") throw new Error("firstBonus BIG|REG required");
+    var iso = new Date(now).toISOString();
+    var set = {
+      id: makeSetId(now),
+      startedAt: iso,
+      endedAt: null,
+      firstHitG: Number(opts.firstHitG) || 0,
+      bonuses: [{ n: 1, type: type, at: iso }],
+      linkedHisho: null,
+      note: ""
+    };
+    if (opts.firstHitSuika != null && opts.firstHitSuika !== "") {
+      set.firstHitSuika = Number(opts.firstHitSuika);
+    }
+    store.sets.push(set);
+    store.activeId = set.id;
+    store.dayKey = localDateKey(now);
+    return store;
+  }
+
+  function addBonus(store, type, now) {
+    now = now || new Date();
+    var set = getActiveSet(store);
+    if (!set) throw new Error("no active set");
+    if (type !== "BIG" && type !== "REG") throw new Error("type BIG|REG required");
+    set.bonuses.push({
+      n: set.bonuses.length + 1,
+      type: type,
+      at: new Date(now).toISOString()
+    });
+    return store;
+  }
+
+  /**
+   * linkedHisho: true=飛翔に繋がった / false=スルーで終了 / null=判定保留
+   * スルー集計は linkedHisho===false のみ。
+   */
+  function endSet(store, linkedHisho, note, now) {
+    now = now || new Date();
+    var set = getActiveSet(store);
+    if (!set) throw new Error("no active set");
+    set.endedAt = new Date(now).toISOString();
+    if (linkedHisho === true) set.linkedHisho = true;
+    else if (linkedHisho === false) set.linkedHisho = false;
+    else set.linkedHisho = null;
+    if (note != null && note !== "") set.note = String(note);
+    store.activeId = null;
+    return store;
+  }
+
+  function clearAllSets(now) {
+    return emptySetsStore(now);
+  }
+
   var API = {
     VERSION: VERSION,
     LS_PREFIX: LS_PREFIX,
@@ -1033,7 +1440,26 @@ footer strong { color: var(--ink); }
     CLOSE_CHERRY_ABS: CLOSE_CHERRY_ABS,
     CLOSE_SUIKA_ABS: CLOSE_SUIKA_ABS,
     CLOSE_RATIO: CLOSE_RATIO,
-    EQUAL_EPS: EQUAL_EPS
+    EQUAL_EPS: EQUAL_EPS,
+    LS_SETS_KEY: LS_SETS_KEY,
+    SETS_MACHINE_ID: SETS_MACHINE_ID,
+    localDateKey: localDateKey,
+    emptySetsStore: emptySetsStore,
+    normalizeSetsStore: normalizeSetsStore,
+    setBelongsToDay: setBelongsToDay,
+    renchanCount: renchanCount,
+    bonusChain: bonusChain,
+    linkedLabel: linkedLabel,
+    todaySets: todaySets,
+    todayEndedSets: todayEndedSets,
+    todayThroughCount: todayThroughCount,
+    todaySetCount: todaySetCount,
+    todayMaxRen: todayMaxRen,
+    getActiveSet: getActiveSet,
+    startSet: startSet,
+    addBonus: addBonus,
+    endSet: endSet,
+    clearAllSets: clearAllSets
   };
   if (typeof window !== "undefined") {
     window.SmasloCeilingMemo = API;
@@ -1216,6 +1642,11 @@ footer strong { color: var(--ink); }
   function renderDeep(m, state) {
     var body = $("deepBody");
     var html = "";
+    if (m.deep && m.deep.throughFromSets) {
+      html += '<div class="set-through-ro">今日スルー（セット由来・読取専用）: <strong id="deepThroughRo">' +
+        todayThroughCount(setsStore) + "</strong>" +
+        '　／　手動+1なし・飛翔終了は数えない</div>';
+    }
     var opts = (m.deep && m.deep.optionalCounters) || [];
     if (opts.length) {
       html += '<div class="sec-grid">';
@@ -1289,6 +1720,7 @@ footer strong { color: var(--ink); }
     $("hintsPanel").open = false;
     $("deepPanel").open = false;
     render(true);
+    renderSetLog();
   }
 
   function render(rebuildPanels) {
@@ -1375,6 +1807,8 @@ footer strong { color: var(--ink); }
       barG.classList.add("lead", "lead-g");
       barC.classList.add("lead", "lead-c2");
     }
+
+    renderSetLog();
   }
 
   function setG(v) {
@@ -1485,7 +1919,182 @@ footer strong { color: var(--ink); }
     reader.readAsText(file);
   });
 
+
+  /* ===== nangoku set-log UI (0.2) ===== */
+  var setsStore = emptySetsStore();
+  var showOlderEnded = false;
+
+  function loadSetsStore() {
+    try {
+      var raw = localStorage.getItem(LS_SETS_KEY);
+      if (!raw) {
+        setsStore = emptySetsStore();
+        return;
+      }
+      setsStore = normalizeSetsStore(JSON.parse(raw));
+    } catch (e) {
+      setsStore = emptySetsStore();
+    }
+  }
+
+  function saveSetsStore() {
+    try {
+      setsStore.dayKey = localDateKey();
+      localStorage.setItem(LS_SETS_KEY, JSON.stringify(setsStore));
+    } catch (e) { /* ignore */ }
+  }
+
+  function renderSetLog() {
+    var panel = $("setLogPanel");
+    if (!panel) return;
+    var isNangoku = activeId === SETS_MACHINE_ID;
+    panel.hidden = !isNangoku;
+    if (!isNangoku) return;
+
+    var stats = $("setStats");
+    var throughN = todayThroughCount(setsStore);
+    var setN = todaySetCount(setsStore);
+    var maxRen = todayMaxRen(setsStore);
+    stats.innerHTML =
+      '<span class="set-stat through">今日スルー<strong>' + throughN + "</strong></span>" +
+      '<span class="set-stat">今日セット<strong>' + setN + "</strong></span>" +
+      '<span class="set-stat">最大連<strong>' + maxRen + "</strong></span>";
+
+    var deepRo = $("deepThroughRo");
+    if (deepRo) deepRo.textContent = String(throughN);
+
+    var active = getActiveSet(setsStore);
+    var area = $("setActiveArea");
+    if (active) {
+      var ren = renchanCount(active);
+      area.innerHTML =
+        '<div class="set-active">' +
+        '<div><span class="now-label">いま</span></div>' +
+        '<div class="active-line">初当 ' + active.firstHitG + "G / " + ren + "連目 / " + bonusChain(active) + "</div>" +
+        '<div class="set-btns">' +
+        '<button type="button" class="big-bonus" data-set-act="add-BIG">+ BIG</button>' +
+        '<button type="button" class="reg-bonus" data-set-act="add-REG">+ REG</button>' +
+        '<button type="button" class="end-hisho" data-set-act="end-hisho">飛翔に繋がった</button>' +
+        '<button type="button" class="end-through" data-set-act="end-through">スルーで終了</button>' +
+        '<button type="button" class="end-hold" data-set-act="end-hold">やめた（判定保留）</button>' +
+        "</div></div>";
+    } else {
+      var curG = states[SETS_MACHINE_ID] ? states[SETS_MACHINE_ID].g : 0;
+      var curSuika = states[SETS_MACHINE_ID] ? states[SETS_MACHINE_ID].c2 : 0;
+      area.innerHTML =
+        '<div class="set-form">' +
+        '<p class="form-title">初当たりを記録</p>' +
+        '<div class="form-row">' +
+        '<div class="field"><label for="setFirstG">初当たりG（必須）</label>' +
+        '<input type="number" id="setFirstG" min="0" max="9999" value="' + curG + '" inputmode="numeric" /></div>' +
+        '<div class="field"><label for="setFirstSuika">スイカCOUNT（任意）</label>' +
+        '<input type="number" id="setFirstSuika" min="0" max="9" value="' + curSuika + '" inputmode="numeric" /></div>' +
+        "</div>" +
+        '<div class="bonus-pick">' +
+        '<button type="button" class="big-bonus" data-set-act="start-BIG">1発目 BIG で開始</button>' +
+        '<button type="button" class="reg-bonus" data-set-act="start-REG">1発目 REG で開始</button>' +
+        "</div></div>";
+    }
+
+    var ended = todayEndedSets(setsStore).slice().sort(function (a, b) {
+      return String(b.endedAt).localeCompare(String(a.endedAt));
+    });
+    var list = $("setEndedList");
+    var openN = 3;
+    var htmlE = '<p class="list-title">今日の終了セット（新しい順）</p>';
+    if (!ended.length) {
+      htmlE += '<p class="list-title" style="font-weight:500;">まだ終了セットなし</p>';
+    } else {
+      ended.forEach(function (s, idx) {
+        var tagClass = s.linkedHisho === false ? "through" : s.linkedHisho === true ? "hisho" : "hold";
+        var collapsed = (!showOlderEnded && idx >= openN) ? " collapsed" : "";
+        htmlE +=
+          '<div class="set-ended' + collapsed + '">' +
+          '<div class="row1">' +
+          "<span>初当 " + s.firstHitG + "G</span>" +
+          "<span>" + renchanCount(s) + "連</span>" +
+          '<span class="badge-tag ' + tagClass + '">' + linkedLabel(s.linkedHisho) + "</span>" +
+          "</div>" +
+          '<div class="chain">' + bonusChain(s) +
+          (s.firstHitSuika != null ? "　／　スイカ" + s.firstHitSuika : "") +
+          (s.note ? "　／　" + s.note : "") +
+          "</div></div>";
+      });
+    }
+    list.innerHTML = htmlE;
+
+    var tog = $("setToggleOlder");
+    if (tog) {
+      if (ended.length > openN) {
+        tog.hidden = false;
+        tog.textContent = showOlderEnded ? "古い終了を隠す" : "古い終了を表示（+" + (ended.length - openN) + "）";
+      } else {
+        tog.hidden = true;
+      }
+    }
+  }
+
+  function onSetLogClick(e) {
+    var btn = e.target.closest("[data-set-act]");
+    if (!btn) return;
+    var act = btn.getAttribute("data-set-act");
+    try {
+      if (act === "start-BIG" || act === "start-REG") {
+        var gEl = $("setFirstG");
+        var sEl = $("setFirstSuika");
+        var g = gEl ? clampInt(gEl.value, 0, 9999) : 0;
+        var suikaRaw = sEl ? sEl.value : "";
+        var opts = {
+          firstHitG: g,
+          firstBonus: act === "start-BIG" ? "BIG" : "REG"
+        };
+        if (suikaRaw !== "" && suikaRaw != null) {
+          opts.firstHitSuika = clampInt(suikaRaw, 0, 9);
+        }
+        startSet(setsStore, opts);
+        saveSetsStore();
+        renderSetLog();
+        if ($("deepThroughRo")) $("deepThroughRo").textContent = String(todayThroughCount(setsStore));
+        return;
+      }
+      if (act === "add-BIG") { addBonus(setsStore, "BIG"); saveSetsStore(); renderSetLog(); return; }
+      if (act === "add-REG") { addBonus(setsStore, "REG"); saveSetsStore(); renderSetLog(); return; }
+      if (act === "end-hisho") { endSet(setsStore, true); saveSetsStore(); renderSetLog(); syncDeepThrough(); return; }
+      if (act === "end-through") { endSet(setsStore, false); saveSetsStore(); renderSetLog(); syncDeepThrough(); return; }
+      if (act === "end-hold") { endSet(setsStore, null); saveSetsStore(); renderSetLog(); syncDeepThrough(); return; }
+    } catch (err) {
+      alert("セット操作に失敗しました: " + (err && err.message ? err.message : err));
+    }
+  }
+
+  function syncDeepThrough() {
+    var deepRo = $("deepThroughRo");
+    if (deepRo) deepRo.textContent = String(todayThroughCount(setsStore));
+  }
+
+  if ($("setLogPanel")) {
+    $("setLogPanel").addEventListener("click", onSetLogClick);
+  }
+  if ($("setClearAll")) {
+    $("setClearAll").addEventListener("click", function () {
+      if (!confirm("南国SPECIALの初当たりセットをすべて消します。よろしいですか？")) return;
+      setsStore = clearAllSets();
+      saveSetsStore();
+      showOlderEnded = false;
+      renderSetLog();
+      syncDeepThrough();
+    });
+  }
+  if ($("setToggleOlder")) {
+    $("setToggleOlder").addEventListener("click", function () {
+      showOlderEnded = !showOlderEnded;
+      renderSetLog();
+    });
+  }
+
+
   loadAll();
+  loadSetsStore();
   setTabs();
   render(true);
 })();
