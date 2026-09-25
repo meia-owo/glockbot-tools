@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>天井メモ（スマスロ） — GlockBOT 0.1.0</title>
+<title>天井メモ（スマスロ） — GlockBOT 0.1.1</title>
 <style>
 :root {
   --bg: #0f1419;
@@ -480,6 +480,12 @@ details.sec[open] > summary {
   font-weight: 800;
   color: var(--ink);
 }
+.hint-group-title {
+  margin: 0;
+  font-size: 0.88em;
+  font-weight: 800;
+  color: var(--muted);
+}
 .hint-cards {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
@@ -617,7 +623,7 @@ footer strong { color: var(--ink); }
 
   <header>
     <h1 id="appTitle">ヤバチバ メモ</h1>
-    <span class="badge">GlockBOT 0.1.0</span>
+    <span class="badge">GlockBOT 0.1.1</span>
     <span class="notice-short">非公式・解析値は変動しうる／店内メモ用・煽り禁止</span>
     <div class="ceiling-ui" id="ceilingUi"></div>
   </header>
@@ -713,7 +719,7 @@ footer strong { color: var(--ink); }
   </div>
 
   <footer>
-    <strong>GlockBOT 0.1.0</strong>
+    <strong>GlockBOT 0.1.1</strong>
     <span>スマスロ天井メモ（非公式）・解析値は変動しうる・メーカー公式の全数値公表ではない</span>
     <span>煽り禁止・「設定○」断定なし・個人収支・店舗名は送信しない</span>
   </footer>
@@ -738,7 +744,7 @@ footer strong { color: var(--ink); }
    * - Compare progress ratios; |diff| < 0.03 → ほぼ同時 / どちらも余裕
    * - Labels: 「G先」／「{c2Label}先」／「どちらも余裕」／「ほぼ同時」
    */
-  var VERSION = "GlockBOT 0.1.0";
+  var VERSION = "GlockBOT 0.1.1";
   var LS_PREFIX = "smaslo-ceiling-memo:v1:";
   var LS_ACTIVE = LS_PREFIX + "activeTab";
 
@@ -874,16 +880,26 @@ footer strong { color: var(--ink); }
         markNote: "3/5/7 期待度約33%・9=濃厚（解析値）"
       },
       hints: [
-        { when: "バタフライ終了 リールフラッシュ 青", means: "弱示唆（モード寄りは小さい）", strength: "弱", section: "mode" },
-        { when: "バタフライ終了 リールフラッシュ 緑", means: "強示唆", strength: "示唆", section: "mode" },
-        { when: "バタフライ終了 リールフラッシュ 赤", means: "通常B以上寄り", strength: "示唆", section: "mode" },
-        { when: "バタフライ終了 リールフラッシュ 虹", means: "（超）飛翔寄り", strength: "濃厚", section: "mode" },
-        { when: "PUSHボイス「可!」", means: "設定示唆（判別用・モードではない）", strength: "弱", section: "setting" },
-        { when: "PUSHボイス「良!」", means: "設定示唆（判別用）", strength: "示唆", section: "setting" },
-        { when: "PUSHボイス「極み!」", means: "高設定寄り示唆（断定しない）", strength: "濃厚", section: "setting" },
-        { when: "リプフラ発生率表", means: "調査・参考（サイト間揺れ）", strength: "調査中", section: "mode" }
+        { when: "バタフライ終了 リールフラッシュ 青", means: "弱示唆（モード寄りは小さい）", strength: "弱", section: "mode", group: "終了時" },
+        { when: "バタフライ終了 リールフラッシュ 緑", means: "強示唆", strength: "示唆", section: "mode", group: "終了時" },
+        { when: "バタフライ終了 リールフラッシュ 赤", means: "通常B以上寄り", strength: "濃厚", section: "mode", group: "終了時" },
+        { when: "バタフライ終了 リールフラッシュ 虹", means: "（超）飛翔寄り", strength: "濃厚", section: "mode", group: "終了時" },
+        { when: "リプフラ（リプレイ入賞音の変化）", means: "モード帯の目安。通常A 約1/379／チャンス・通常B・飛翔準備A 約1/270／飛翔準備B 約1/136／超飛翔準備 約1/78", strength: "示唆", section: "mode", group: "途中" },
+        { when: "さざなみ前兆 赤", means: "約85%で通常B以上寄り", strength: "濃厚", section: "mode", group: "途中" },
+        { when: "さざなみ前兆 虹", means: "ボーナス＋飛翔寄り", strength: "濃厚", section: "mode", group: "途中" },
+        { when: "アツナミカスタム時のさざなみ", means: "発生時点で期待度約90%（カスタム依存）", strength: "示唆", section: "mode", group: "途中" },
+        { when: "紫織ランプ 虹", means: "1G連ストック濃厚", strength: "濃厚", section: "mode", group: "ボーナス中" },
+        { when: "バタフライ中に蝶が飛ぶ", means: "飛翔＋1G連寄り", strength: "濃厚", section: "mode", group: "ボーナス中" },
+        { when: "筐体右上 SPECIAL LUCKY 点灯", means: "超飛翔", strength: "濃厚", section: "mode", group: "ボーナス中" },
+        { when: "PUSH「可!」", means: "設定2以上寄り（断定禁止・寄り表記）", strength: "濃厚", section: "setting" },
+        { when: "PUSH「良!」", means: "設定4以上寄り", strength: "濃厚", section: "setting" },
+        { when: "PUSH「極み!」", means: "設定6寄り", strength: "濃厚", section: "setting" },
+        { when: "「張り切っていこー」", means: "サイト揺れ・設定1でも頻出報告あり", strength: "調査中", section: "setting" },
+        { when: "「自分を信じて」", means: "サイト揺れ・設定1でも頻出報告あり", strength: "調査中", section: "setting" },
+        { when: "「良い感じよ♪うんうん」", means: "サイト揺れ・設定1でも頻出報告あり", strength: "調査中", section: "setting" },
+        { when: "規定回以外（1・2・4・6・8）スイカ当選", means: "通常A/B滞在時 低設定帯約1.2%／設定4以上約5.1%", strength: "示唆", section: "setting" }
       ],
-      footnotes: ["ときめき後やめ目安／赤・虹フラッシュは続行寄り（自己判断）。"],
+      footnotes: ["ときめき32G後やめ／赤・虹なら続行"],
       deep: {
         optionalCounters: [
           { key: "throughCount", label: "スルー回数（任意・絶対天井なし）", min: 0, max: 99 }
@@ -1168,7 +1184,25 @@ footer strong { color: var(--ink); }
       }).join("") + "</div>";
     }
     if (modeHints.length) {
-      html += '<p class="hint-section-title">モード・演出示唆</p>' + cards(modeHints);
+      html += '<p class="hint-section-title">モード・演出示唆</p>';
+      var grouped = {};
+      modeHints.forEach(function (h) {
+        var group = h.group || "";
+        if (!grouped[group]) grouped[group] = [];
+        grouped[group].push(h);
+      });
+      var groupOrder = ["終了時", "途中", "ボーナス中"];
+      function renderGroup(group) {
+        if (!grouped[group]) return;
+        html += '<p class="hint-group-title">' + group + '</p>' + cards(grouped[group]);
+        delete grouped[group];
+      }
+      groupOrder.forEach(renderGroup);
+      Object.keys(grouped).forEach(function (group) {
+        if (group) renderGroup(group);
+      });
+      // Legacy machines have no group field: keep one plain card block.
+      if (grouped[""]) html += cards(grouped[""]);
     }
     if (settingHints.length) {
       html += '<p class="hint-section-title">設定示唆（モードとは別）</p>' + cards(settingHints);

@@ -1,6 +1,6 @@
 # スマスロ天井・状態把握メモ（3機種タブ）
 
-版: **GlockBOT 0.1.0**（趣味枠／Pages可）
+版: **GlockBOT 0.1.1**（趣味枠／Pages可）
 
 ホールでその場で使える **天井・状態把握メモ**。機種タブ切替で定数・示唆早見・天井モードを差し替える。  
 正の仕様: `/workspace/specs/smaslo-ceiling-memo-0.1.md`  
@@ -56,7 +56,7 @@ smaslo-ceiling-memo:v1:activeTab     # 最後に開いたタブ
 
 ## 示唆早見
 
-- `hints[] = { when, means, strength, section }`
+- `hints[] = { when, means, strength, section, group? }`
 - strength: `濃厚` / `示唆` / `弱` / `調査中`
 - 南国の PUSH「可!／良!／極み!」は **設定示唆**セクション（モード示唆と分離）
 - **自動判定しない**。「設定○です」断定UIなし
