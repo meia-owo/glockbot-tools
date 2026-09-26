@@ -202,7 +202,7 @@
   <div id="map"></div>
 </div>
 <div id="timeline" role="tabpanel" aria-labelledby="tab-timeline" hidden></div>
-<footer>trip-pin-base 0.3.0</footer>
+<footer>trip-pin-base 0.3.1</footer>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
 /*
@@ -226,28 +226,72 @@
  */
 const pins = [
   {
-    id: 'nagato-farm',
+    id: 'korankei',
     group: 'stop',
     section: 'Day1（10/30）',
+    name: '香嵐渓',
+    lat: 35.1304462,
+    lon: 137.3160731,
+    note: '10/30 午前・紅葉渓谷立ち寄り',
+    when: '10/30 午前',
+    address: '愛知県豊田市足助町',
+    gmaps: 'https://www.google.com/maps/search/?api=1&query=%E9%A6%99%E5%B5%90%E6%B8%93'
+  },
+  {
+    id: 'michinoeki-hiraya',
+    group: 'stop',
+    name: '信州平谷 道の駅',
+    lat: 35.3242331,
+    lon: 137.6319012,
+    note: '10/30・トイレ休憩',
+    when: '10/30',
+    address: '長野県下伊那郡平谷村',
+    gmaps: 'https://www.google.com/maps/search/?api=1&query=%E9%81%93%E3%81%AE%E9%A7%85%E4%BF%A1%E5%B7%9E%E5%B9%B3%E8%B0%B7'
+  },
+  {
+    id: 'shirakaba-lake',
+    group: 'stop',
+    name: '白樺湖',
+    lat: 36.1057761,
+    lon: 138.2379630,
+    note: '10/30・湖畔立ち寄り',
+    when: '10/30',
+    address: '長野県茅野市北山',
+    gmaps: 'https://www.google.com/maps/search/?api=1&query=%E7%99%BD%E6%A8%BA%E6%B9%96'
+  },
+  {
+    id: 'nagato-farm',
+    group: 'stop',
     name: '長門牧場',
     lat: 36.1709547,
     lon: 138.2773549,
-    note: '10/30 昼・薪窯ピザ',
-    when: '10/30 12:00',
+    note: '10/30・薪窯ピザ',
+    when: '10/30',
     address: '長野県小県郡長和町大門3539-2',
     gmaps: 'https://www.google.com/maps/search/?api=1&query=%E9%95%B7%E9%96%80%E7%89%A7%E5%A0%B4',
     url: 'https://nagatofarm.com/'
   },
   {
-    id: 'denim-street',
+    id: 'kyu-karuizawa-ginza',
     group: 'stop',
-    name: '旧軽井沢・デニムストリート',
+    name: '旧軽井沢銀座',
     lat: 36.3598831,
     lon: 138.6368547,
-    note: '10/30 午後・平坦散策',
-    when: '10/30 15:00',
-    address: '長野県北佐久郡軽井沢町旧軽井沢（銀座通り付近）',
+    note: '10/30 午後・銀座散策',
+    when: '10/30 午後',
+    address: '長野県北佐久郡軽井沢町旧軽井沢',
     gmaps: 'https://www.google.com/maps/search/?api=1&query=%E6%97%A7%E8%BB%BD%E4%BA%95%E6%B2%A2%E9%8A%80%E5%BA%A7'
+  },
+  {
+    id: 'harunire-terrace',
+    group: 'stop',
+    name: 'ハルニレテラス',
+    lat: 36.3593866,
+    lon: 138.5904379,
+    note: '10/30・軽井沢星野エリア',
+    when: '10/30 午後',
+    address: '〒389-0111 長野県北佐久郡軽井沢町長倉2145-5',
+    gmaps: 'https://www.google.com/maps/search/?api=1&query=%E3%83%8F%E3%83%AB%E3%83%8B%E3%83%AC%E3%83%86%E3%83%A9%E3%82%B9'
   },
   {
     id: 'greenplaza',
@@ -258,7 +302,7 @@ const pins = [
     note: '10/30→10/31・確定宿・2食バイキング・メゾネット',
     when: '10/30 17:30 チェックイン / 10/31 チェックアウト',
     bookingNo: 'RYa0nf9v36',
-    address: '群馬県吾妻郡嬬恋村大前細原2277',
+    address: '〒377-1612 群馬県吾妻郡嬬恋村大前細原2277',
     gmaps: 'https://www.google.com/maps/search/?api=1&query=%E3%83%9B%E3%83%86%E3%83%AB%E3%82%B0%E3%83%AA%E3%83%BC%E3%83%B3%E3%83%97%E3%83%A9%E3%82%B6%E8%BB%BD%E4%BA%95%E6%B2%A2',
     rakuten: 'https://travel.rakuten.co.jp/HOTEL/11009/11009.html'
   },
@@ -496,8 +540,12 @@ function renderTimeline() {
   const el = document.getElementById('timeline');
   const gp = pinById['greenplaza'];
   const ryu = pinById['ryu-resort'];
+  const korankei = pinById['korankei'];
+  const hiraya = pinById['michinoeki-hiraya'];
+  const shirakaba = pinById['shirakaba-lake'];
   const nagato = pinById['nagato-farm'];
-  const denim = pinById['denim-street'];
+  const ginza = pinById['kyu-karuizawa-ginza'];
+  const harunire = pinById['harunire-terrace'];
   const shinmei = pinById['shinmei-parking'];
   const oldTown = pinById['old-town'];
   const station = pinById['takayama-station'];
@@ -514,29 +562,78 @@ function renderTimeline() {
   html += '<section class="tl-day"><div class="tl-day-head">Day1（10/30 金）</div>';
 
   html += '<div class="tl-card move">';
-  html += '<div class="tl-time">出発</div>';
-  html += '<div class="tl-title">岡崎市</div>';
-  html += '<div class="tl-body">午前出発想定（時刻は未定のため捏造していません）</div>';
+  html += '<div class="tl-time">AM 5時</div>';
+  html += '<div class="tl-title">岡崎出発</div>';
+  html += '<div class="tl-body">岡崎市を出発</div>';
+  html += '</div>';
+
+  html += '<div class="tl-card move">';
+  html += '<div class="tl-time">ルート</div>';
+  html += '<div class="tl-title">153号</div>';
   html += '</div>';
 
   html += '<div class="tl-card stop">';
-  html += '<div class="tl-time">12:00頃</div>';
+  html += '<div class="tl-time">立ち寄り</div>';
+  html += '<div class="tl-title">' + esc(korankei.name) + '</div>';
+  html += '<div class="tl-body">紅葉渓谷</div>';
+  html += pinLinksHtml(korankei, true);
+  html += '</div>';
+
+  html += '<div class="tl-card stop">';
+  html += '<div class="tl-time">トイレ休憩</div>';
+  html += '<div class="tl-title">' + esc(hiraya.name) + '</div>';
+  html += '<div class="tl-body">道の駅・トイレ休憩</div>';
+  html += pinLinksHtml(hiraya, true);
+  html += '</div>';
+
+  html += '<div class="tl-card move">';
+  html += '<div class="tl-time">高速</div>';
+  html += '<div class="tl-title">飯田IC → 諏訪IC</div>';
+  html += '</div>';
+
+  html += '<div class="tl-card move">';
+  html += '<div class="tl-time">ルート</div>';
+  html += '<div class="tl-title">152号</div>';
+  html += '</div>';
+
+  html += '<div class="tl-card stop">';
+  html += '<div class="tl-time">立ち寄り</div>';
+  html += '<div class="tl-title">' + esc(shirakaba.name) + '</div>';
+  html += '<div class="tl-body">湖畔立ち寄り</div>';
+  html += pinLinksHtml(shirakaba, true);
+  html += '</div>';
+
+  html += '<div class="tl-card stop">';
+  html += '<div class="tl-time">ランチ</div>';
   html += '<div class="tl-title">' + esc(nagato.name) + '</div>';
-  html += '<div class="tl-body">昼・薪窯ピザ</div>';
+  html += '<div class="tl-body">ピザを食べる</div>';
   html += pinLinksHtml(nagato, true);
   html += '</div>';
 
+  html += '<div class="tl-card move">';
+  html += '<div class="tl-time">運転メモ</div>';
+  html += '<div class="tl-title">軽井沢方面ルート</div>';
+  html += '<div class="tl-body">長久保交差点右→142号／芦田宿入口交差点信号右→142号／跡部交差点左折→141号／平原T字信号右折→18号</div>';
+  html += '</div>';
+
   html += '<div class="tl-card stop">';
-  html += '<div class="tl-time">15:00頃</div>';
-  html += '<div class="tl-title">' + esc(denim.name) + '</div>';
-  html += '<div class="tl-body">午後・平坦散策</div>';
-  html += pinLinksHtml(denim, true);
+  html += '<div class="tl-time">散策</div>';
+  html += '<div class="tl-title">' + esc(ginza.name) + ' 散策</div>';
+  html += '<div class="tl-body">旧軽井沢銀座を散策</div>';
+  html += pinLinksHtml(ginza, true);
+  html += '</div>';
+
+  html += '<div class="tl-card stop">';
+  html += '<div class="tl-time">立ち寄り</div>';
+  html += '<div class="tl-title">' + esc(harunire.name) + '（軽井沢星野エリア）</div>';
+  html += '<div class="tl-body">' + esc(harunire.address) + '</div>';
+  html += pinLinksHtml(harunire, true);
   html += '</div>';
 
   html += '<div class="tl-card stay">';
   html += '<div class="tl-time">17:30 CI</div>';
   html += '<div class="tl-title">' + esc(gp.name) + '</div>';
-  html += '<div class="tl-body">' + bookingBlock(timelineExtra.greenplaza, gp.bookingNo) + '</div>';
+  html += '<div class="tl-body">' + (gp.address ? ('<div>' + esc(gp.address) + '</div>') : '') + bookingBlock(timelineExtra.greenplaza, gp.bookingNo) + '</div>';
   html += pinLinksHtml(gp, true);
   html += '</div>';
 
