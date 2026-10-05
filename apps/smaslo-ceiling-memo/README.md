@@ -1,12 +1,13 @@
 # スマスロ天井・状態把握メモ（3機種タブ）
 
-版: **GlockBOT 0.3.0**（趣味枠／Pages可）
+版: **GlockBOT 0.3.1**（趣味枠／Pages可）
 
 ホールでその場で使える **天井・状態把握メモ**。機種タブ切替で定数・示唆早見・天井モードを差し替える。  
 正の仕様: `/workspace/specs/smaslo-ceiling-memo-0.1.md`（親UX）  
 0.2 追加: `/workspace/specs/smaslo-ceiling-memo-0.2-session-log.md`（南国SPECIAL 初当たりセット／連チャン／スルー）  
 0.2.1 追加: `/workspace/specs/smaslo-ceiling-memo-0.2.1-hint-log.md`（南国 示唆ログ・ボーナス間／通常待ち）  
 0.3 追加: `/workspace/specs/smaslo-ceiling-memo-0.3-yabachiba-logs.md`（ヤバチバへセット／示唆ログ展開・G直入・Undo・export hygiene）  
+0.3.1: G±／スライダーつまみのタップ領域拡大  
 旧単機 `apps/yabachiba-memo/` は本アプリへ統合（誘導ページのみ残置）。
 
 ## 開き方
