@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>川崎BXP 据付負荷スクリーニング — GlockBOT 0.2.0</title>
+<title>川崎BXP 据付負荷スクリーニング — GlockBOT 0.3.0</title>
 <style>
 :root {
   --bg:#12141a; --panel:#1e2129; --accent:#4f8cff; --ng:#ff5c5c; --warn:#ffb84f; --ok:#4fd68c;
@@ -93,6 +93,22 @@ table.steps tr.peak{background:rgba(255,92,92,.15)}
 }
 .sliders label{margin-top:6px}
 .three-missing{color:var(--warn);font-size:11px;padding:4px 8px}
+
+.badge{display:inline-block;padding:4px 12px;border-radius:6px;font-weight:700;font-size:clamp(14px,1.1vw,18px);letter-spacing:.04em}
+.badge.ok{background:rgba(79,214,140,.2);color:var(--ok);border:1px solid var(--ok)}
+.badge.warn{background:rgba(255,184,79,.2);color:var(--warn);border:1px solid var(--warn)}
+.badge.ng{background:rgba(255,92,92,.2);color:var(--ng);border:1px solid var(--ng)}
+.ship-kpi{background:#151820;border:1px solid var(--border);border-radius:8px;padding:10px;margin-bottom:10px}
+.ship-kpi .row2{display:flex;justify-content:space-between;align-items:center;gap:8px;margin:4px 0}
+.compare-table{width:100%;border-collapse:collapse;font-size:11px;margin-top:6px}
+.compare-table th,.compare-table td{border:1px solid var(--border);padding:4px 6px;text-align:center}
+.compare-table th{color:var(--muted);font-weight:600}
+.estop-warn{color:var(--ng);font-size:12px;margin-top:4px}
+.preset-row{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
+.preset-row button{flex:1;min-width:90px;font-size:12px}
+.toggle-row{display:flex;align-items:center;gap:8px;margin:8px 0;font-size:12px}
+.toggle-row input{width:auto}
+
 </style>
 <script>
 /* Three.js r128 optional — corporate CDN may block */
@@ -106,13 +122,13 @@ window.__THREE_OK=false;
 <div class="app">
   <header>
     <h1>川崎BXP 据付負荷スクリーニング</h1>
-    <span class="ver">GlockBOT 0.2.0</span>
+    <span class="ver">GlockBOT 0.3.0</span>
     <span style="flex:1"></span>
     <button id="btnRecalc" class="primary">再計算</button>
     <button id="btnExport">CSV出力</button>
     <button id="btnReport">印刷レポート</button>
   </header>
-  <div id="lWarn" class="banner">LMOVE は 0.2.0 では J 補間へフォールバックします（未達: 逆キネマ）。</div>
+  <div id="lWarn" class="banner">LMOVE は 0.3.0 でも J 補間へフォールバックします（未達: 逆キネマ）。</div>
   <div class="main">
     <!-- LEFT -->
     <aside class="pane" id="leftPane">
@@ -140,7 +156,7 @@ window.__THREE_OK=false;
             <select id="catalogMode"><option value="0">オフ（動的推定）</option><option value="1">オン（M_tip固定）</option></select>
           </div>
         </div>
-        <p class="note">質量配分・DH・M_tip/T_rot は近似プレースホルダ（公式表でない場合あり）。</p>
+        <p class="note">質量配分・DHは近似。M_tip/T_rot はメーカー公表・運転時（非常停止・水平力は未公表）。</p>
         <h2 style="padding-left:0">手動関節 (J1–J6 °)</h2>
         <div class="sliders" id="jointSliders"></div>
       </div>
@@ -163,12 +179,21 @@ window.__THREE_OK=false;
           <div><label>ピッチ Y mm</label><input type="number" id="pitchY" value="700"/></div>
         </div>
         <div class="row">
-          <div><label>許容引張 Na N</label><input type="number" id="Na" value="45000"/></div>
-          <div><label>許容せん断 Qa N</label><input type="number" id="Qa" value="25000"/></div>
+          <div><label>長期許容引張 Na（既定 38.3 kN）</label><input type="number" id="Na" value="38300"/></div>
+          <div><label>短期許容引張 Na_short（既定 57.5 kN）</label><input type="number" id="Na_short" value="57500"/></div>
         </div>
         <div class="row">
-          <button type="button" id="btnResetBolts">角ボルト8本リセット</button>
-          <button type="button" id="btnAddMatsuba">松葉+2</button>
+          <div><label>許容せん断 Qa（手入力）</label><input type="number" id="Qa" value="25000"/></div>
+        </div>
+        <p class="note">ボルト座標は仕様寸法からの<strong>推定</strong>。CADで要確認。</p>
+        <div class="preset-row">
+          <button type="button" id="btnBolts8">8本標準</button>
+          <button type="button" id="btnBolts6">6本（後部✕）</button>
+          <button type="button" id="btnAddMatsuba">松葉+2（確認後のみ有効）</button>
+        </div>
+        <div class="toggle-row">
+          <label style="display:inline;color:var(--text);margin:0"><input type="checkbox" id="includeMatsuba"/> BKTを剛体として算入</label>
+          <span class="note" style="margin:0">OFF＝松葉除外（安全側・既定）</span>
         </div>
         <div class="anchor-list" id="anchorList"></div>
       </div>
@@ -223,37 +248,57 @@ window.__THREE_OK=false;
 
     <!-- RIGHT -->
     <aside class="pane" id="rightPane">
-      <h2>結果 KPI</h2>
+      <h2>出荷判定 KPI</h2>
       <div class="right-body">
+        <div class="ship-kpi">
+          <div class="row2">
+            <span class="l" style="color:var(--muted);font-size:11px">判定 U=T_op/Ta_long</span>
+            <span class="badge ok" id="kpiBadge">—</span>
+          </div>
+          <div class="row2"><span class="l" style="color:var(--muted);font-size:11px">最悪ボルト</span><span class="v" id="kpiWorstId" style="font-family:var(--mono)">—</span></div>
+          <div class="row2"><span class="l" style="color:var(--muted);font-size:11px">T_op</span><span class="v" id="kpiTop" style="font-family:var(--mono)">—</span></div>
+          <div class="row2"><span class="l" style="color:var(--muted);font-size:11px">利用率 U</span><span class="v" id="kpiU" style="font-family:var(--mono)">—</span></div>
+          <div id="estopWarn" class="estop-warn" style="display:none"></div>
+        </div>
         <div class="kpi-grid">
           <div class="kpi"><div class="l">ピーク M_floor</div><div class="v" id="kpiM">—</div><div class="l" id="kpiMmeta">—</div></div>
-          <div class="kpi"><div class="l">最悪ボルト利用率</div><div class="v" id="kpiU">—</div><div class="l" id="kpiUmeta">—</div></div>
-          <div class="kpi"><div class="l">カタログ M_tip</div><div class="v" id="kpiCat">—</div><div class="l">illustrative</div></div>
+          <div class="kpi"><div class="l">カタログ M（運転時）</div><div class="v" id="kpiCat">—</div><div class="l" id="kpiCatMeta">メーカー公表</div></div>
+          <div class="kpi"><div class="l">カタログ T（運転時）</div><div class="v" id="kpiCatT">—</div><div class="l">メーカー公表</div></div>
           <div class="kpi"><div class="l">Fz_floor @peak</div><div class="v" id="kpiFz">—</div><div class="l">N</div></div>
         </div>
         <div class="chart-box">
           <div class="tag" style="position:static;margin-bottom:4px">M_floor(t) vs カタログ線</div>
           <canvas id="chartCanvas" width="600" height="160"></canvas>
         </div>
-        <h2 style="padding:0 0 6px">ボルト利用率</h2>
+        <h2 style="padding:0 0 6px">8本 vs 6本（現在M_floorピーク固定）</h2>
+        <table class="compare-table" id="compareTable">
+          <thead><tr><th></th><th>8本標準</th><th>6本（後部✕）</th></tr></thead>
+          <tbody>
+            <tr><td>T_max</td><td id="cmp8T">—</td><td id="cmp6T">—</td></tr>
+            <tr><td>U</td><td id="cmp8U">—</td><td id="cmp6U">—</td></tr>
+            <tr><td>判定</td><td id="cmp8J">—</td><td id="cmp6J">—</td></tr>
+          </tbody>
+        </table>
+        <h2 style="padding:10px 0 6px">ボルト利用率（引張 U）</h2>
         <div class="bolt-bars" id="boltBars"></div>
         <div class="tips"><strong>簡易ヒント</strong><ul id="tipList"><li>再計算後に表示</li></ul></div>
       </div>
     </aside>
   </div>
   <footer class="footer">
-    <div class="disclaimer">本結果は簡易モデルによる推定値です。据付可否の最終判断は、川崎重工の据付・接続要領書および構造設計者による正式検討に基づいてください。</div>
-    <div>GlockBOT 0.2.0 · 架台剛体仮定 · DH/質量/カタログ値は近似 · Three.js r128 は任意（CDNブロック時は Canvas2D のみ）</div>
+    <div class="disclaimer">本結果は簡易モデルによる推定値です。据付可否の最終判断は、川崎重工の据付・接続要領書および構造設計者による正式検討に基づいてください。構造保証ではありません。</div>
+    <div>ボルト座標は仕様寸法からの推定（CADで要確認）。利用率0.7は疲労・繰返し（静的の約65%）を踏まえた提案目安。非常停止×1.8はABB比準用の推定。</div>
+    <div>GlockBOT 0.3.0 · 架台剛体仮定 · DH/質量は近似 · M/Tはメーカー公表・運転時 · Three.js r128 は任意（CDNブロック時は Canvas2D のみ）</div>
   </footer>
 </div>
 
 <div class="modal" id="reportModal">
   <div class="modal-inner" id="printReport">
     <h2>据付負荷スクリーニング レポート</h2>
-    <p><strong>GlockBOT 0.2.0</strong></p>
+    <p><strong>GlockBOT 0.3.0</strong></p>
     <div id="reportBody"></div>
     <p style="margin-top:24px;border-top:1px solid #ccc;padding-top:12px;color:#666;font-size:12px">
-      本結果は簡易モデルによる推定値です。据付可否の最終判断は、川崎重工の据付・接続要領書および構造設計者による正式検討に基づいてください。
+      本結果は簡易モデルによる推定値です。据付可否の最終判断は、川崎重工の据付・接続要領書および構造設計者による正式検討に基づいてください。構造保証ではありません。ボルト座標は推定。利用率0.7は提案目安。
     </p>
     <div class="modal-actions">
       <button type="button" onclick="window.print()">印刷 / PDF</button>
@@ -265,25 +310,25 @@ window.__THREE_OK=false;
 <script>
 window.BXPCore = (function(){
 'use strict';
-/**
- * Kawasaki BXP mount-load physics core (Node-testable).
- * Keep in sync with the CORE block in ../index.html.
- * Values marked illustrative are approximate placeholders, not official catalog tables.
- */
-'use strict';
-
 const G = 9.80665;
 const DISCLAIMER =
-  '本結果は簡易モデルによる推定値です。据付可否の最終判断は、川崎重工の据付・接続要領書および構造設計者による正式検討に基づいてください。';
-const VERSION = 'GlockBOT 0.2.0';
+  '本結果は簡易モデルによる推定値です。据付可否の最終判断は、川崎重工の据付・接続要領書および構造設計者による正式検討に基づいてください。構造保証ではありません。';
+const VERSION = 'GlockBOT 0.3.0';
 
-/** Illustrative DH (mm, deg) + mass split + catalog M_tip/T_rot placeholders */
+/** M20 接着系（AP-20 等）Fc=21・SS400 目安 */
+const NA_LONG_DEFAULT = 38300; // N 長期許容引張
+const NA_SHORT_DEFAULT = 57500; // N 短期許容引張
+const QA_DEFAULT = 25000; // N 許容せん断（手入力既定）
+const U_OK = 0.7; // U < 0.7 → OK（疲労・繰返しを踏まえた提案目安）
+const U_NG = 1.0; // U ≥ 1.0 → NG
+const ESTOP_RATIO = 1.8; // ABB 比準用・推定
+
+/** DH (mm, deg) + mass split illustrative; M_tip/T_rot = メーカー公表・運転時 */
 const MODELS = {
   BXP110S: {
     name: 'BXP110S',
     payloadKg: 110,
     totalMassKg: 1180,
-    // [a(mm), alpha(deg), d(mm), thetaOffset(deg)] modified DH-style used as a,α,d with θ from joint
     dh: [
       { a: 150, alpha: -90, d: 650, th0: 0 },
       { a: 870, alpha: 0, d: 0, th0: -90 },
@@ -292,11 +337,10 @@ const MODELS = {
       { a: 0, alpha: -90, d: 0, th0: 0 },
       { a: 0, alpha: 0, d: 200, th0: 0 }
     ],
-    // mass fractions of totalMassKg at links after joints 1..4 (shoulder, upper, elbow/fore, wrist)
     massFrac: [0.28, 0.32, 0.25, 0.15],
-    M_tip_Nm: 28000,
-    T_rot_Nm: 18000,
-    note: 'illustrative / approximate'
+    M_tip_Nm: 27000,
+    T_rot_Nm: 10000,
+    note: 'メーカー公表・運転時（非常停止・水平力は未公表）'
   },
   BXP110L: {
     name: 'BXP110L',
@@ -311,9 +355,9 @@ const MODELS = {
       { a: 0, alpha: 0, d: 200, th0: 0 }
     ],
     massFrac: [0.26, 0.33, 0.26, 0.15],
-    M_tip_Nm: 32000,
-    T_rot_Nm: 20000,
-    note: 'illustrative / approximate'
+    M_tip_Nm: 35000,
+    T_rot_Nm: 15000,
+    note: 'メーカー公表・運転時（非常停止・水平力は未公表）'
   },
   BXP135X: {
     name: 'BXP135X',
@@ -328,9 +372,9 @@ const MODELS = {
       { a: 0, alpha: 0, d: 215, th0: 0 }
     ],
     massFrac: [0.27, 0.32, 0.26, 0.15],
-    M_tip_Nm: 38000,
-    T_rot_Nm: 23000,
-    note: 'illustrative / approximate'
+    M_tip_Nm: 35000,
+    T_rot_Nm: 15000,
+    note: 'メーカー公表・運転時（非常停止・水平力は未公表）'
   },
   BXP165L: {
     name: 'BXP165L',
@@ -345,9 +389,9 @@ const MODELS = {
       { a: 0, alpha: 0, d: 220, th0: 0 }
     ],
     massFrac: [0.25, 0.34, 0.26, 0.15],
-    M_tip_Nm: 45000,
-    T_rot_Nm: 28000,
-    note: 'illustrative / approximate'
+    M_tip_Nm: 35000,
+    T_rot_Nm: 15000,
+    note: 'メーカー公表・運転時（非常停止・水平力は未公表）'
   },
   BXP210L: {
     name: 'BXP210L',
@@ -362,9 +406,9 @@ const MODELS = {
       { a: 0, alpha: 0, d: 230, th0: 0 }
     ],
     massFrac: [0.24, 0.35, 0.26, 0.15],
-    M_tip_Nm: 55000,
-    T_rot_Nm: 35000,
-    note: 'illustrative / approximate'
+    M_tip_Nm: 35000,
+    T_rot_Nm: 15000,
+    note: 'メーカー公表・運転時（非常停止・水平力は未公表）'
   }
 };
 
@@ -395,7 +439,6 @@ function dhTransform(thetaDeg, d, a, alphaDeg) {
   const al = deg2rad(alphaDeg);
   const ct = Math.cos(th), st = Math.sin(th);
   const ca = Math.cos(al), sa = Math.sin(al);
-  // column-major 4x4
   return [
     ct, st, 0, 0,
     -st * ca, ct * ca, sa, 0,
@@ -441,8 +484,6 @@ function massPositionsFromFK(fk) {
 }
 
 function standMassKg(h_mm, L_mm, W_mm, pipe_mm, t_mm) {
-  // Spec formula base: (4*54*(h/1000) + (L/1000)*(W/1000)*196)*1.15
-  // Dynamic leg mass from section if pipe/t given
   const h = h_mm / 1000;
   const L = L_mm / 1000;
   const W = W_mm / 1000;
@@ -450,7 +491,7 @@ function standMassKg(h_mm, L_mm, W_mm, pipe_mm, t_mm) {
   if (pipe_mm && t_mm && pipe_mm > 2 * t_mm) {
     const outer = pipe_mm / 1000;
     const inner = (pipe_mm - 2 * t_mm) / 1000;
-    const area = outer * outer - inner * inner; // m²
+    const area = outer * outer - inner * inner;
     legKgPerM = area * 7850;
   }
   return (4 * legKgPerM * h + L * W * 196) * 1.15;
@@ -458,8 +499,6 @@ function standMassKg(h_mm, L_mm, W_mm, pipe_mm, t_mm) {
 
 /**
  * Simulate joint trajectory with synchronized trapezoid JMOVE + dwell for weld/timer.
- * steps: [{j:[6], speed, accel, weld, timer, interp}]
- * Returns samples: {t, joints, stepIndex}[]
  */
 function buildTrajectory(steps, dt) {
   dt = dt || 0.01;
@@ -476,18 +515,15 @@ function buildTrajectory(steps, dt) {
     const timer = Number(st.timer || st.weld_dwell || 0) || 0;
     const isL = String(st.interp || 'J').toUpperCase().startsWith('L');
 
-    // LMOVE: warn/fallback to J (MVP)
     const speed = Math.max(1, Number(st.speed) || 100) / 100;
     const accel = Math.max(1, Number(st.accel) || 100) / 100;
 
-    // max joint rate ~ 120 deg/s at 100% (illustrative)
-    const maxRate = 120 * speed; // deg/s
-    const maxAcc = 400 * accel; // deg/s²
+    const maxRate = 120 * speed;
+    const maxAcc = 400 * accel;
     let maxDelta = 0;
     for (let i = 0; i < 6; i++) maxDelta = Math.max(maxDelta, Math.abs(tgt[i] - cur[i]));
 
     if (maxDelta < 1e-6 || weld) {
-      // static / weld segment
       const dwell = weld ? Math.max(timer, 0.3) : Math.max(timer, dt);
       const n = Math.max(1, Math.round(dwell / dt));
       for (let k = 1; k <= n; k++) {
@@ -497,14 +533,12 @@ function buildTrajectory(steps, dt) {
       continue;
     }
 
-    // Trapezoid time for dominant axis
     const v = maxRate;
     const a = maxAcc;
     let tAcc = v / a;
     let dAcc = 0.5 * a * tAcc * tAcc;
     let tTotal;
     if (2 * dAcc >= maxDelta) {
-      // triangle
       tAcc = Math.sqrt(maxDelta / a);
       tTotal = 2 * tAcc;
       dAcc = 0.5 * a * tAcc * tAcc;
@@ -519,7 +553,6 @@ function buildTrajectory(steps, dt) {
       const tau = (k / n) * tTotal;
       let sNorm;
       if (2 * dAcc >= maxDelta - 1e-9 && tTotal > 0) {
-        // triangle profile position fraction
         const tA = tTotal / 2;
         if (tau <= tA) sNorm = 0.5 * a * tau * tau / maxDelta;
         else {
@@ -571,10 +604,6 @@ function centralDiffAccel(series, dt) {
   return out;
 }
 
-/**
- * Compute base loads for one sample given mass positions + accels.
- * Returns Fx,Fy,Fz,M,T (before DAF on M,T)
- */
 function baseLoads(masses, positions, accels) {
   let Fx = 0, Fy = 0, Fz = 0, Mx = 0, My = 0, Tz = 0;
   for (let i = 0; i < masses.length; i++) {
@@ -587,7 +616,6 @@ function baseLoads(masses, positions, accels) {
     Fx += fx;
     Fy += fy;
     Fz += fz;
-    // Moment about base origin: r × F
     Mx += p.y * fz - p.z * fy;
     My += p.z * fx - p.x * fz;
     Tz += p.x * fy - p.y * fx;
@@ -615,8 +643,7 @@ function floorLoads(base, h_m, mStand, daf) {
 }
 
 /**
- * Default corner bolt pattern (8 bolts) in mm relative to plate center.
- * pitchX, pitchY = outer column pitches.
+ * Legacy pitch-based 8-bolt pattern (kept for selfcheck / older cases).
  */
 function defaultBolts(pitchX, pitchY) {
   const hx = pitchX / 2, hy = pitchY / 2;
@@ -633,32 +660,93 @@ function defaultBolts(pitchX, pitchY) {
   ];
 }
 
+/**
+ * 標準8本（川崎推定）: (±195,±170) と (±170,±195) mm。
+ * 仕様寸法からの推定 — CADで要確認。
+ */
+function standardBoltsKawasaki() {
+  return [
+    { id: 'B1', x: -195, y: -170, enabled: true, matsuba: false, rear: true },
+    { id: 'B2', x: -170, y: -195, enabled: true, matsuba: false, rear: false },
+    { id: 'B3', x: 170, y: -195, enabled: true, matsuba: false, rear: false },
+    { id: 'B4', x: 195, y: -170, enabled: true, matsuba: false, rear: false },
+    { id: 'B5', x: -195, y: 170, enabled: true, matsuba: false, rear: true },
+    { id: 'B6', x: -170, y: 195, enabled: true, matsuba: false, rear: false },
+    { id: 'B7', x: 170, y: 195, enabled: true, matsuba: false, rear: false },
+    { id: 'B8', x: 195, y: 170, enabled: true, matsuba: false, rear: false }
+  ];
+}
+
+/**
+ * 6本（後部2本無効）。松葉は別途。
+ */
+function bolts6RearDisabled() {
+  return standardBoltsKawasaki().map((b) =>
+    Object.assign({}, b, { enabled: !b.rear })
+  );
+}
+
+/**
+ * 松葉+2 を追加。enabled=true でも includeMatsuba=false なら analyze から除外。
+ */
 function addMatsuba(bolts, pitchX, pitchY) {
-  const hx = pitchX / 2 + 80, hy = pitchY / 2 + 80;
+  const existing = bolts.filter((b) => b.matsuba);
+  if (existing.length) return bolts.slice();
+  // 推定位置: X外側（仕様寸法ベース）
+  const hx = 195 + 80;
   return bolts.concat([
-    { id: 'M1', x: -hx, y: 0, enabled: true, matsuba: true },
-    { id: 'M2', x: hx, y: 0, enabled: true, matsuba: true }
+    { id: 'M1', x: -hx, y: 0, enabled: true, matsuba: true, rear: false },
+    { id: 'M2', x: hx, y: 0, enabled: true, matsuba: true, rear: false }
   ]);
 }
 
 /**
- * Elastic bolt-group tensile + shear split.
- * plate half-size for compression edge: halfL, halfW (mm)
- * Allowables: Na (tensile N), Qa (shear N)
+ * 出荷判定: U = T_op / Ta_long
+ * OK: U < 0.7 / 要対策: 0.7 ≤ U < 1.0 / NG: U ≥ 1.0
  */
-function analyzeBolts(bolts, M_floor, T_floor, Fx, Fy, halfL_mm, halfW_mm, Na, Qa) {
-  const active = bolts.filter((b) => b.enabled);
-  if (!active.length) return { bolts: [], maxUtil: 0, worstId: null };
+function shipJudgment(U) {
+  if (U >= U_NG) return { code: 'NG', label: 'NG', hint: '据付見直し必須' };
+  if (U >= U_OK) return { code: 'WARN', label: '要対策', hint: 'speed/Acc低減または補強' };
+  return { code: 'OK', label: 'OK', hint: 'その条件で出荷可（目安）' };
+}
 
-  // Moment direction: assume My-dominant tipping about Y → tension by x distance from compression edge
-  // Use distance from plate edge in tipping direction. Simplified: c_i = distance from compression edge along x
-  // Compression edge at x = -halfL (worst for positive My tipping). Use |x| relative to neutral at edge.
-  const edge = halfL_mm; // mm
-  // c_i = x_i - (-edge) = x_i + edge  (tensile when positive from compression edge)
-  // Better classic: lever arm from neutral axis through compression edge
+/**
+ * 非常停止推定引張: T_estop ≈ T_op × 1.8（ABB比準用・推定）
+ */
+function estopTension(T_op_N, ratio) {
+  const r = ratio != null ? ratio : ESTOP_RATIO;
+  const T_estop = T_op_N * r;
+  return {
+    T_estop,
+    ratio: r,
+    ng: T_estop >= NA_SHORT_DEFAULT,
+    label: '推定'
+  };
+}
+
+/**
+ * Elastic bolt-group tensile + shear split.
+ * includeMatsuba: 松葉を剛体として算入するか（既定 false = 安全側除外）
+ */
+function analyzeBolts(bolts, M_floor, T_floor, Fx, Fy, halfL_mm, halfW_mm, Na, Qa, includeMatsuba) {
+  const includeM = !!includeMatsuba;
+  const active = bolts.filter((b) => b.enabled && (includeM || !b.matsuba));
+  if (!active.length) {
+    return {
+      bolts: [],
+      maxUtil: 0,
+      maxUtilT: 0,
+      T_op: 0,
+      worstId: null,
+      judgment: shipJudgment(0),
+      estop: estopTension(0)
+    };
+  }
+
+  const edge = halfL_mm;
   let sumC2 = 0;
   const cs = active.map((b) => {
-    const c = b.x + edge; // mm from left edge
+    const c = b.x + edge;
     sumC2 += c * c;
     return c;
   });
@@ -669,31 +757,29 @@ function analyzeBolts(bolts, M_floor, T_floor, Fx, Fy, halfL_mm, halfW_mm, Na, Q
     return r;
   });
   const n = active.length;
-  const Fh = Math.sqrt(Fx * Fx + Fy * Fy);
   const results = [];
   let maxUtil = 0;
+  let maxUtilT = 0;
+  let T_op = 0;
   let worstId = null;
 
   for (let i = 0; i < n; i++) {
     const b = active[i];
     const c = cs[i];
     const r = rs[i] || 1e-6;
-    // N_i in N; M_floor in N·m → convert lever mm→m
     const Ni = sumC2 > 0 ? (M_floor * (c / 1000)) / (sumC2 / 1e6) : 0;
     const N_tensile = Math.max(0, Ni);
-    // shear: equal share of Fh + torsion share
     const Qeqx = Fx / n;
     const Qeqy = Fy / n;
     const Qt = sumR2 > 0 ? (T_floor * (r / 1000)) / (sumR2 / 1e6) : 0;
-    // torsion shear direction perpendicular to radius
     const qx = Qeqx + (r > 0 ? (-b.y / r) * Qt : 0);
     const qy = Qeqy + (r > 0 ? (b.x / r) * Qt : 0);
     const Qi = Math.sqrt(qx * qx + qy * qy);
     const utilT = Na > 0 ? N_tensile / Na : 0;
     const utilS = Qa > 0 ? Qi / Qa : 0;
-    // interaction approx
     const utilC = Math.sqrt(utilT * utilT + utilS * utilS);
     const util = Math.max(utilT, utilC);
+    const jud = shipJudgment(utilT);
     results.push({
       id: b.id,
       x: b.x,
@@ -701,20 +787,44 @@ function analyzeBolts(bolts, M_floor, T_floor, Fx, Fy, halfL_mm, halfW_mm, Na, Q
       matsuba: b.matsuba,
       N: N_tensile,
       Q: Qi,
+      utilT,
       util,
-      color: util >= 1 ? 'ng' : util >= 0.7 ? 'warn' : 'ok'
+      color: jud.code === 'NG' ? 'ng' : jud.code === 'WARN' ? 'warn' : 'ok'
     });
-    if (util > maxUtil) {
-      maxUtil = util;
+    if (util > maxUtil) maxUtil = util;
+    if (utilT > maxUtilT) {
+      maxUtilT = utilT;
+      T_op = N_tensile;
       worstId = b.id;
     }
   }
-  return { bolts: results, maxUtil, worstId };
+  return {
+    bolts: results,
+    maxUtil,
+    maxUtilT,
+    T_op,
+    worstId,
+    judgment: shipJudgment(maxUtilT),
+    estop: estopTension(T_op)
+  };
+}
+
+/**
+ * 同一 M_floor で 8本 vs 6本 を対照。
+ */
+function compare8vs6(M_floor, T_floor, Fx, Fy, halfL_mm, halfW_mm, Na, Qa) {
+  const b8 = standardBoltsKawasaki();
+  const b6 = bolts6RearDisabled();
+  const a8 = analyzeBolts(b8, M_floor, T_floor, Fx, Fy, halfL_mm, halfW_mm, Na, Qa, false);
+  const a6 = analyzeBolts(b6, M_floor, T_floor, Fx, Fy, halfL_mm, halfW_mm, Na, Qa, false);
+  return {
+    eight: { T_op: a8.T_op, U: a8.maxUtilT, judgment: a8.judgment, worstId: a8.worstId },
+    six: { T_op: a6.T_op, U: a6.maxUtilT, judgment: a6.judgment, worstId: a6.worstId }
+  };
 }
 
 /**
  * Full timeline simulation.
- * opts: { modelKey, toolKg, workKg, h_mm, L_mm, W_mm, pipe, t, mStandOverride, daf, steps, bolts, halfL, halfW, Na, Qa, dt }
  */
 function simulate(opts) {
   const model = MODELS[opts.modelKey] || MODELS.BXP165L;
@@ -729,8 +839,8 @@ function simulate(opts) {
       : standMassKg(opts.h_mm || 0, opts.L_mm || 1200, opts.W_mm || 1000, opts.pipe || 200, opts.t || 9);
   const daf = opts.daf != null ? opts.daf : 1.3;
   const samples = buildTrajectory(opts.steps, dt);
+  const includeMatsuba = !!opts.includeMatsuba;
 
-  // FK positions for each sample / each mass
   const posSeries = masses.map(() => []);
   for (let s = 0; s < samples.length; s++) {
     const fk = forwardKinematics(samples[s].joints, model);
@@ -744,19 +854,21 @@ function simulate(opts) {
   let peakM = -1;
   let peakIdx = 0;
   let worstBoltUtil = 0;
+  let worstBoltUtilT = 0;
   let worstBoltId = null;
   let worstBoltAt = 0;
+  let worstT_op = 0;
 
-  const bolts = opts.bolts || defaultBolts(opts.pitchX || 900, opts.pitchY || 700);
+  const bolts = opts.bolts || standardBoltsKawasaki();
   const halfL = opts.halfL != null ? opts.halfL : (opts.L_mm || 1200) / 2;
   const halfW = opts.halfW != null ? opts.halfW : (opts.W_mm || 1000) / 2;
-  const Na = opts.Na != null ? opts.Na : 45000; // N illustrative
-  const Qa = opts.Qa != null ? opts.Qa : 25000;
+  const Na = opts.Na != null ? opts.Na : NA_LONG_DEFAULT;
+  const Qa = opts.Qa != null ? opts.Qa : QA_DEFAULT;
+  const Na_short = opts.Na_short != null ? opts.Na_short : NA_SHORT_DEFAULT;
 
   for (let s = 0; s < samples.length; s++) {
     const positions = posSeries.map((ser) => ser[s]);
     const accels = accSeries.map((ser) => ser[s]);
-    // Force static dynamics to zero on weld/static samples (gravity only via az=0)
     if (samples[s].static) {
       for (let i = 0; i < accels.length; i++) accels[i] = { ax: 0, ay: 0, az: 0 };
     }
@@ -771,7 +883,8 @@ function simulate(opts) {
       halfL,
       halfW,
       Na,
-      Qa
+      Qa,
+      includeMatsuba
     );
     timeline.push({
       t: samples[s].t,
@@ -781,21 +894,41 @@ function simulate(opts) {
       weld: !!samples[s].weld,
       ...floor,
       boltMaxUtil: boltRes.maxUtil,
+      boltMaxUtilT: boltRes.maxUtilT,
+      boltT_op: boltRes.T_op,
       boltWorstId: boltRes.worstId,
-      boltDetail: boltRes.bolts
+      boltDetail: boltRes.bolts,
+      judgment: boltRes.judgment,
+      estop: boltRes.estop
     });
     if (floor.M_floor > peakM) {
       peakM = floor.M_floor;
       peakIdx = s;
     }
-    if (boltRes.maxUtil > worstBoltUtil) {
+    if (boltRes.maxUtilT > worstBoltUtilT) {
+      worstBoltUtilT = boltRes.maxUtilT;
       worstBoltUtil = boltRes.maxUtil;
       worstBoltId = boltRes.worstId;
+      worstT_op = boltRes.T_op;
       worstBoltAt = s;
     }
   }
 
   const totalRobotMass = masses.reduce((a, b) => a + b, 0);
+  const peakRow = timeline[peakIdx];
+  const cmp =
+    peakRow
+      ? compare8vs6(
+          peakRow.M_floor,
+          peakRow.T_floor,
+          peakRow.Fx,
+          peakRow.Fy,
+          halfL,
+          halfW,
+          Na,
+          Qa
+        )
+      : null;
 
   return {
     model,
@@ -811,16 +944,57 @@ function simulate(opts) {
     },
     worstBolt: {
       util: worstBoltUtil,
+      utilT: worstBoltUtilT,
+      T_op: worstT_op,
       id: worstBoltId,
       t: timeline[worstBoltAt] ? timeline[worstBoltAt].t : 0,
-      index: worstBoltAt
+      index: worstBoltAt,
+      judgment: shipJudgment(worstBoltUtilT),
+      estop: estopTension(worstT_op)
     },
-    catalog: { M_tip: model.M_tip_Nm, T_rot: model.T_rot_Nm }
+    catalog: { M_tip: model.M_tip_Nm, T_rot: model.T_rot_Nm },
+    compare8vs6: cmp,
+    Na,
+    Na_short,
+    Qa
   };
 }
 
 
-return { G, DISCLAIMER, VERSION, MODELS, deg2rad, rad2deg, dhTransform, forwardKinematics, concentratedMasses, massPositionsFromFK, standMassKg, buildTrajectory, centralDiffAccel, baseLoads, floorLoads, defaultBolts, addMatsuba, analyzeBolts, simulate, mat4Mul, mat4Identity };
+return {
+  G,
+  DISCLAIMER,
+  VERSION,
+  MODELS,
+  NA_LONG_DEFAULT,
+  NA_SHORT_DEFAULT,
+  QA_DEFAULT,
+  U_OK,
+  U_NG,
+  ESTOP_RATIO,
+  deg2rad,
+  rad2deg,
+  dhTransform,
+  forwardKinematics,
+  concentratedMasses,
+  massPositionsFromFK,
+  standMassKg,
+  buildTrajectory,
+  centralDiffAccel,
+  baseLoads,
+  floorLoads,
+  defaultBolts,
+  standardBoltsKawasaki,
+  bolts6RearDisabled,
+  addMatsuba,
+  analyzeBolts,
+  shipJudgment,
+  estopTension,
+  compare8vs6,
+  simulate,
+  mat4Mul,
+  mat4Identity
+};
 })();
 </script>
 <script>
@@ -830,7 +1004,7 @@ const C = window.BXPCore;
 const DISCLAIMER = C.DISCLAIMER;
 
 let state = {
-  bolts: C.defaultBolts(900, 700),
+  bolts: C.standardBoltsKawasaki(),
   steps: [],
   sim: null,
   idx: 0,
@@ -931,8 +1105,6 @@ function renderSteps(){
   });
 }
 
-function readStepsFromTable(){ /* already live */ }
-
 function importCsv(){
   const text=$('csvPaste').value.trim();
   if(!text) return;
@@ -943,7 +1115,7 @@ function importCsv(){
     const p=line.split(/[,\t]/).map(s=>s.trim());
     if(p.length<7) continue;
     let off=0;
-    if(/^d+$/.test(p[0]) && p.length>=8) off=1;
+    if(/^\d+$/.test(p[0]) && p.length>=8) off=1;
     const j=p.slice(off,off+6).map(Number);
     const speed=Number(p[off+6]||100);
     const accel=Number(p[off+7]||100);
@@ -957,12 +1129,14 @@ function importCsv(){
 function renderBolts(){
   const host=$('anchorList');
   host.innerHTML='';
-  state.bolts.forEach((b,i)=>{
+  const includeM=$('includeMatsuba').checked;
+  state.bolts.forEach((b)=>{
     const div=document.createElement('div');
     div.className='anchor-item';
-    div.innerHTML=`<strong>${b.id}</strong> <span>(${b.x},${b.y})</span>
+    const matNote=b.matsuba?(includeM?'<span style="color:var(--accent)">松葉・算入</span>':'<span style="color:var(--muted)">松葉・除外</span>'):'';
+    div.innerHTML=`<strong>${b.id}</strong> <span>(${b.x},${b.y})${b.rear?' 後部':''}</span>
       <label style="display:inline;color:var(--text)"><input type="checkbox" ${b.enabled?'checked':''}/> 有効</label>
-      ${b.matsuba?'<span style="color:var(--accent)">松葉</span>':''}`;
+      ${matNote}`;
     div.querySelector('input').addEventListener('change',e=>{ b.enabled=e.target.checked; });
     host.appendChild(div);
   });
@@ -984,7 +1158,10 @@ function inputs(){
     h_mm, L_mm, W_mm, pipe, t, mStandOverride:mStand,
     daf:Number($('daf').value)||1.3,
     pitchX:Number($('pitchX').value)||900, pitchY:Number($('pitchY').value)||700,
-    Na:Number($('Na').value)||45000, Qa:Number($('Qa').value)||25000,
+    Na:Number($('Na').value)||C.NA_LONG_DEFAULT,
+    Na_short:Number($('Na_short').value)||C.NA_SHORT_DEFAULT,
+    Qa:Number($('Qa').value)||C.QA_DEFAULT,
+    includeMatsuba: $('includeMatsuba').checked,
     bolts: state.bolts, steps: state.steps, dt:0.01,
     halfL: L_mm/2, halfW: W_mm/2,
     catalogMode: $('catalogMode').value==='1'
@@ -1001,6 +1178,24 @@ function recalc(){
     const Mtip=state.sim.catalog.M_tip;
     state.sim.timeline.forEach(r=>{ r.M_floor=Math.max(r.M_floor, Mtip); r.M=Math.max(r.M,Mtip); });
     state.sim.peak.M_floor=Math.max(state.sim.peak.M_floor, Mtip);
+    // re-run bolt analysis at peak with catalog-clamped M
+    const peakRow=state.sim.timeline[state.sim.peak.index];
+    if(peakRow){
+      const boltRes=C.analyzeBolts(opt.bolts, peakRow.M_floor, peakRow.T_floor, peakRow.Fx, peakRow.Fy, opt.halfL, opt.halfW, opt.Na, opt.Qa, opt.includeMatsuba);
+      peakRow.boltDetail=boltRes.bolts;
+      peakRow.boltMaxUtil=boltRes.maxUtil;
+      peakRow.boltMaxUtilT=boltRes.maxUtilT;
+      peakRow.boltT_op=boltRes.T_op;
+      peakRow.boltWorstId=boltRes.worstId;
+      peakRow.judgment=boltRes.judgment;
+      peakRow.estop=boltRes.estop;
+      state.sim.worstBolt={
+        util:boltRes.maxUtil, utilT:boltRes.maxUtilT, T_op:boltRes.T_op,
+        id:boltRes.worstId, t:peakRow.t, index:state.sim.peak.index,
+        judgment:boltRes.judgment, estop:boltRes.estop
+      };
+      state.sim.compare8vs6=C.compare8vs6(peakRow.M_floor, peakRow.T_floor, peakRow.Fx, peakRow.Fy, opt.halfL, opt.halfW, opt.Na, opt.Qa);
+    }
   }
   $('seek').max=Math.max(0,state.sim.timeline.length-1);
   state.idx=0;
@@ -1017,23 +1212,59 @@ function highlightPeakSteps(){
   });
 }
 
+function setBadge(el, jud){
+  el.className='badge '+(jud.code==='OK'?'ok':jud.code==='WARN'?'warn':'ng');
+  el.textContent=jud.label;
+}
+
 function updateKPI(){
   const sim=state.sim; if(!sim) return;
   const p=sim.peak;
+  const wb=sim.worstBolt;
+  const jud=wb.judgment||C.shipJudgment(wb.utilT||0);
+  setBadge($('kpiBadge'), jud);
+  $('kpiWorstId').textContent=wb.id||'—';
+  $('kpiTop').textContent=((wb.T_op||0)/1000).toFixed(2)+' kN';
+  $('kpiU').textContent=((wb.utilT!=null?wb.utilT:wb.util)*100).toFixed(1)+'%';
   $('kpiM').textContent=(p.M_floor/1000).toFixed(2)+' kNm';
   $('kpiMmeta').textContent='t='+p.t.toFixed(2)+'s / step '+(p.stepIndex+1);
-  $('kpiU').textContent=(sim.worstBolt.util*100).toFixed(1)+'%';
-  $('kpiUmeta').textContent=(sim.worstBolt.id||'—')+' @ t='+sim.worstBolt.t.toFixed(2)+'s';
   $('kpiCat').textContent=(sim.catalog.M_tip/1000).toFixed(1)+' kNm';
+  $('kpiCatT').textContent=(sim.catalog.T_rot/1000).toFixed(1)+' kNm';
   const row=sim.timeline[p.index];
   $('kpiFz').textContent=row? Math.round(row.Fz_floor).toLocaleString() : '—';
-  // tips
+
+  const es=wb.estop||C.estopTension(wb.T_op||0);
+  const ew=$('estopWarn');
+  if(es.ng){
+    ew.style.display='block';
+    ew.textContent='非常停止NG（推定）: T_estop≈'+(es.T_estop/1000).toFixed(1)+' kN ≥ 57.5 kN（×'+es.ratio+' ABB比準用）';
+  } else {
+    ew.style.display='block';
+    ew.style.color='var(--muted)';
+    ew.textContent='非常停止推定 T_estop≈'+(es.T_estop/1000).toFixed(1)+' kN（×'+es.ratio+'・推定）';
+  }
+
+  // 8 vs 6 compare
+  const cmp=sim.compare8vs6;
+  if(cmp){
+    $('cmp8T').textContent=(cmp.eight.T_op/1000).toFixed(2)+' kN';
+    $('cmp6T').textContent=(cmp.six.T_op/1000).toFixed(2)+' kN';
+    $('cmp8U').textContent=(cmp.eight.U*100).toFixed(1)+'%';
+    $('cmp6U').textContent=(cmp.six.U*100).toFixed(1)+'%';
+    $('cmp8J').textContent=cmp.eight.judgment.label;
+    $('cmp6J').textContent=cmp.six.judgment.label;
+  }
+
   const tips=[];
-  if(sim.worstBolt.util>=1) tips.push('利用率≥1のボルトあり → 松葉追加や無効ボルト見直しを検討');
-  else if(sim.worstBolt.util>=0.7) tips.push('利用率≥0.7 → 接着系繰返しに注意（0.5超でも監視推奨）');
+  const U=wb.utilT!=null?wb.utilT:wb.util;
+  if(U>=1) tips.push('U≥1.0 → 据付見直し必須（目安）。speed/Acc低減・補強・配置確認を検討');
+  else if(U>=0.7) tips.push('U≥0.7 → 要対策（目安）。speed/Acc低減または補強を検討。0.7は疲労・繰返しを踏まえた提案閾値');
+  else tips.push('U<0.7 → その条件で出荷可（目安）。最終は要領書・構造設計で確認');
+  if(es.ng) tips.push('非常停止推定が短期許容を超過 → 非常停止時の据付条件を別途確認（推定）');
   const h=Number($('h_mm').value)||0;
   if(h>=800) tips.push('架台高さ由来の F×h が大きい可能性 → 低床化・ブレース検討');
-  if(p.M_floor>sim.catalog.M_tip) tips.push('推定ピークがカタログ M_tip を超過（スクリーニング警告）');
+  if(p.M_floor>sim.catalog.M_tip) tips.push('推定ピークがカタログ運転時 M を超過（スクリーニング警告）');
+  if(cmp && cmp.six.U>cmp.eight.U*1.05) tips.push('6本（後部✕）は同MでUが上がる傾向。現場の6本トラブル説明に対照表を参照');
   tips.push('該当ピーク step の Spd/Acc を下げて再計算し低減率を確認');
   $('tipList').innerHTML=tips.map(t=>'<li>'+t+'</li>').join('');
   renderBoltBars(row);
@@ -1043,11 +1274,12 @@ function renderBoltBars(row){
   const host=$('boltBars'); host.innerHTML='';
   if(!row||!row.boltDetail) return;
   row.boltDetail.forEach(b=>{
+    const u=b.utilT!=null?b.utilT:b.util;
     const col=b.color==='ng'?'var(--ng)':b.color==='warn'?'var(--warn)':'var(--ok)';
-    const pct=Math.min(100,b.util*100);
+    const pct=Math.min(100,u*100);
     const div=document.createElement('div');
     div.className='bolt-bar';
-    div.innerHTML=`<span>${b.id}</span><div class="track"><div class="fill" style="width:${pct}%;background:${col}"></div></div><span>${(b.util*100).toFixed(0)}%</span>`;
+    div.innerHTML=`<span>${b.id}</span><div class="track"><div class="fill" style="width:${pct}%;background:${col}"></div></div><span>${(u*100).toFixed(0)}%</span>`;
     host.appendChild(div);
   });
 }
@@ -1069,18 +1301,15 @@ function drawSide(joints){
   const model=C.MODELS[$('modelSel').value];
   const fk=C.forwardKinematics(joints||state.joints, model);
   const h_m=(Number($('h_mm').value)||0)/1000;
-  // side view XZ
   const scale=Math.min(W,H)/3.5;
   const ox=W*0.25, oy=H*0.85;
   function tx(x,z){ return ox + x*scale; }
   function ty(x,z){ return oy - (z+h_m)*scale; }
-  // floor & stand box
   ctx.strokeStyle='#3a4150'; ctx.lineWidth=2;
   ctx.beginPath(); ctx.moveTo(0,oy); ctx.lineTo(W,oy); ctx.stroke();
   ctx.fillStyle='#252a35';
   const L=(Number($('L_mm').value)||1200)/1000;
   ctx.fillRect(tx(-L/2,0)-2, ty(0,0)-(h_m*scale), L*scale+4, h_m*scale);
-  // robot links
   ctx.strokeStyle='#4f8cff'; ctx.lineWidth=3* (window.devicePixelRatio||1);
   ctx.beginPath();
   fk.points.forEach((p,i)=>{
@@ -1092,7 +1321,6 @@ function drawSide(joints){
     ctx.fillStyle=i===fk.points.length-1?'#ffb84f':'#e8eaed';
     ctx.beginPath(); ctx.arc(tx(p.x,p.z),ty(p.x,p.z),4*(window.devicePixelRatio||1),0,Math.PI*2); ctx.fill();
   });
-  // tipping arc hint
   if(state.sim && state.sim.timeline[state.idx]){
     const r=state.sim.timeline[state.idx];
     const mag=Math.min(80, r.M_floor/800);
@@ -1113,7 +1341,8 @@ function drawFloor(){
   const row=state.sim && state.sim.timeline[state.idx];
   const detail=row && row.boltDetail;
   state.bolts.forEach(b=>{
-    if(!b.enabled){
+    const includeM=$('includeMatsuba').checked;
+    if(!b.enabled || (b.matsuba && !includeM)){
       ctx.fillStyle='#666'; ctx.font=(11*(window.devicePixelRatio||1))+'px sans-serif';
       ctx.fillText('✕', ox+b.x*scale-4, oy-b.y*scale+4);
       return;
@@ -1150,18 +1379,15 @@ function drawChart(){
   const pad=20;
   function xAt(i){ return pad + (W-2*pad)*i/(tl.length-1||1); }
   function yAt(v){ return H-pad - (H-2*pad)*v/maxM; }
-  // catalog line
   ctx.strokeStyle='#4f8cff'; ctx.setLineDash([4,4]);
   ctx.beginPath(); ctx.moveTo(pad,yAt(cat)); ctx.lineTo(W-pad,yAt(cat)); ctx.stroke();
   ctx.setLineDash([]);
-  // series
   ctx.beginPath();
   for(let i=0;i<tl.length;i++){
     const x=xAt(i), y=yAt(tl[i].M_floor);
     if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
   }
   ctx.strokeStyle='#e8eaed'; ctx.lineWidth=1.5; ctx.stroke();
-  // exceed in red overlay segments
   ctx.strokeStyle='#ff5c5c'; ctx.lineWidth=2;
   ctx.beginPath();
   let inEx=false;
@@ -1171,13 +1397,11 @@ function drawChart(){
     else inEx=false;
   }
   ctx.stroke();
-  // peak marker
   const pi=state.sim.peak.index;
   ctx.fillStyle='#ff5c5c';
   ctx.beginPath();
   const px=xAt(pi), py=yAt(tl[pi].M_floor);
   ctx.moveTo(px,py-6); ctx.lineTo(px+5,py+4); ctx.lineTo(px-5,py+4); ctx.closePath(); ctx.fill();
-  // cursor
   ctx.strokeStyle='#ffb84f';
   ctx.beginPath(); ctx.moveTo(xAt(state.idx),pad); ctx.lineTo(xAt(state.idx),H-pad); ctx.stroke();
 }
@@ -1193,19 +1417,16 @@ function drawTimeline(){
   if(!state.sim) return;
   const tl=state.sim.timeline;
   const n=tl.length;
-  let maxM=1; tl.forEach(x=>{if(x.M_floor>maxM)maxM=x.M_floor;});
   for(let i=0;i<n;i++){
     const x0=W*i/n, x1=W*(i+1)/n;
     const hot=tl[i].M_floor>state.sim.catalog.M_tip;
     ctx.fillStyle=hot?'rgba(255,92,92,.45)':'rgba(79,140,255,.25)';
     ctx.fillRect(x0,0,Math.max(1,x1-x0),H);
   }
-  // peak diamond
   const pi=state.sim.peak.index;
   const px=W*(pi+0.5)/n;
   ctx.fillStyle='#ff5c5c';
   ctx.beginPath(); ctx.moveTo(px,2); ctx.lineTo(px+6,H/2); ctx.lineTo(px,H-2); ctx.lineTo(px-6,H/2); ctx.closePath(); ctx.fill();
-  // playhead
   ctx.fillStyle='#ffb84f';
   ctx.fillRect(W*state.idx/n,0,2,H);
 }
@@ -1255,23 +1476,29 @@ function exportCsv(){
   if(!state.sim) recalc();
   const sim=state.sim;
   const model=$('modelSel').value;
+  const wb=sim.worstBolt;
+  const jud=wb.judgment||C.shipJudgment(wb.utilT||0);
   const lines=[];
   lines.push('項目,値');
-  lines.push('版,GlockBOT 0.2.0');
+  lines.push('版,GlockBOT 0.3.0');
   lines.push('型式,'+model);
   lines.push('ツールkg,'+$('toolKg').value);
   lines.push('ワークkg,'+$('workKg').value);
   lines.push('h_mm,'+$('h_mm').value);
   lines.push('DAF,'+$('daf').value);
+  lines.push('Na_N,'+$('Na').value);
+  lines.push('Na_short_N,'+$('Na_short').value);
   lines.push('ピークM_floor_Nm,'+sim.peak.M_floor.toFixed(1));
   lines.push('ピーク時刻_s,'+sim.peak.t.toFixed(3));
   lines.push('ピークステップ,'+(sim.peak.stepIndex+1));
-  lines.push('最悪ボルト,'+(sim.worstBolt.id||''));
-  lines.push('最悪利用率,'+sim.worstBolt.util.toFixed(4));
+  lines.push('最悪ボルト,'+(wb.id||''));
+  lines.push('T_op_N,'+(wb.T_op||0).toFixed(1));
+  lines.push('U_引張,'+(wb.utilT!=null?wb.utilT:wb.util).toFixed(4));
+  lines.push('出荷判定,'+jud.label);
+  lines.push('T_estop_N_推定,'+(wb.estop?wb.estop.T_estop:0).toFixed(1));
   lines.push('免責,"'+DISCLAIMER+'"');
   lines.push('');
-  lines.push('step,t_s,M_floor_Nm,T_floor_Nm,Fz_floor_N,boltMaxUtil');
-  // downsample peaks per step
+  lines.push('step,t_s,M_floor_Nm,T_floor_Nm,Fz_floor_N,boltMaxUtilT');
   const byStep={};
   sim.timeline.forEach(r=>{
     const s=r.stepIndex;
@@ -1279,15 +1506,22 @@ function exportCsv(){
   });
   Object.keys(byStep).sort((a,b)=>a-b).forEach(k=>{
     const r=byStep[k];
-    lines.push([Number(k)+1,r.t.toFixed(3),r.M_floor.toFixed(1),r.T_floor.toFixed(1),r.Fz_floor.toFixed(1),r.boltMaxUtil.toFixed(4)].join(','));
+    lines.push([Number(k)+1,r.t.toFixed(3),r.M_floor.toFixed(1),r.T_floor.toFixed(1),r.Fz_floor.toFixed(1),(r.boltMaxUtilT!=null?r.boltMaxUtilT:r.boltMaxUtil).toFixed(4)].join(','));
   });
   lines.push('');
-  lines.push('bolt_id,util,N_N,Q_N,判定');
+  lines.push('bolt_id,utilT,N_N,Q_N,判定');
   const detail=sim.timeline[sim.peak.index].boltDetail||[];
   detail.forEach(b=>{
-    const jud=b.util>=1?'NG':b.util>=0.7?'注意':'OK';
-    lines.push([b.id,b.util.toFixed(4),b.N.toFixed(1),b.Q.toFixed(1),jud].join(','));
+    const u=b.utilT!=null?b.utilT:b.util;
+    const j2=C.shipJudgment(u);
+    lines.push([b.id,u.toFixed(4),b.N.toFixed(1),b.Q.toFixed(1),j2.label].join(','));
   });
+  if(sim.compare8vs6){
+    lines.push('');
+    lines.push('比較,T_op_N,U,判定');
+    lines.push(['8本標準',sim.compare8vs6.eight.T_op.toFixed(1),sim.compare8vs6.eight.U.toFixed(4),sim.compare8vs6.eight.judgment.label].join(','));
+    lines.push(['6本後部無効',sim.compare8vs6.six.T_op.toFixed(1),sim.compare8vs6.six.U.toFixed(4),sim.compare8vs6.six.judgment.label].join(','));
+  }
   const bom='\uFEFF';
   const blob=new Blob([bom+lines.join('\n')],{type:'text/csv;charset=utf-8'});
   const a=document.createElement('a');
@@ -1302,16 +1536,31 @@ function exportCsv(){
 function openReport(){
   if(!state.sim) recalc();
   const sim=state.sim;
+  const wb=sim.worstBolt;
+  const jud=wb.judgment||C.shipJudgment(wb.utilT||0);
   const chartUrl=$('chartCanvas').toDataURL('image/png');
+  const cmp=sim.compare8vs6;
   $('reportBody').innerHTML=`
-    <p>型式: <b>${$('modelSel').value}</b> / h=${$('h_mm').value} mm / DAF=${$('daf').value}</p>
-    <p>ピーク M_floor: <b>${(sim.peak.M_floor/1000).toFixed(2)} kNm</b> @ t=${sim.peak.t.toFixed(2)}s step ${sim.peak.stepIndex+1}</p>
-    <p>最悪ボルト: <b>${sim.worstBolt.id||'—'}</b> 利用率 ${(sim.worstBolt.util*100).toFixed(1)}%</p>
+    <p>型式: <b>${$('modelSel').value}</b> / h=${$('h_mm').value} mm / DAF=${$('daf').value} / Na=${$('Na').value} N</p>
+    <p>出荷判定: <b>${jud.label}</b>（${jud.hint}）</p>
+    <p>最悪ボルト: <b>${wb.id||'—'}</b>　T_op <b>${((wb.T_op||0)/1000).toFixed(2)} kN</b>　U <b>${((wb.utilT!=null?wb.utilT:wb.util)*100).toFixed(1)}%</b></p>
+    <p>ピーク M_floor: <b>${(sim.peak.M_floor/1000).toFixed(2)} kNm</b> @ t=${sim.peak.t.toFixed(2)}s step ${sim.peak.stepIndex+1}　／　カタログM ${(sim.catalog.M_tip/1000).toFixed(1)} kNm（運転時・メーカー公表）</p>
+    <p>非常停止推定 T_estop≈ <b>${(wb.estop?wb.estop.T_estop/1000:0).toFixed(1)} kN</b>（×1.8・ABB比準用・推定）${wb.estop&&wb.estop.ng?'　<span style="color:#c00">非常停止NG（推定）</span>':''}</p>
     <img src="${chartUrl}" style="max-width:100%;border:1px solid #ccc"/>
-    <h3>ボルト利用率（ピーク時）</h3>
+    <h3>8本 vs 6本（ピークM固定）</h3>
     <table border="1" cellpadding="4" cellspacing="0" style="border-collapse:collapse;width:100%;font-size:12px">
-      <tr><th>ID</th><th>利用率</th><th>N[N]</th><th>Q[N]</th></tr>
-      ${(sim.timeline[sim.peak.index].boltDetail||[]).map(b=>`<tr><td>${b.id}</td><td>${(b.util*100).toFixed(1)}%</td><td>${b.N.toFixed(0)}</td><td>${b.Q.toFixed(0)}</td></tr>`).join('')}
+      <tr><th></th><th>8本標準</th><th>6本（後部✕）</th></tr>
+      <tr><td>T_max</td><td>${cmp?(cmp.eight.T_op/1000).toFixed(2)+' kN':'—'}</td><td>${cmp?(cmp.six.T_op/1000).toFixed(2)+' kN':'—'}</td></tr>
+      <tr><td>U</td><td>${cmp?(cmp.eight.U*100).toFixed(1)+'%':'—'}</td><td>${cmp?(cmp.six.U*100).toFixed(1)+'%':'—'}</td></tr>
+      <tr><td>判定</td><td>${cmp?cmp.eight.judgment.label:'—'}</td><td>${cmp?cmp.six.judgment.label:'—'}</td></tr>
+    </table>
+    <h3>ボルト利用率（ピーク時・引張）</h3>
+    <table border="1" cellpadding="4" cellspacing="0" style="border-collapse:collapse;width:100%;font-size:12px">
+      <tr><th>ID</th><th>U</th><th>N[N]</th><th>Q[N]</th><th>判定</th></tr>
+      ${(sim.timeline[sim.peak.index].boltDetail||[]).map(b=>{
+        const u=b.utilT!=null?b.utilT:b.util;
+        return `<tr><td>${b.id}</td><td>${(u*100).toFixed(1)}%</td><td>${b.N.toFixed(0)}</td><td>${b.Q.toFixed(0)}</td><td>${C.shipJudgment(u).label}</td></tr>`;
+      }).join('')}
     </table>
   `;
   $('reportModal').classList.add('show');
@@ -1331,12 +1580,13 @@ $('btnAddStep').onclick=()=>{
   state.steps.push({j:last.j.slice(),speed:100,accel:100,weld:0,timer:0,interp:'J'});
   renderSteps();
 };
-$('btnResetBolts').onclick=()=>{ state.bolts=C.defaultBolts(Number($('pitchX').value)||900,Number($('pitchY').value)||700); renderBolts(); };
-$('btnAddMatsuba').onclick=()=>{ state.bolts=C.addMatsuba(state.bolts,Number($('pitchX').value)||900,Number($('pitchY').value)||700); renderBolts(); };
+$('btnBolts8').onclick=()=>{ state.bolts=C.standardBoltsKawasaki(); renderBolts(); };
+$('btnBolts6').onclick=()=>{ state.bolts=C.bolts6RearDisabled(); renderBolts(); };
+$('btnAddMatsuba').onclick=()=>{ state.bolts=C.addMatsuba(state.bolts); renderBolts(); };
+$('includeMatsuba').onchange=()=>{ renderBolts(); };
 $('modelSel').onchange=()=>{ buildSliders(); recalc(); };
 window.addEventListener('resize',()=>drawAll());
 
-// Three.js optional badge
 setTimeout(()=>{
   if(!window.__THREE_OK || typeof THREE==='undefined'){
     const h=$('threeHost');
