@@ -2404,25 +2404,22 @@ footer strong { color: var(--ink); }
   $("sessionReset").addEventListener("click", function () {
     var m = getMachine(activeId);
     var hasSets = machineHasSetLog(m);
-    var msg = "「" + m.label + "」の天井カウンタ（G・第2・モード・任意カウンタ）をリセットします。";
+    var msg = "「" + m.label + "」の天井カウンタ（G・第2・モード・任意カウンタ）をリセットします。\n\nよろしいですか？";
     if (hasSets) {
-      msg += "\n\nセット／示唆ログも消しますか？\nOK＝カウンタ＋セット両方／キャンセル＝カウンタのみ";
-      // Use two-step: first confirm counters, then ask sets
+      msg += "\n（セット／示唆ログは次の確認で別途選べます）";
     }
-    if (!confirm(msg + (hasSets ? "" : "\n\nよろしいですか？"))) return;
+    if (!confirm(msg)) return;
     states[activeId] = defaultState(m);
     try { localStorage.removeItem(lsKey(activeId)); } catch (e) {}
     undoStacks[activeId] = [];
     if (hasSets) {
-      if (confirm("続けてセット／示唆ログ（v2:" + activeId + ":sets）も全クリアしますか？")) {
+      if (confirm("続けて「" + m.label + "」のセット／示唆ログ（" + setsLsKey(activeId) + "）も全クリアしますか？\nキャンセル＝カウンタのみリセット済み・セットは残す")) {
         setsStores[activeId] = clearAllSets();
         saveSetsFor(activeId);
-        if (activeId === setsStoreMachineId()) {
-          setsStore = setsStores[activeId];
-          showOlderEnded = false;
-          hintPickerOpen = false;
-          expandedEndedIds = {};
-        }
+        setsStore = setsStores[activeId];
+        showOlderEnded = false;
+        hintPickerOpen = false;
+        expandedEndedIds = {};
       }
     }
     render(true);
