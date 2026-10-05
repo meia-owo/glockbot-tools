@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>天井メモ（スマスロ） — GlockBOT 0.3.3</title>
+<title>天井メモ（スマスロ） — GlockBOT 0.3.4</title>
 <style>
 :root {
   --bg: #0f1419;
@@ -70,22 +70,26 @@ select {
 .app {
   max-width: min(1400px, 100%);
   margin: 0 auto;
-  padding: 6px 10px 8px;
+  padding: 6px 10px 12px;
   display: flex;
   flex-direction: column;
   gap: 6px;
   min-height: 100dvh;
-  max-height: 100dvh;
-  overflow: hidden;
 }
 .app-secondary {
-  flex: 1 1 auto;
-  min-height: 0;
-  overflow: auto;
-  -webkit-overflow-scrolling: touch;
   display: flex;
   flex-direction: column;
   gap: 6px;
+  padding-bottom: 8px;
+}
+.app-secondary .set-log {
+  position: relative;
+  z-index: 2;
+}
+.app-secondary .set-log button,
+.app-secondary .set-log .set-btns button {
+  pointer-events: auto;
+  min-height: 48px;
 }
 .app-secondary details.hints > summary,
 .app-secondary details.sec > summary {
@@ -1097,7 +1101,7 @@ footer strong { color: var(--ink); }
 
   <header>
     <h1 id="appTitle">ヤバチバ メモ</h1>
-    <span class="badge">GlockBOT 0.3.3</span>
+    <span class="badge">GlockBOT 0.3.4</span>
     <span class="notice-short">非公式・解析値は変動しうる／店内メモ用・煽り禁止</span>
     <div class="ceiling-ui" id="ceilingUi"></div>
   </header>
@@ -1208,7 +1212,7 @@ footer strong { color: var(--ink); }
   </div>
 
   <footer>
-    <strong>GlockBOT 0.3.3</strong>
+    <strong>GlockBOT 0.3.4</strong>
     <span>スマスロ天井メモ（非公式）・解析値は変動しうる・メーカー公式の全数値公表ではない</span>
     <span>煽り禁止・「設定○」断定なし・個人収支・店舗名は送信しない</span>
   </footer>
@@ -1242,7 +1246,7 @@ footer strong { color: var(--ink); }
    * 南国: 飛翔終了 (linkedHisho===true) はスルーに数えない。日次マニュアル+1なし。
    * ヤバチバ: 飛翔概念なし。セット終了時に連チャン数===1 ならスルー、>=2 なら連あり（linkedHisho=true を連あり表示）。
    */
-  var VERSION = "GlockBOT 0.3.3";
+  var VERSION = "GlockBOT 0.3.4";
   var LS_PREFIX = "smaslo-ceiling-memo:v1:";
   var LS_ACTIVE = LS_PREFIX + "activeTab";
   var LS_SETS_PREFIX = "smaslo-ceiling-memo:v2:";
