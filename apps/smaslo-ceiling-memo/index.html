@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>天井メモ（スマスロ） — GlockBOT 0.3.1</title>
+<title>天井メモ（スマスロ） — GlockBOT 0.3.2</title>
 <style>
 :root {
   --bg: #0f1419;
@@ -1062,7 +1062,7 @@ footer strong { color: var(--ink); }
 
   <header>
     <h1 id="appTitle">ヤバチバ メモ</h1>
-    <span class="badge">GlockBOT 0.3.1</span>
+    <span class="badge">GlockBOT 0.3.2</span>
     <span class="notice-short">非公式・解析値は変動しうる／店内メモ用・煽り禁止</span>
     <div class="ceiling-ui" id="ceilingUi"></div>
   </header>
@@ -1108,10 +1108,7 @@ footer strong { color: var(--ink); }
 
   <section class="inputs" aria-label="入力">
     <div class="input-panel">
-      <h2>ゲーム数（スライダー主）</h2>
-      <div class="slider-row">
-        <input type="range" id="gSlider" min="0" max="1200" value="0" step="1" aria-label="ゲーム数スライダー" />
-      </div>
+      <h2>ゲーム数</h2>
       <div class="btn-row">
         <button type="button" data-g="-10">−10</button>
         <button type="button" data-g="-1">−1</button>
@@ -1125,13 +1122,10 @@ footer strong { color: var(--ink); }
       </div>
     </div>
     <div class="input-panel">
-      <h2 id="c2InputTitle">チェリー（+1/−1 主）</h2>
+      <h2 id="c2InputTitle">チェリー（+1/−1）</h2>
       <div class="c2-btns">
         <button type="button" class="minus" id="c2Minus" aria-label="第2カウンタ−1">−1</button>
         <button type="button" class="plus" id="c2Plus" aria-label="第2カウンタ+1">+1</button>
-      </div>
-      <div class="thin-slider slider-row">
-        <input type="range" class="c2" id="c2Slider" min="0" max="50" value="0" step="1" aria-label="第2カウンタスライダー" />
       </div>
     </div>
   </section>
@@ -1178,7 +1172,7 @@ footer strong { color: var(--ink); }
   </div>
 
   <footer>
-    <strong>GlockBOT 0.3.1</strong>
+    <strong>GlockBOT 0.3.2</strong>
     <span>スマスロ天井メモ（非公式）・解析値は変動しうる・メーカー公式の全数値公表ではない</span>
     <span>煽り禁止・「設定○」断定なし・個人収支・店舗名は送信しない</span>
   </footer>
@@ -1210,7 +1204,7 @@ footer strong { color: var(--ink); }
    * 南国: 飛翔終了 (linkedHisho===true) はスルーに数えない。日次マニュアル+1なし。
    * ヤバチバ: 飛翔概念なし。セット終了時に連チャン数===1 ならスルー、>=2 なら連あり（linkedHisho=true を連あり表示）。
    */
-  var VERSION = "GlockBOT 0.3.1";
+  var VERSION = "GlockBOT 0.3.2";
   var LS_PREFIX = "smaslo-ceiling-memo:v1:";
   var LS_ACTIVE = LS_PREFIX + "activeTab";
   var LS_SETS_PREFIX = "smaslo-ceiling-memo:v2:";
@@ -1974,7 +1968,7 @@ footer strong { color: var(--ink); }
   }
 
   function $(id) { return document.getElementById(id); }
-  if (typeof document === "undefined" || !$("gSlider")) {
+  if (typeof document === "undefined" || !$("gInput")) {
     return;
   }
 
@@ -2289,12 +2283,7 @@ footer strong { color: var(--ink); }
     $("pctG").textContent = Math.round(pctG) + "%";
     $("pctC2").textContent = Math.round(pctC) + "%";
 
-    var gSliderMax = Math.max(1200, gCap + 200);
-    $("gSlider").max = String(gSliderMax);
-    $("gSlider").value = String(Math.min(gSliderMax, state.g));
     $("gInput").value = String(state.g);
-    $("c2Slider").max = String(m.counter2.max);
-    $("c2Slider").value = String(state.c2);
 
     renderMarks(m, c2Cap);
 
@@ -2381,7 +2370,6 @@ footer strong { color: var(--ink); }
     });
   });
 
-  $("gSlider").addEventListener("input", function () { setG(this.value); });
   function applyGDirect() {
     setG($("gInput").value);
   }
@@ -2401,7 +2389,6 @@ footer strong { color: var(--ink); }
   });
   $("c2Plus").addEventListener("click", function () { setC2(states[activeId].c2 + 1); });
   $("c2Minus").addEventListener("click", function () { setC2(states[activeId].c2 - 1); });
-  $("c2Slider").addEventListener("input", function () { setC2(this.value); });
 
   $("undoBtn").addEventListener("click", function () { undoLast(); });
   $("resetG").addEventListener("click", function () { setG(0); });
