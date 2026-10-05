@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>天井メモ（スマスロ） — GlockBOT 0.2.1</title>
+<title>天井メモ（スマスロ） — GlockBOT 0.3.0</title>
 <style>
 :root {
   --bg: #0f1419;
@@ -399,6 +399,53 @@ input[type="range"].c2::-moz-range-thumb { background: var(--c2); }
   font-size: 1.1em;
   text-align: center;
   padding: 0.3em;
+}
+.g-direct-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin-top: 4px;
+  background: var(--panel2);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 8px 10px;
+}
+.g-direct-row label {
+  font-size: 0.82em;
+  font-weight: 700;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.g-direct-row .num-input.g-direct {
+  flex: 1 1 7rem;
+  width: auto;
+  min-width: 6rem;
+  min-height: 52px;
+  font-size: clamp(1.25rem, 2.4vw, 1.6rem);
+  font-weight: 800;
+  border-color: #5a8ad0;
+}
+.g-direct-row #gApply {
+  min-height: 52px;
+  min-width: 5.5rem;
+  font-weight: 800;
+  background: #2a4a7a;
+  border-color: #5a8ad0;
+  color: #dcecff;
+}
+.set-btns .end-simple {
+  background: #1a3a28;
+  border-color: var(--ok);
+  color: #b8f0c8;
+}
+.set-ended .badge-tag.renari { color: #b8f0c8; border-color: #2a5a38; background: #1a3a28; }
+.set-help {
+  font-size: 0.78em;
+  color: var(--muted);
+  line-height: 1.45;
+  margin: 0;
+  flex: 1 1 100%;
 }
 .c2-btns {
   display: grid;
@@ -1001,7 +1048,7 @@ footer strong { color: var(--ink); }
 
   <header>
     <h1 id="appTitle">ヤバチバ メモ</h1>
-    <span class="badge">GlockBOT 0.2.1</span>
+    <span class="badge">GlockBOT 0.3.0</span>
     <span class="notice-short">非公式・解析値は変動しうる／店内メモ用・煽り禁止</span>
     <div class="ceiling-ui" id="ceilingUi"></div>
   </header>
@@ -1056,8 +1103,11 @@ footer strong { color: var(--ink); }
         <button type="button" data-g="-1">−1</button>
         <button type="button" data-g="1">+1</button>
         <button type="button" data-g="10">+10</button>
-        <span class="spacer"></span>
-        <input type="number" class="num-input" id="gInput" min="0" max="9999" value="0" inputmode="numeric" aria-label="ゲーム数直接入力" />
+      </div>
+      <div class="g-direct-row">
+        <label for="gInput">G直入</label>
+        <input type="number" class="num-input g-direct" id="gInput" min="0" max="9999" value="0" inputmode="numeric" enterkeyhint="done" aria-label="ゲーム数直接入力" />
+        <button type="button" id="gApply">反映</button>
       </div>
     </div>
     <div class="input-panel">
@@ -1073,6 +1123,7 @@ footer strong { color: var(--ink); }
   </section>
 
   <div class="reset-row">
+    <button type="button" class="ghost" id="undoBtn" disabled title="直前のG／第2カウンタ変更を1つ戻す">1つ戻す</button>
     <button type="button" class="ghost" id="resetG">Gのみリセット</button>
     <button type="button" class="ghost" id="resetC2">第2のみリセット</button>
     <button type="button" class="danger-soft" id="resetBoth">両方リセット</button>
@@ -1082,7 +1133,8 @@ footer strong { color: var(--ink); }
   <section class="set-log" id="setLogPanel" aria-label="初当たりセットログ" hidden>
     <div class="set-log-head">
       <h2>初当たりセット</h2>
-      <span class="sub">連チャン・スルー・示唆ログ（照合用・断定しない）</span>
+      <span class="sub" id="setLogSub">連チャン・スルー・示唆ログ（照合用・断定しない）</span>
+      <p class="set-help" id="setLogHelp" hidden></p>
     </div>
     <div class="set-stats" id="setStats" aria-live="polite"></div>
     <div id="setActiveArea"></div>
@@ -1112,7 +1164,7 @@ footer strong { color: var(--ink); }
   </div>
 
   <footer>
-    <strong>GlockBOT 0.2.1</strong>
+    <strong>GlockBOT 0.3.0</strong>
     <span>スマスロ天井メモ（非公式）・解析値は変動しうる・メーカー公式の全数値公表ではない</span>
     <span>煽り禁止・「設定○」断定なし・個人収支・店舗名は送信しない</span>
   </footer>
@@ -1126,7 +1178,9 @@ footer strong { color: var(--ink); }
    * localStorage key scheme (documented for selfcheck):
    *   smaslo-ceiling-memo:v1:<machineId>  — per-machine counters / modes
    *   smaslo-ceiling-memo:v1:activeTab    — last active machine id
-   *   smaslo-ceiling-memo:v2:nangoku-sp:sets — 初当たりセット／連チャン／スルー／示唆ログ (0.2.1)
+   *   smaslo-ceiling-memo:v2:<machineId>:sets — 初当たりセット／連チャン／スルー／示唆ログ (0.3)
+   *   smaslo-ceiling-memo:v2:nangoku-sp:sets — 南国（0.2 から継続・キー不変）
+   *   smaslo-ceiling-memo:v2:yabachiba:sets — ヤバチバ（0.3 追加）
    * machineId ∈ { yabachiba, chibariyo2, nangoku-sp }
    *
    * Lead / close logic (generalized from yabachiba-memo):
@@ -1139,13 +1193,26 @@ footer strong { color: var(--ink); }
    * - Labels: 「G先」／「{c2Label}先」／「どちらも余裕」／「ほぼ同時」
    *
    * スルー = セット単位。終了時 linkedHisho===false のみ今日スルー+1。
-   * 飛翔終了 (linkedHisho===true) はスルーに数えない。日次マニュアル+1なし。
+   * 南国: 飛翔終了 (linkedHisho===true) はスルーに数えない。日次マニュアル+1なし。
+   * ヤバチバ: 飛翔概念なし。セット終了時に連チャン数===1 ならスルー、>=2 なら連あり（linkedHisho=true を連あり表示）。
    */
-  var VERSION = "GlockBOT 0.2.1";
+  var VERSION = "GlockBOT 0.3.0";
   var LS_PREFIX = "smaslo-ceiling-memo:v1:";
   var LS_ACTIVE = LS_PREFIX + "activeTab";
-  var LS_SETS_KEY = "smaslo-ceiling-memo:v2:nangoku-sp:sets";
-  var SETS_MACHINE_ID = "nangoku-sp";
+  var LS_SETS_PREFIX = "smaslo-ceiling-memo:v2:";
+  var LS_SETS_KEY = "smaslo-ceiling-memo:v2:nangoku-sp:sets"; // legacy alias kept for selfcheck
+  var SETS_MACHINE_ID = "nangoku-sp"; // legacy alias
+  var UNDO_MAX = 10;
+
+  function setsLsKey(machineId) {
+    return LS_SETS_PREFIX + machineId + ":sets";
+  }
+  function machineHasSetLog(m) {
+    return !!(m && m.setLog && m.setLog.enabled);
+  }
+  function setLogEndStyle(m) {
+    return (m && m.setLog && m.setLog.endStyle) || "hisho";
+  }
 
   var CLOSE_G_ABS = 50;
   var CLOSE_CHERRY_ABS = 5;
@@ -1204,6 +1271,11 @@ footer strong { color: var(--ink); }
           "ハイエナは「残りが少ない側」を優先して判断材料にする。断定はしない。",
           "やめどき・資金管理は個人のルールに従う。勝てる保証はない。"
         ]
+      },
+      setLog: {
+        enabled: true,
+        endStyle: "simple",
+        throughHelp: "スルー＝初当のみで終わったセット（連チャン数1）。機種内部の断定ではない。終了は「セット終了」。"
       }
     },
     chibariyo2: {
@@ -1319,6 +1391,11 @@ footer strong { color: var(--ink); }
           "スルーに絶対天井はない。今日スルーは初当たりセット終了（飛翔に繋がらず）から集計。",
           "やめどき・資金管理は個人のルールに従う。"
         ]
+      },
+      setLog: {
+        enabled: true,
+        endStyle: "hisho",
+        throughHelp: "スルー＝飛翔に繋がらずに終了したセット。飛翔終了はスルーに数えない。"
       }
     }
   };
@@ -1530,10 +1607,15 @@ footer strong { color: var(--ink); }
     return ((set && set.bonuses) || []).map(function (b) { return b.type; }).join("→");
   }
 
-  function linkedLabel(linkedHisho) {
-    if (linkedHisho === true) return "飛翔";
+  function linkedLabel(linkedHisho, endStyle) {
     if (linkedHisho === false) return "スルー";
+    if (linkedHisho === true) return endStyle === "simple" ? "連あり" : "飛翔";
     return "保留";
+  }
+
+  /** ヤバチバ等 simple: セット終了時に連チャン数でスルー／連ありを自動付与 */
+  function linkedForSimpleEnd(set) {
+    return renchanCount(set) === 1 ? false : true;
   }
 
   function todaySets(store, now) {
@@ -1835,7 +1917,13 @@ footer strong { color: var(--ink); }
     CLOSE_RATIO: CLOSE_RATIO,
     EQUAL_EPS: EQUAL_EPS,
     LS_SETS_KEY: LS_SETS_KEY,
+    LS_SETS_PREFIX: LS_SETS_PREFIX,
     SETS_MACHINE_ID: SETS_MACHINE_ID,
+    UNDO_MAX: UNDO_MAX,
+    setsLsKey: setsLsKey,
+    machineHasSetLog: machineHasSetLog,
+    setLogEndStyle: setLogEndStyle,
+    linkedForSimpleEnd: linkedForSimpleEnd,
     localDateKey: localDateKey,
     emptySetsStore: emptySetsStore,
     normalizeSetsStore: normalizeSetsStore,
@@ -2046,9 +2134,15 @@ footer strong { color: var(--ink); }
     var body = $("deepBody");
     var html = "";
     if (m.deep && m.deep.throughFromSets) {
+      var deepStore = (typeof setsStores !== "undefined" && setsStores[activeId])
+        ? setsStores[activeId]
+        : setsStore;
+      var deepThroughNote = setLogEndStyle(m) === "simple"
+        ? "手動+1なし・スルー＝初当のみ終了"
+        : "手動+1なし・飛翔終了は数えない";
       html += '<div class="set-through-ro">今日スルー（セット由来・読取専用）: <strong id="deepThroughRo">' +
-        todayThroughCount(setsStore) + "</strong>" +
-        '　／　手動+1なし・飛翔終了は数えない</div>';
+        todayThroughCount(deepStore) + "</strong>" +
+        "　／　" + deepThroughNote + "</div>";
     }
     var opts = (m.deep && m.deep.optionalCounters) || [];
     if (opts.length) {
@@ -2133,6 +2227,9 @@ footer strong { color: var(--ink); }
     var c2Cap = resolveC2Cap(m, state);
     var lead = computeLead(state.g, state.c2, gCap, c2Cap, m.counter2.label);
 
+    // Keep setsStore pointer aligned before deep/set-log reads it
+    if (typeof bindActiveSetsStore === "function") bindActiveSetsStore();
+
     applyC2Theme(m);
     $("appTitle").textContent = m.title;
     if (rebuildPanels) {
@@ -2214,14 +2311,52 @@ footer strong { color: var(--ink); }
     renderSetLog();
   }
 
-  function setG(v) {
-    states[activeId].g = clampInt(v, 0, 9999);
+  /* ===== Undo stack (G / c2 only, per machine, ~10) ===== */
+  var undoStacks = {};
+  machineIds().forEach(function (id) { undoStacks[id] = []; });
+
+  function snapshotCounters(id) {
+    var s = states[id];
+    return { g: s.g, c2: s.c2 };
+  }
+  function pushUndo(id) {
+    id = id || activeId;
+    if (!undoStacks[id]) undoStacks[id] = [];
+    undoStacks[id].push(snapshotCounters(id));
+    if (undoStacks[id].length > UNDO_MAX) undoStacks[id].shift();
+    updateUndoBtn();
+  }
+  function updateUndoBtn() {
+    var btn = $("undoBtn");
+    if (!btn) return;
+    var stack = undoStacks[activeId] || [];
+    btn.disabled = stack.length === 0;
+  }
+  function undoLast() {
+    var stack = undoStacks[activeId] || [];
+    if (!stack.length) return;
+    var snap = stack.pop();
+    states[activeId].g = snap.g;
+    states[activeId].c2 = snap.c2;
+    render();
+    saveMachine(activeId);
+    updateUndoBtn();
+  }
+
+  function setG(v, opts) {
+    opts = opts || {};
+    var next = clampInt(v, 0, 9999);
+    if (!opts.noUndo && next !== states[activeId].g) pushUndo(activeId);
+    states[activeId].g = next;
     render();
     saveMachine(activeId);
   }
-  function setC2(v) {
+  function setC2(v, opts) {
+    opts = opts || {};
     var m = getMachine(activeId);
-    states[activeId].c2 = clampInt(v, 0, m.counter2.max);
+    var next = clampInt(v, 0, m.counter2.max);
+    if (!opts.noUndo && next !== states[activeId].c2) pushUndo(activeId);
+    states[activeId].c2 = next;
     render();
     saveMachine(activeId);
   }
@@ -2233,9 +2368,17 @@ footer strong { color: var(--ink); }
   });
 
   $("gSlider").addEventListener("input", function () { setG(this.value); });
-  $("gInput").addEventListener("change", function () { setG(this.value); });
+  function applyGDirect() {
+    setG($("gInput").value);
+  }
+  $("gApply").addEventListener("click", applyGDirect);
+  $("gInput").addEventListener("change", applyGDirect);
   $("gInput").addEventListener("keydown", function (e) {
-    if (e.key === "Enter") setG(this.value);
+    if (e.key === "Enter") {
+      e.preventDefault();
+      applyGDirect();
+      this.blur();
+    }
   });
   document.querySelectorAll("[data-g]").forEach(function (btn) {
     btn.addEventListener("click", function () {
@@ -2246,29 +2389,62 @@ footer strong { color: var(--ink); }
   $("c2Minus").addEventListener("click", function () { setC2(states[activeId].c2 - 1); });
   $("c2Slider").addEventListener("input", function () { setC2(this.value); });
 
+  $("undoBtn").addEventListener("click", function () { undoLast(); });
   $("resetG").addEventListener("click", function () { setG(0); });
   $("resetC2").addEventListener("click", function () { setC2(0); });
   $("resetBoth").addEventListener("click", function () {
+    if (states[activeId].g !== 0 || states[activeId].c2 !== 0) pushUndo(activeId);
     states[activeId].g = 0;
     states[activeId].c2 = 0;
     render();
     saveMachine(activeId);
+    updateUndoBtn();
   });
 
   $("sessionReset").addEventListener("click", function () {
-    states[activeId] = defaultState(getMachine(activeId));
+    var m = getMachine(activeId);
+    var hasSets = machineHasSetLog(m);
+    var msg = "「" + m.label + "」の天井カウンタ（G・第2・モード・任意カウンタ）をリセットします。";
+    if (hasSets) {
+      msg += "\n\nセット／示唆ログも消しますか？\nOK＝カウンタ＋セット両方／キャンセル＝カウンタのみ";
+      // Use two-step: first confirm counters, then ask sets
+    }
+    if (!confirm(msg + (hasSets ? "" : "\n\nよろしいですか？"))) return;
+    states[activeId] = defaultState(m);
     try { localStorage.removeItem(lsKey(activeId)); } catch (e) {}
+    undoStacks[activeId] = [];
+    if (hasSets) {
+      if (confirm("続けてセット／示唆ログ（v2:" + activeId + ":sets）も全クリアしますか？")) {
+        setsStores[activeId] = clearAllSets();
+        saveSetsFor(activeId);
+        if (activeId === setsStoreMachineId()) {
+          setsStore = setsStores[activeId];
+          showOlderEnded = false;
+          hintPickerOpen = false;
+          expandedEndedIds = {};
+        }
+      }
+    }
     render(true);
+    updateUndoBtn();
   });
 
   $("exportJson").addEventListener("click", function () {
+    // Ensure current sets flushed
+    machineIds().forEach(function (id) {
+      if (machineHasSetLog(MACHINES[id])) saveSetsFor(id);
+    });
     var payload = {
       version: VERSION,
       activeTab: activeId,
-      machines: {}
+      machines: {},
+      sets: {}
     };
     machineIds().forEach(function (id) {
       payload.machines[id] = states[id];
+      if (machineHasSetLog(MACHINES[id])) {
+        payload.sets[id] = setsStores[id] || emptySetsStore();
+      }
     });
     var blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
     var a = document.createElement("a");
@@ -2310,11 +2486,25 @@ footer strong { color: var(--ink); }
           });
           states[id] = st;
           saveMachine(id);
+          undoStacks[id] = [];
         });
+        if (o.sets && typeof o.sets === "object") {
+          machineIds().forEach(function (id) {
+            if (!machineHasSetLog(MACHINES[id])) return;
+            if (!o.sets[id]) return;
+            setsStores[id] = normalizeSetsStore(o.sets[id]);
+            saveSetsFor(id);
+          });
+        }
         if (o.activeTab && MACHINES[o.activeTab]) activeId = o.activeTab;
         saveActive();
         setTabs();
+        // refresh active setsStore pointer
+        if (machineHasSetLog(getMachine(activeId))) {
+          setsStore = setsStores[activeId] || emptySetsStore();
+        }
         render(true);
+        updateUndoBtn();
       } catch (err) {
         alert("JSONの読み込みに失敗しました");
       }
@@ -2323,31 +2513,74 @@ footer strong { color: var(--ink); }
   });
 
 
-  /* ===== nangoku set-log UI (0.2 / 0.2.1 hint log) ===== */
+  /* ===== set-log UI (0.2 / 0.2.1 / 0.3 per-machine) ===== */
+  var setsStores = {};
   var setsStore = emptySetsStore();
   var showOlderEnded = false;
   var hintPickerOpen = false;
   var hintPickerNote = "";
   var expandedEndedIds = {};
 
-  function loadSetsStore() {
+  function setsStoreMachineId() {
+    return machineHasSetLog(getMachine(activeId)) ? activeId : null;
+  }
+
+  function loadSetsFor(id) {
+    if (!machineHasSetLog(MACHINES[id])) {
+      setsStores[id] = emptySetsStore();
+      return setsStores[id];
+    }
     try {
-      var raw = localStorage.getItem(LS_SETS_KEY);
+      var raw = localStorage.getItem(setsLsKey(id));
       if (!raw) {
-        setsStore = emptySetsStore();
-        return;
+        setsStores[id] = emptySetsStore();
+        return setsStores[id];
       }
-      setsStore = normalizeSetsStore(JSON.parse(raw));
+      setsStores[id] = normalizeSetsStore(JSON.parse(raw));
     } catch (e) {
+      setsStores[id] = emptySetsStore();
+    }
+    return setsStores[id];
+  }
+
+  function saveSetsFor(id) {
+    if (!machineHasSetLog(MACHINES[id])) return;
+    try {
+      var store = setsStores[id] || emptySetsStore();
+      store.dayKey = localDateKey();
+      setsStores[id] = store;
+      localStorage.setItem(setsLsKey(id), JSON.stringify(store));
+    } catch (e) { /* ignore */ }
+  }
+
+  function loadAllSetsStores() {
+    machineIds().forEach(function (id) {
+      if (machineHasSetLog(MACHINES[id])) loadSetsFor(id);
+    });
+    if (machineHasSetLog(getMachine(activeId))) {
+      setsStore = setsStores[activeId] || emptySetsStore();
+    } else {
       setsStore = emptySetsStore();
     }
   }
 
   function saveSetsStore() {
-    try {
-      setsStore.dayKey = localDateKey();
-      localStorage.setItem(LS_SETS_KEY, JSON.stringify(setsStore));
-    } catch (e) { /* ignore */ }
+    var id = setsStoreMachineId();
+    if (!id) return;
+    setsStores[id] = setsStore;
+    saveSetsFor(id);
+  }
+
+  function bindActiveSetsStore() {
+    if (machineHasSetLog(getMachine(activeId))) {
+      if (!setsStores[activeId]) loadSetsFor(activeId);
+      setsStore = setsStores[activeId];
+    } else {
+      setsStore = emptySetsStore();
+    }
+    showOlderEnded = false;
+    hintPickerOpen = false;
+    // keep expandedEndedIds across machines is fine (ids unique)
   }
 
   function escapeHtml(s) {
@@ -2380,7 +2613,7 @@ footer strong { color: var(--ink); }
 
   function renderHintPickerHtml() {
     if (!hintPickerOpen) return '<div class="hint-picker" id="hintPicker" hidden></div>';
-    var m = getMachine(SETS_MACHINE_ID);
+    var m = getMachine(activeId);
     var modeHints = [];
     var settingHints = [];
     (m.hints || []).forEach(function (h) {
@@ -2394,7 +2627,6 @@ footer strong { color: var(--ink); }
       '<input type="text" id="hintNoteInput" maxlength="80" placeholder="短く任意" value="' +
       escapeHtml(hintPickerNote) + '" /></div>';
 
-    // Mode groups — reuse renderHints grouping style
     var grouped = {};
     modeHints.forEach(function (h) {
       var g = h.group || "";
@@ -2402,7 +2634,6 @@ footer strong { color: var(--ink); }
       grouped[g].push(h);
     });
     var groupOrder = ["終了時", "途中", "ボーナス中"];
-    // Flatten with index into full machine.hints for reliable lookup
     function renderGroup(group, list) {
       if (!list || !list.length) return;
       html += '<p class="picker-group-title">' + escapeHtml(group) + "</p>";
@@ -2469,9 +2700,31 @@ footer strong { color: var(--ink); }
   function renderSetLog() {
     var panel = $("setLogPanel");
     if (!panel) return;
-    var isNangoku = activeId === SETS_MACHINE_ID;
-    panel.hidden = !isNangoku;
-    if (!isNangoku) return;
+    var m = getMachine(activeId);
+    var enabled = machineHasSetLog(m);
+    panel.hidden = !enabled;
+    if (!enabled) return;
+
+    bindActiveSetsStore();
+    var endStyle = setLogEndStyle(m);
+    var c2Label = m.counter2.label;
+
+    var help = $("setLogHelp");
+    var sub = $("setLogSub");
+    if (sub) {
+      sub.textContent = endStyle === "simple"
+        ? "連チャン・スルー（初当のみ終了）・示唆ログ（照合用・断定しない）"
+        : "連チャン・スルー・示唆ログ（照合用・断定しない）";
+    }
+    if (help) {
+      if (m.setLog && m.setLog.throughHelp) {
+        help.hidden = false;
+        help.textContent = m.setLog.throughHelp;
+      } else {
+        help.hidden = true;
+        help.textContent = "";
+      }
+    }
 
     var stats = $("setStats");
     var throughN = todayThroughCount(setsStore);
@@ -2493,6 +2746,17 @@ footer strong { color: var(--ink); }
 
     if (active) {
       var ren = renchanCount(active);
+      var endBtns;
+      if (endStyle === "simple") {
+        endBtns =
+          '<button type="button" class="end-simple" data-set-act="end-simple">セット終了</button>' +
+          '<button type="button" class="end-hold" data-set-act="end-hold">やめた（判定保留）</button>';
+      } else {
+        endBtns =
+          '<button type="button" class="end-hisho" data-set-act="end-hisho">飛翔に繋がった</button>' +
+          '<button type="button" class="end-through" data-set-act="end-through">スルーで終了</button>' +
+          '<button type="button" class="end-hold" data-set-act="end-hold">やめた（判定保留）</button>';
+      }
       area.innerHTML =
         '<div class="set-active">' +
         '<div><span class="now-label">いま</span></div>' +
@@ -2500,9 +2764,7 @@ footer strong { color: var(--ink); }
         '<div class="set-btns">' +
         '<button type="button" class="big-bonus" data-set-act="add-BIG">+ BIG</button>' +
         '<button type="button" class="reg-bonus" data-set-act="add-REG">+ REG</button>' +
-        '<button type="button" class="end-hisho" data-set-act="end-hisho">飛翔に繋がった</button>' +
-        '<button type="button" class="end-through" data-set-act="end-through">スルーで終了</button>' +
-        '<button type="button" class="end-hold" data-set-act="end-hold">やめた（判定保留）</button>' +
+        endBtns +
         "</div>" +
         '<div class="set-hint-bar">' +
         '<button type="button" class="hint-log-btn" data-set-act="hint-picker-open">示唆を残す</button>' +
@@ -2511,11 +2773,10 @@ footer strong { color: var(--ink); }
         renderHintPickerHtml() +
         "</div>";
     } else {
-      var curG = states[SETS_MACHINE_ID] ? states[SETS_MACHINE_ID].g : 0;
-      var curSuika = states[SETS_MACHINE_ID] ? states[SETS_MACHINE_ID].c2 : 0;
-      var waitingBlock = "";
-      // Waiting / post-set UI (also when no waiting yet — allow first hint to create)
-      waitingBlock =
+      var curG = states[activeId] ? states[activeId].g : 0;
+      var curC2 = states[activeId] ? states[activeId].c2 : 0;
+      var c2Max = m.counter2.max;
+      var waitingBlock =
         '<div class="set-waiting">' +
         '<p class="wait-title">セット後〜次初当（通常待ち）</p>' +
         '<div class="set-seg-label">区間: ' + escapeHtml(segLabel || "セット後〜次初当") +
@@ -2533,8 +2794,8 @@ footer strong { color: var(--ink); }
         '<div class="form-row">' +
         '<div class="field"><label for="setFirstG">初当たりG（必須）</label>' +
         '<input type="number" id="setFirstG" min="0" max="9999" value="' + curG + '" inputmode="numeric" /></div>' +
-        '<div class="field"><label for="setFirstSuika">スイカCOUNT（任意）</label>' +
-        '<input type="number" id="setFirstSuika" min="0" max="9" value="' + curSuika + '" inputmode="numeric" /></div>' +
+        '<div class="field"><label for="setFirstC2">' + escapeHtml(c2Label) + "COUNT（任意）</label>" +
+        '<input type="number" id="setFirstC2" min="0" max="' + c2Max + '" value="' + curC2 + '" inputmode="numeric" /></div>' +
         "</div>" +
         '<div class="bonus-pick">' +
         '<button type="button" class="big-bonus" data-set-act="start-BIG">1発目 BIG で開始</button>' +
@@ -2542,7 +2803,6 @@ footer strong { color: var(--ink); }
         "</div></div>";
     }
 
-    // keep note field live if picker open
     var noteEl = $("hintNoteInput");
     if (noteEl) {
       noteEl.addEventListener("input", function () {
@@ -2560,7 +2820,9 @@ footer strong { color: var(--ink); }
       htmlE += '<p class="list-title" style="font-weight:500;">まだ終了セットなし</p>';
     } else {
       ended.forEach(function (s, idx) {
-        var tagClass = s.linkedHisho === false ? "through" : s.linkedHisho === true ? "hisho" : "hold";
+        var tagClass = s.linkedHisho === false ? "through"
+          : s.linkedHisho === true ? (endStyle === "simple" ? "renari" : "hisho")
+          : "hold";
         var collapsed = (!showOlderEnded && idx >= openN) ? " collapsed" : "";
         var exp = expandedEndedIds[s.id] ? " expanded" : "";
         var heN = Array.isArray(s.hintEvents) ? s.hintEvents.length : 0;
@@ -2569,11 +2831,11 @@ footer strong { color: var(--ink); }
           '<div class="row1">' +
           "<span>初当 " + s.firstHitG + "G</span>" +
           "<span>" + renchanCount(s) + "連</span>" +
-          '<span class="badge-tag ' + tagClass + '">' + linkedLabel(s.linkedHisho) + "</span>" +
+          '<span class="badge-tag ' + tagClass + '">' + linkedLabel(s.linkedHisho, endStyle) + "</span>" +
           '<span class="expand-hint">示唆' + heN + (exp ? " ▲" : " ▼") + "</span>" +
           "</div>" +
           '<div class="chain">' + bonusChain(s) +
-          (s.firstHitSuika != null ? "　／　スイカ" + s.firstHitSuika : "") +
+          (s.firstHitSuika != null ? "　／　" + escapeHtml(c2Label) + s.firstHitSuika : "") +
           (s.note ? "　／　" + escapeHtml(s.note) : "") +
           "</div>" +
           renderEndedHintDetail(s) +
@@ -2594,7 +2856,7 @@ footer strong { color: var(--ink); }
   }
 
   function pickHintByIndex(i) {
-    var m = getMachine(SETS_MACHINE_ID);
+    var m = getMachine(activeId);
     var h = (m.hints || [])[i];
     if (!h) return;
     var noteEl = $("hintNoteInput");
@@ -2617,6 +2879,7 @@ footer strong { color: var(--ink); }
     var btn = e.target.closest("[data-set-act]");
     if (!btn) return;
     var act = btn.getAttribute("data-set-act");
+    var m = getMachine(activeId);
     try {
       if (act === "hint-picker-open") {
         hintPickerOpen = true;
@@ -2635,27 +2898,37 @@ footer strong { color: var(--ink); }
       }
       if (act === "start-BIG" || act === "start-REG") {
         var gEl = $("setFirstG");
-        var sEl = $("setFirstSuika");
+        var c2El = $("setFirstC2");
         var g = gEl ? clampInt(gEl.value, 0, 9999) : 0;
-        var suikaRaw = sEl ? sEl.value : "";
+        var c2Raw = c2El ? c2El.value : "";
         var opts = {
           firstHitG: g,
           firstBonus: act === "start-BIG" ? "BIG" : "REG"
         };
-        if (suikaRaw !== "" && suikaRaw != null) {
-          opts.firstHitSuika = clampInt(suikaRaw, 0, 9);
+        if (c2Raw !== "" && c2Raw != null) {
+          opts.firstHitSuika = clampInt(c2Raw, 0, m.counter2.max);
         }
         hintPickerOpen = false;
         startSet(setsStore, opts);
         saveSetsStore();
         renderSetLog();
-        if ($("deepThroughRo")) $("deepThroughRo").textContent = String(todayThroughCount(setsStore));
+        syncDeepThrough();
         return;
       }
       if (act === "add-BIG") { addBonus(setsStore, "BIG"); hintPickerOpen = false; saveSetsStore(); renderSetLog(); return; }
       if (act === "add-REG") { addBonus(setsStore, "REG"); hintPickerOpen = false; saveSetsStore(); renderSetLog(); return; }
       if (act === "end-hisho") { endSet(setsStore, true); hintPickerOpen = false; saveSetsStore(); renderSetLog(); syncDeepThrough(); return; }
       if (act === "end-through") { endSet(setsStore, false); hintPickerOpen = false; saveSetsStore(); renderSetLog(); syncDeepThrough(); return; }
+      if (act === "end-simple") {
+        var actSet = getActiveSet(setsStore);
+        var linked = linkedForSimpleEnd(actSet);
+        endSet(setsStore, linked);
+        hintPickerOpen = false;
+        saveSetsStore();
+        renderSetLog();
+        syncDeepThrough();
+        return;
+      }
       if (act === "end-hold") { endSet(setsStore, null); hintPickerOpen = false; saveSetsStore(); renderSetLog(); syncDeepThrough(); return; }
     } catch (err) {
       alert("セット操作に失敗しました: " + (err && err.message ? err.message : err));
@@ -2672,8 +2945,11 @@ footer strong { color: var(--ink); }
   }
   if ($("setClearAll")) {
     $("setClearAll").addEventListener("click", function () {
-      if (!confirm("南国SPECIALの初当たりセットをすべて消します。よろしいですか？")) return;
+      var m = getMachine(activeId);
+      if (!machineHasSetLog(m)) return;
+      if (!confirm(m.label + "の初当たりセット／示唆ログをすべて消します。よろしいですか？")) return;
       setsStore = clearAllSets();
+      setsStores[activeId] = setsStore;
       saveSetsStore();
       showOlderEnded = false;
       hintPickerOpen = false;
@@ -2689,9 +2965,9 @@ footer strong { color: var(--ink); }
     });
   }
 
-  /** Optional: 「この行をログへ」 on 示唆早見 cards when nangoku + (active or waiting-capable). */
+  /** 「この行をログへ」 on 示唆早見 when set-log enabled + (active or waiting-capable). */
   function enhanceHintsWithLogButtons(m) {
-    if (activeId !== SETS_MACHINE_ID) return;
+    if (!machineHasSetLog(m)) return;
     var body = $("hintsBody");
     if (!body) return;
     var cards = body.querySelectorAll(".hint-card");
@@ -2715,6 +2991,7 @@ footer strong { color: var(--ink); }
         ev.preventDefault();
         ev.stopPropagation();
         try {
+          bindActiveSetsStore();
           var h = hints[parseInt(b.getAttribute("data-hint-i"), 10)];
           if (!h) return;
           addHintEvent(setsStore, h, "");
@@ -2728,18 +3005,29 @@ footer strong { color: var(--ink); }
     });
   }
 
-  // Wrap renderHints to add log buttons after paint when nangoku
+  // Wrap renderHints to add log buttons after paint when set-log enabled
   var _renderHintsOrig = renderHints;
   renderHints = function (m) {
     _renderHintsOrig(m);
     enhanceHintsWithLogButtons(m);
   };
 
+  // switchMachine already calls renderSetLog; ensure store rebound
+  var _switchMachineOrig = switchMachine;
+  switchMachine = function (id) {
+    // flush current sets before leaving
+    if (machineHasSetLog(getMachine(activeId))) saveSetsStore();
+    _switchMachineOrig(id);
+    bindActiveSetsStore();
+    updateUndoBtn();
+  };
 
   loadAll();
-  loadSetsStore();
+  loadAllSetsStores();
   setTabs();
   render(true);
+  updateUndoBtn();
+
 })();
 </script>
 </body>
