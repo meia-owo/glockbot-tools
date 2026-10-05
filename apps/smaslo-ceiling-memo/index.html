@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>天井メモ（スマスロ） — GlockBOT 0.3.2</title>
+<title>天井メモ（スマスロ） — GlockBOT 0.3.3</title>
 <style>
 :root {
   --bg: #0f1419;
@@ -23,7 +23,7 @@
   --thumb: 40px;
   --radius: 12px;
   --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
-  --tab-h: 48px;
+  --tab-h: 36px;
 }
 * { box-sizing: border-box; }
 html, body { margin: 0; min-height: 100%; }
@@ -70,11 +70,39 @@ select {
 .app {
   max-width: min(1400px, 100%);
   margin: 0 auto;
-  padding: clamp(10px, 1.5vw, 28px) clamp(12px, 2vw, 36px) 20px;
+  padding: 6px 10px 8px;
   display: flex;
   flex-direction: column;
-  gap: clamp(10px, 1.2vw, 16px);
-  min-height: 100vh;
+  gap: 6px;
+  min-height: 100dvh;
+  max-height: 100dvh;
+  overflow: hidden;
+}
+.app-secondary {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.app-secondary details.hints > summary,
+.app-secondary details.sec > summary {
+  padding: 8px 10px;
+  font-size: 0.85rem;
+}
+.session-bar {
+  padding: 6px 8px !important;
+  gap: 4px !important;
+}
+.session-bar .hint { font-size: 0.72em; }
+.session-bar button { min-height: 36px; font-size: 0.78em; padding: 0.25em 0.55em; }
+footer {
+  margin-top: 0 !important;
+  padding-top: 4px !important;
+  font-size: 0.65rem !important;
+  gap: 4px 10px !important;
 }
 
 /* ===== Tabs (top fixed) ===== */
@@ -84,22 +112,21 @@ select {
   z-index: 40;
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 6px;
+  gap: 4px;
   background: var(--bg);
-  padding: 8px 0 10px;
+  padding: 2px 0 4px;
   border-bottom: 1px solid var(--line);
-  margin: 0 calc(-1 * clamp(12px, 2vw, 36px));
-  padding-left: clamp(12px, 2vw, 36px);
-  padding-right: clamp(12px, 2vw, 36px);
+  flex: 0 0 auto;
 }
 .tab {
   min-height: var(--tab-h);
-  font-weight: 800;
-  font-size: clamp(0.85rem, 1.4vw, 1.05rem);
+  font-weight: 700;
+  font-size: 0.78rem;
   background: var(--panel);
-  border: 2px solid var(--line);
-  border-radius: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
   color: var(--muted);
+  padding: 0.25em 0.4em;
 }
 .tab[aria-selected="true"] {
   color: var(--ink);
@@ -112,28 +139,31 @@ header {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 8px 14px;
-  padding-bottom: 4px;
+  gap: 4px 8px;
+  padding-bottom: 2px;
   border-bottom: 1px solid var(--line);
+  flex: 0 0 auto;
 }
 header h1 {
   margin: 0;
-  font-size: clamp(1.15rem, 2.2vw, 1.65rem);
-  font-weight: 800;
-  letter-spacing: 0.02em;
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0;
+  line-height: 1.2;
 }
 .badge {
-  font-size: clamp(0.7rem, 0.9vw, 0.85rem);
+  font-size: 0.65rem;
   color: var(--muted);
   background: var(--panel);
   border: 1px solid var(--line);
   border-radius: 999px;
-  padding: 0.25em 0.75em;
+  padding: 0.1em 0.5em;
 }
 .notice-short {
   color: var(--muted);
-  font-size: clamp(0.72rem, 0.95vw, 0.88rem);
-  flex: 1 1 10rem;
+  font-size: 0.65rem;
+  flex: 1 1 8rem;
+  line-height: 1.25;
 }
 .ceiling-ui {
   display: flex;
@@ -144,13 +174,14 @@ header h1 {
 .toggle-wrap {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   background: var(--panel);
   border: 1px solid var(--line);
   border-radius: 999px;
-  padding: 6px 12px 6px 8px;
+  padding: 3px 8px 3px 6px;
   user-select: none;
   cursor: pointer;
+  font-size: 0.75rem;
 }
 .toggle-wrap input {
   width: 1.25em;
@@ -177,9 +208,10 @@ header h1 {
   background: var(--panel);
   border: 1px solid var(--line);
   border-radius: var(--radius);
-  padding: clamp(12px, 1.5vw, 20px);
+  padding: 8px 10px;
   display: grid;
-  gap: clamp(10px, 1.2vw, 16px);
+  gap: 6px;
+  flex: 0 0 auto;
 }
 .big-nums {
   display: grid;
@@ -189,8 +221,8 @@ header h1 {
 .num-card {
   background: var(--panel2);
   border: 2px solid var(--line);
-  border-radius: var(--radius);
-  padding: clamp(10px, 1.2vw, 16px);
+  border-radius: 10px;
+  padding: 6px 8px;
   text-align: center;
   transition: border-color 0.15s, box-shadow 0.15s;
 }
@@ -207,21 +239,21 @@ header h1 {
   background: linear-gradient(180deg, var(--c2-soft), var(--panel2));
 }
 .num-card .label {
-  font-size: clamp(0.75rem, 1vw, 0.95rem);
+  font-size: 0.72rem;
   color: var(--muted);
   font-weight: 600;
 }
 .num-card .value {
   font-family: var(--mono);
-  font-size: clamp(2.2rem, 6vw, 3.8rem);
+  font-size: clamp(1.6rem, 5vw, 2.4rem);
   font-weight: 800;
   line-height: 1.05;
-  margin: 4px 0;
+  margin: 2px 0;
 }
 .num-card.lead-g .value { color: var(--g); }
 .num-card.lead-c2 .value { color: var(--c2); }
 .num-card .remain {
-  font-size: clamp(0.8rem, 1.1vw, 1rem);
+  font-size: 0.72rem;
   color: var(--muted);
 }
 .num-card .tag-sen {
@@ -239,13 +271,13 @@ header h1 {
 
 .lead-banner {
   text-align: center;
-  font-size: clamp(1.1rem, 2.4vw, 1.7rem);
+  font-size: clamp(0.9rem, 1.8vw, 1.15rem);
   font-weight: 800;
-  padding: 0.45em 0.8em;
-  border-radius: 10px;
+  padding: 0.3em 0.6em;
+  border-radius: 8px;
   border: 2px solid var(--line);
   background: var(--panel2);
-  letter-spacing: 0.04em;
+  letter-spacing: 0.02em;
 }
 .lead-banner.g { border-color: var(--g); color: var(--g); background: var(--g-soft); }
 .lead-banner.c2 { border-color: var(--c2); color: var(--c2); background: var(--c2-soft); }
@@ -321,15 +353,15 @@ header h1 {
 .input-panel {
   background: var(--panel);
   border: 1px solid var(--line);
-  border-radius: var(--radius);
-  padding: clamp(10px, 1.2vw, 16px);
+  border-radius: 10px;
+  padding: 6px 8px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 6px;
 }
 .input-panel h2 {
   margin: 0;
-  font-size: clamp(0.9rem, 1.2vw, 1.1rem);
+  font-size: 0.8rem;
   font-weight: 700;
 }
 .slider-row {
@@ -394,10 +426,10 @@ input[type="range"].c2::-moz-range-thumb { background: var(--c2); }
   gap: 10px;
 }
 .input-panel .btn-row button {
-  min-height: 56px;
-  font-size: clamp(1.05rem, 2.2vw, 1.35rem);
+  min-height: 48px;
+  font-size: clamp(0.95rem, 2vw, 1.2rem);
   font-weight: 800;
-  padding: 0.45em 0.4em;
+  padding: 0.35em 0.3em;
 }
 .num-input {
   width: 5.5em;
@@ -414,13 +446,13 @@ input[type="range"].c2::-moz-range-thumb { background: var(--c2); }
 .g-direct-row {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 6px;
   align-items: center;
-  margin-top: 4px;
+  margin-top: 0;
   background: var(--panel2);
   border: 1px solid var(--line);
-  border-radius: 12px;
-  padding: 8px 10px;
+  border-radius: 10px;
+  padding: 4px 6px;
 }
 .g-direct-row label {
   font-size: 0.82em;
@@ -429,11 +461,11 @@ input[type="range"].c2::-moz-range-thumb { background: var(--c2); }
   white-space: nowrap;
 }
 .g-direct-row .num-input.g-direct {
-  flex: 1 1 7rem;
+  flex: 1 1 5rem;
   width: auto;
-  min-width: 6rem;
-  min-height: 52px;
-  font-size: clamp(1.25rem, 2.4vw, 1.6rem);
+  min-width: 4.5rem;
+  min-height: 44px;
+  font-size: clamp(1.05rem, 2vw, 1.3rem);
   font-weight: 800;
   border-color: #5a8ad0;
 }
@@ -464,10 +496,10 @@ input[type="range"].c2::-moz-range-thumb { background: var(--c2); }
   gap: 10px;
 }
 .c2-btns button {
-  font-size: clamp(1.3rem, 2.5vw, 1.8rem);
+  font-size: clamp(1.15rem, 2.2vw, 1.5rem);
   font-weight: 800;
-  min-height: 72px;
-  padding: 0.4em;
+  min-height: 56px;
+  padding: 0.3em;
 }
 .c2-btns .plus {
   background: var(--c2);
@@ -490,10 +522,13 @@ input[type="range"].c2::-moz-range-thumb { background: var(--c2); }
 .reset-row {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
-  margin-top: 2px;
+  gap: 4px;
+  margin-top: 0;
+  flex: 0 0 auto;
 }
-.reset-row button { font-size: 0.85em; min-height: 40px; }
+.reset-row button { font-size: 0.75em; min-height: 36px; padding: 0.25em 0.6em; }
+.inputs { flex: 0 0 auto; }
+
 
 /* ===== Hints (示唆早見) ===== */
 details.hints, details.sec {
@@ -1042,13 +1077,13 @@ footer {
 footer strong { color: var(--ink); }
 
 @media (max-width: 720px) {
-  .inputs { grid-template-columns: 1fr; }
-  .bars { grid-template-columns: 1fr; }
+  .inputs { grid-template-columns: 1fr 1fr; }
+  .bars { grid-template-columns: 1fr 1fr; }
   .big-nums { grid-template-columns: 1fr 1fr; }
-  .tabs { grid-template-columns: 1fr; }
+  .tabs { grid-template-columns: repeat(3, 1fr); }
 }
-@media (max-width: 420px) {
-  .big-nums { grid-template-columns: 1fr; }
+@media (max-width: 360px) {
+  .inputs { grid-template-columns: 1fr; }
 }
 </style>
 </head>
@@ -1062,7 +1097,7 @@ footer strong { color: var(--ink); }
 
   <header>
     <h1 id="appTitle">ヤバチバ メモ</h1>
-    <span class="badge">GlockBOT 0.3.2</span>
+    <span class="badge">GlockBOT 0.3.3</span>
     <span class="notice-short">非公式・解析値は変動しうる／店内メモ用・煽り禁止</span>
     <div class="ceiling-ui" id="ceilingUi"></div>
   </header>
@@ -1138,6 +1173,7 @@ footer strong { color: var(--ink); }
   </div>
 
 
+  <div class="app-secondary">
   <section class="set-log" id="setLogPanel" aria-label="初当たりセットログ" hidden>
     <div class="set-log-head">
       <h2>初当たりセット</h2>
@@ -1172,10 +1208,12 @@ footer strong { color: var(--ink); }
   </div>
 
   <footer>
-    <strong>GlockBOT 0.3.2</strong>
+    <strong>GlockBOT 0.3.3</strong>
     <span>スマスロ天井メモ（非公式）・解析値は変動しうる・メーカー公式の全数値公表ではない</span>
     <span>煽り禁止・「設定○」断定なし・個人収支・店舗名は送信しない</span>
   </footer>
+  </div>
+
 </div>
 
 <script>
@@ -1204,7 +1242,7 @@ footer strong { color: var(--ink); }
    * 南国: 飛翔終了 (linkedHisho===true) はスルーに数えない。日次マニュアル+1なし。
    * ヤバチバ: 飛翔概念なし。セット終了時に連チャン数===1 ならスルー、>=2 なら連あり（linkedHisho=true を連あり表示）。
    */
-  var VERSION = "GlockBOT 0.3.2";
+  var VERSION = "GlockBOT 0.3.3";
   var LS_PREFIX = "smaslo-ceiling-memo:v1:";
   var LS_ACTIVE = LS_PREFIX + "activeTab";
   var LS_SETS_PREFIX = "smaslo-ceiling-memo:v2:";
