@@ -1,6 +1,6 @@
 # 軽井沢→荘川 旅ピンマップ（trip-pin-base）
 
-版: **trip-pin-base 0.4.1**（GlockBOT）
+版: **trip-pin-base 0.5.0**（GlockBOT）
 
 岡崎発着・2泊3日（2026-10-30〜11-01）の確定宿＋立ち寄りを Leaflet 地図と時系列サマリーで閲覧する静的アプリ。
 
@@ -18,6 +18,8 @@ Pages: https://meia-owo.github.io/glockbot-tools/apps/takayama-hotel-map/
 |---|---|
 | **地図** | 左リスト＋Leaflet 地図。ピン focus / Google Maps・楽天リンク |
 | **時系列**（初期・0.4.1〜） | 旅程概要＋Day1〜Day3 の時刻順カード。予約番号・差引金額・夕食B・アメニティ。Day3 帰路（ちこり村→恵那川上屋 恵那峡店→瑞浪 瑞喜舎→岡崎）を区間所要つきで表示 |
+
+時系列は**日別アコーディオン**（Day見出し＝日付・曜日・区間・宿、件数表示、複数同時に開ける、「すべて開く/閉じる」）。初期: 今日(JST)が旅行日ならその日、それ以外は Day1 を開く（`?day=1〜3` で指定可）。
 
 初期表示は時系列タブ（タブ順も 時系列→地図）。`#map` 付きURLのみ地図タブで開く。localStorage での記憶なし。地図は初回表示時に invalidateSize＋全ピン fit。
 
@@ -39,6 +41,7 @@ Pages: https://meia-owo.github.io/glockbot-tools/apps/takayama-hotel-map/
 | 0.2.0 | 行程立ち寄りピン追加 |
 | 0.3.0 | 時系列サマリー別タブ |
 | 0.3.1 | Day1 手書きルート反映（香嵐渓・平谷道の駅・白樺湖・ハルニレ追加／銀座置換） |
+| 0.5.0 | 時系列を日別アコーディオン化・すべて開く/閉じる・タップ領域拡大・ワイド画面で幅/文字拡大・「地図で見る」初回フォーカス不具合修正 |
 | 0.4.1 | 初期表示を時系列タブに変更（タブ順入替・`#map` ハッシュ対応・地図は初回表示時に fit） |
 | 0.4.0 | Day3 帰路ルート＋立ち寄り3件・岡崎帰着ref・区間所要（実ルーティング推定） |
 
@@ -47,4 +50,5 @@ Pages: https://meia-owo.github.io/glockbot-tools/apps/takayama-hotel-map/
 `screenshots/30-tab-map.png` / `screenshots/31-tab-timeline.png`（0.3.0）  
 `screenshots/32-tab-map-day1.png` / `screenshots/33-tab-timeline-day1.png`（0.3.1）  
 `screenshots/34-tab-map-day3.png` / `screenshots/35-tab-timeline-day3.png`（0.4.0）  
-`screenshots/36-default-timeline.png` / `screenshots/37-switch-to-map.png`（0.4.1）
+`screenshots/36-default-timeline.png` / `screenshots/37-switch-to-map.png`（0.4.1）  
+`screenshots/38-live-timeline-accordion.png`（0.5.0・公開URL）
