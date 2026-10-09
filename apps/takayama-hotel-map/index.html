@@ -193,16 +193,16 @@
     <span><i class="dot" style="background:#2563eb"></i>起点・目印（ref）</span>
   </div>
   <nav class="tabs" role="tablist" aria-label="表示切替">
-    <button type="button" class="tab active" role="tab" id="tab-map" aria-selected="true" aria-controls="wrap" data-tab="map">地図</button>
-    <button type="button" class="tab" role="tab" id="tab-timeline" aria-selected="false" aria-controls="timeline" data-tab="timeline">時系列</button>
+    <button type="button" class="tab active" role="tab" id="tab-timeline" aria-selected="true" aria-controls="timeline" data-tab="timeline">時系列</button>
+    <button type="button" class="tab" role="tab" id="tab-map" aria-selected="false" aria-controls="wrap" data-tab="map">地図</button>
   </nav>
 </header>
-<div id="wrap" role="tabpanel" aria-labelledby="tab-map">
+<div id="wrap" class="hidden" role="tabpanel" aria-labelledby="tab-map" hidden>
   <aside id="list"></aside>
   <div id="map"></div>
 </div>
-<div id="timeline" role="tabpanel" aria-labelledby="tab-timeline" hidden></div>
-<footer>trip-pin-base 0.4.0</footer>
+<div id="timeline" class="active" role="tabpanel" aria-labelledby="tab-timeline"></div>
+<footer>trip-pin-base 0.4.1</footer>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
 /*
@@ -480,6 +480,7 @@ function focusPin(id) {
   // Invalidate size after tab show so Leaflet lays out correctly
   setTimeout(() => {
     map.invalidateSize();
+    mapFitted = true;
     map.setView([p.lat, p.lon], 13);
     m.openPopup();
   }, 50);
@@ -546,11 +547,16 @@ pins.forEach(p => {
   list.appendChild(card);
 });
 
-if (bounds.length) {
-  map.fitBounds(bounds, { padding: [48, 48], maxZoom: 11 });
-} else {
-  map.setView([36.2, 137.5], 8);
+/* Map may start hidden (timeline is default tab): fit bounds on first show */
+let mapFitted = false;
+function fitAll() {
+  if (bounds.length) {
+    map.fitBounds(bounds, { padding: [48, 48], maxZoom: 11 });
+  } else {
+    map.setView([36.2, 137.5], 8);
+  }
 }
+map.setView([36.2, 137.5], 8);
 
 /* ---- Timeline render ---- */
 function pinLinksHtml(p, withFocus) {
@@ -833,7 +839,10 @@ function switchTab(name) {
     tabMap.setAttribute('aria-selected', 'true');
     tabTl.classList.remove('active');
     tabTl.setAttribute('aria-selected', 'false');
-    setTimeout(() => map.invalidateSize(), 40);
+    setTimeout(() => {
+      map.invalidateSize();
+      if (!mapFitted) { mapFitted = true; fitAll(); }
+    }, 40);
   } else {
     wrap.classList.add('hidden');
     wrap.hidden = true;
@@ -846,8 +855,15 @@ function switchTab(name) {
   }
 }
 
-document.getElementById('tab-map').addEventListener('click', () => switchTab('map'));
-document.getElementById('tab-timeline').addEventListener('click', () => switchTab('timeline'));
+function setHash(name) {
+  try { history.replaceState(null, '', name === 'map' ? '#map' : location.pathname + location.search); } catch (e) {}
+}
+document.getElementById('tab-map').addEventListener('click', () => { switchTab('map'); setHash('map'); });
+document.getElementById('tab-timeline').addEventListener('click', () => { switchTab('timeline'); setHash('timeline'); });
+
+/* Default tab = timeline. Only an explicit #map hash opens the map tab (no localStorage). */
+switchTab(location.hash === '#map' ? 'map' : 'timeline');
+window.addEventListener('hashchange', () => switchTab(location.hash === '#map' ? 'map' : 'timeline'));
 </script>
 </body>
 </html>
