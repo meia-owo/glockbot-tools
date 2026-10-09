@@ -186,7 +186,7 @@
 <body>
 <header>
   <h1>軽井沢→荘川 旅ピンマップ（10/30–11/1）</h1>
-  <p class="sub">2026-10-30(金)〜11-01(日) 2泊3日／大人3名／岡崎市発着・マイカー。シニア配慮・平坦スポット＋温泉・バイキングの無理のないドライブ。確定宿＋行程立ち寄り（Day3なし）。</p>
+  <p class="sub">2026-10-30(金)〜11-01(日) 2泊3日／大人3名／岡崎市発着・マイカー。シニア配慮・平坦スポット＋温泉・バイキングの無理のないドライブ。確定宿＋行程立ち寄り（Day3 帰路：ちこり村→恵那川上屋→瑞浪）。</p>
   <div class="legend">
     <span><i class="dot" style="background:#e11d48"></i>確定宿（stay）</span>
     <span><i class="dot" style="background:#0d9488"></i>立ち寄り（stop）</span>
@@ -202,7 +202,7 @@
   <div id="map"></div>
 </div>
 <div id="timeline" role="tabpanel" aria-labelledby="tab-timeline" hidden></div>
-<footer>trip-pin-base 0.3.1</footer>
+<footer>trip-pin-base 0.4.0</footer>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
 /*
@@ -344,6 +344,57 @@ const pins = [
     phone: '05769-2-2611',
     gmaps: 'https://www.google.com/maps/search/?api=1&query=%E9%BE%8D%E3%83%AA%E3%82%BE%E3%83%BC%E3%83%88%EF%BC%86%E3%82%B9%E3%83%91%20%E9%AB%98%E5%B1%B1%E9%BE%8D%E7%A5%9E%E6%B8%A9%E6%B3%89',
     rakuten: 'https://travel.rakuten.co.jp/HOTEL/8631/8631.html'
+  },
+  {
+    id: 'chicory-village',
+    group: 'stop',
+    section: 'Day3（11/1）',
+    name: 'ちこり村（サラダコスモ）',
+    lat: 35.476894,
+    lon: 137.485397,
+    note: '11/1 昼・野菜ビュッフェランチ（バーバーズダイニング）＋お土産。中津川IC横',
+    when: '11/1 12:20頃着〜13:20頃発（約60分）',
+    address: '〒509-9131 岐阜県中津川市千旦林1-15',
+    phone: '0573-62-1545',
+    gmaps: 'https://www.google.com/maps/search/?api=1&query=%E3%81%A1%E3%81%93%E3%82%8A%E6%9D%91%20%E4%B8%AD%E6%B4%A5%E5%B7%9D%E5%B8%82%E5%8D%83%E6%97%A6%E6%9E%971-15',
+    url: 'https://www.chicory.jp/f/shoplist'
+  },
+  {
+    id: 'ena-kawakamiya',
+    group: 'stop',
+    name: '恵那川上屋 恵那峡店（本社・栗里宿）',
+    lat: 35.471443,
+    lon: 137.412231,
+    note: '11/1 午後・栗きんとん／栗里宿カフェ',
+    when: '11/1 13:35頃着〜14:20頃発（約45分）',
+    address: '〒509-7201 岐阜県恵那市大井町2632-105',
+    phone: '0573-20-1150',
+    gmaps: 'https://www.google.com/maps/search/?api=1&query=%E6%81%B5%E9%82%A3%E5%B7%9D%E4%B8%8A%E5%B1%8B%20%E6%81%B5%E9%82%A3%E5%B3%A1%E5%BA%97',
+    url: 'https://www.enakawakamiya.co.jp/com/shopenakyo.html/'
+  },
+  {
+    id: 'mizunami-yakushi',
+    group: 'stop',
+    name: '瑞浪市薬師町1丁目（恵那川上屋 瑞喜舎 瑞浪店）',
+    lat: 35.362804,
+    lon: 137.234634,
+    note: '11/1 午後・薬師町1-1 は恵那川上屋「瑞喜舎 瑞浪店」（カフェ別棟）',
+    when: '11/1 14:45頃着〜15:15頃発（約30分）',
+    address: '〒509-6135 岐阜県瑞浪市薬師町1-1',
+    phone: '0572-68-5220',
+    gmaps: 'https://www.google.com/maps/search/?api=1&query=%E6%81%B5%E9%82%A3%E5%B7%9D%E4%B8%8A%E5%B1%8B%20%E7%91%9E%E5%96%9C%E8%88%8E%20%E7%91%9E%E6%B5%AA%E5%BA%97',
+    url: 'https://www.enakawakamiya.co.jp/com/shopmizunami.html/'
+  },
+  {
+    id: 'okazaki-home',
+    group: 'ref',
+    name: '岡崎市（帰着）',
+    lat: 34.954926,
+    lon: 137.172852,
+    note: '11/1 16:15〜16:30頃帰着目安（渋滞なし想定）',
+    when: '11/1 16:15〜16:30頃',
+    address: '愛知県岡崎市（目安点：市役所付近）',
+    gmaps: 'https://www.google.com/maps/search/?api=1&query=%E5%B2%A1%E5%B4%8E%E5%B8%82%E5%BD%B9%E6%89%80'
   },
   {
     id: 'takayama-station',
@@ -670,16 +721,81 @@ function renderTimeline() {
 
   html += '</section>';
 
-  /* Day3 — no invented stops */
-  html += '<section class="tl-day"><div class="tl-day-head">Day3（11/1 日）</div>';
+  /* Day3 — return drive (0.4.0) */
+  const chicory = pinById['chicory-village'];
+  const enaK = pinById['ena-kawakamiya'];
+  const mizu = pinById['mizunami-yakushi'];
+  const home = pinById['okazaki-home'];
+  html += '<section class="tl-day"><div class="tl-day-head">Day3（11/1 日）帰路・立ち寄り</div>';
+
+  html += '<div class="tl-card stay">';
+  html += '<div class="tl-time">10:00 CO</div>';
+  html += '<div class="tl-title">' + esc(ryu.name) + ' チェックアウト</div>';
+  html += '<div class="tl-body">公式 CO 10:00。10:10 頃出発想定</div>';
+  html += pinLinksHtml(ryu, true);
+  html += '</div>';
+
   html += '<div class="tl-card move">';
-  html += '<div class="tl-time">CO → 帰路</div>';
-  html += '<div class="tl-title">龍リゾート CO → 岡崎帰路</div>';
+  html += '<div class="tl-time">10:10 → 12:20頃（約2時間＋休憩10分）</div>';
+  html += '<div class="tl-title">荘川 → ちこり村　約145km</div>';
+  html += '<div class="tl-body">荘川IC → 東海北陸道 → 美濃関JCT → 東海環状道 → 土岐JCT → 中央道 → 中津川IC（ちこり村はIC横）。<ul>'
+    + '<li>比較: 高山 → R41下呂 → R257（舞台峠・付知）経由は約145kmで同距離だが山道で約2時間40〜50分 → 不採用</li>'
+    + '<li>途中トイレ休憩: ひるがの高原SA／郡上八幡IC付近など</li></ul></div>';
   html += '</div>';
-  html += '<div class="tl-card empty">';
-  html += '<div class="tl-title">立ち寄りピンなし</div>';
-  html += '<p class="tl-empty-note">Day3 の立ち寄りは空欄（未定）です。ルート上の追加ストップは予定していません。</p>';
+
+  html += '<div class="tl-card stop">';
+  html += '<div class="tl-time">12:20頃〜13:20頃（約60分）</div>';
+  html += '<div class="tl-title">' + esc(chicory.name) + '</div>';
+  html += '<div class="tl-body">ランチ: 野菜ビュッフェ（11:00〜15:00・LO14:00・土日祝 大人2,420円）＋お土産。<ul>'
+    + '<li>営業 9:00〜17:00・年末年始以外無休 → 日曜OK</li>'
+    + '<li>' + esc(chicory.address) + '</li></ul></div>';
+  html += pinLinksHtml(chicory, true);
   html += '</div>';
+
+  html += '<div class="tl-card move">';
+  html += '<div class="tl-time">13:20 → 13:35頃（約10〜15分）</div>';
+  html += '<div class="tl-title">ちこり村 → 恵那川上屋 恵那峡店　約9〜10km</div>';
+  html += '<div class="tl-body">国道19号 → 恵那峡方面（一般道）</div>';
+  html += '</div>';
+
+  html += '<div class="tl-card stop">';
+  html += '<div class="tl-time">13:35頃〜14:20頃（約45分）</div>';
+  html += '<div class="tl-title">' + esc(enaK.name) + '</div>';
+  html += '<div class="tl-body">栗きんとん・栗里宿カフェ。<ul>'
+    + '<li>店舗 9:00〜18:30／カフェ 土日祝 9:00〜18:00（LO17:30）／定休は元日のみ → 日曜OK</li>'
+    + '<li>' + esc(enaK.address) + '</li></ul></div>';
+  html += pinLinksHtml(enaK, true);
+  html += '</div>';
+
+  html += '<div class="tl-card move">';
+  html += '<div class="tl-time">14:20 → 14:45頃（約25分）</div>';
+  html += '<div class="tl-title">恵那 → 瑞浪 薬師町　約23km</div>';
+  html += '<div class="tl-body">恵那IC → 中央道 → 瑞浪IC（約18km）→ 市街</div>';
+  html += '</div>';
+
+  html += '<div class="tl-card stop">';
+  html += '<div class="tl-time">14:45頃〜15:15頃（約30分）</div>';
+  html += '<div class="tl-title">' + esc(mizu.name) + '</div>';
+  html += '<div class="tl-body">薬師町1-1 = 恵那川上屋「瑞喜舎 瑞浪店」。<ul>'
+    + '<li>店舗 9:00〜18:30／瑞喜舎カフェ 9:00〜17:00（LO16:30）・火曜定休 → 日曜OK</li>'
+    + '<li>恵那峡店と同じ恵那川上屋。どちらかに絞るなら時間短縮可</li></ul></div>';
+  html += pinLinksHtml(mizu, true);
+  html += '</div>';
+
+  html += '<div class="tl-card move">';
+  html += '<div class="tl-time">15:15 → 16:15〜16:30頃（約60〜70分）</div>';
+  html += '<div class="tl-title">瑞浪 → 岡崎　約60〜68km</div>';
+  html += '<div class="tl-body">瑞浪IC → 中央道 → 土岐JCT → 東海環状道 → 豊田東JCT → 伊勢湾岸道・東名 → 岡崎IC（または豊田勘八IC → R248）</div>';
+  html += '</div>';
+
+  html += '<div class="tl-card ref">';
+  html += '<div class="tl-time">16:15〜16:30頃 帰着</div>';
+  html += '<div class="tl-title">' + esc(home.name) + '</div>';
+  html += '<div class="tl-body">所要は渋滞なしの推定（Valhalla/OSRM 公開ルーティング＋道路区分から算出）。<ul>'
+    + '<li>秋の日曜（紅葉シーズン）: 東海北陸道上り・東海環状・東名 豊田付近は午後に渋滞しやすい → 帰着 17:00〜17:30 も見込む</li></ul></div>';
+  html += pinLinksHtml(home, true);
+  html += '</div>';
+
   html += '</section>';
 
   /* Landmark (optional, outside day flow) */
