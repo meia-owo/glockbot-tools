@@ -80,7 +80,36 @@
   .links a.rakuten { color:#bf0000; background:#fff1f0; border-color:#ffccc7; }
   .links a.url { color:#0f766e; background:#f0fdfa; border-color:#99f6e4; }
   .links button.focus-map { color:#0f172a; background:#e2e8f0; border-color:#cbd5e1; }
-  #map { width:100%; height:100%; min-height:0; }
+  #map { width:100%; flex:1; min-height:0; }
+  /* 0.6.0: 地図タブの時間軸（Day絞り込み・番号＋時刻・済/次/これから） */
+  #mapcol { display:flex; flex-direction:column; min-height:0; min-width:0; }
+  #dayfilter { flex:0 0 auto; padding:6px 8px; background:#fff; border-bottom:1px solid #e2e8f0; }
+  #dayfilter .btns { display:flex; gap:6px; }
+  #dayfilter button {
+    flex:1 1 0; min-width:0; min-height:44px; appearance:none; font:inherit; font-weight:700;
+    font-size:.88rem; border-radius:10px; cursor:pointer;
+    border:2px solid var(--c,#334155); background:#fff; color:#0f172a;
+  }
+  #dayfilter button[aria-pressed="true"] { background:var(--c,#334155); color:#fff; }
+  #dayfilter button:focus-visible { outline:3px solid #38bdf8; outline-offset:2px; }
+  #nowline { margin:5px 2px 0; font-size:.8rem; color:#334155; line-height:1.4; }
+  #nowline .k { display:inline-block; margin-right:8px; color:#64748b; }
+  .rp { position:relative; width:26px; height:26px; }
+  .rp .no {
+    width:26px; height:26px; border-radius:50%; background:var(--c); color:#fff;
+    border:2px solid #fff; box-shadow:0 1px 4px rgba(0,0,0,.45);
+    display:flex; align-items:center; justify-content:center; font:700 13px/1 system-ui, sans-serif;
+  }
+  .rp .lb {
+    position:absolute; left:24px; top:3px; white-space:nowrap;
+    background:#fff; color:#0f172a; border:1px solid var(--c); border-radius:6px;
+    padding:1px 4px; font:600 11px/1.3 system-ui, sans-serif; box-shadow:0 1px 2px rgba(0,0,0,.2);
+  }
+  .rp.flip .lb { left:auto; right:24px; }
+  .rp .lb .tent { color:#b45309; }
+  .rp.done { opacity:.45; }
+  .rp.next .no { width:32px; height:32px; margin:-3px; border:3px solid #fde047; font-size:15px; }
+  .rp.next .lb { font-weight:800; border-width:2px; background:#fefce8; }
   .popup { font-size:.85rem; line-height:1.45; max-width:260px; }
   .popup b { font-size:.92rem; }
   .popup .note { color:#475569; margin-top:4px; }
@@ -221,7 +250,7 @@
   @media (max-width:800px) {
     #wrap {
       grid-template-columns: 1fr;
-      grid-template-rows: minmax(180px, 38%) 1fr;
+      grid-template-rows: minmax(150px, 30%) 1fr;
     }
     #list { border-right:none; border-bottom:1px solid #e2e8f0; }
   }
@@ -243,11 +272,23 @@
 </header>
 <div id="wrap" class="hidden" role="tabpanel" aria-labelledby="tab-map" hidden>
   <aside id="list"></aside>
-  <div id="map"></div>
+  <div id="mapcol">
+    <div id="dayfilter">
+      <div class="btns" role="group" aria-label="地図の日の絞り込み">
+        <button type="button" data-day="1" style="--c:#ea580c">Day1</button>
+        <button type="button" data-day="2" style="--c:#7c3aed">Day2</button>
+        <button type="button" data-day="3" style="--c:#0369a1">Day3</button>
+        <button type="button" data-day="all" style="--c:#334155">全部</button>
+      </div>
+      <p id="nowline" aria-live="polite"></p>
+    </div>
+    <div id="map"></div>
+  </div>
 </div>
 <div id="timeline" class="active" role="tabpanel" aria-labelledby="tab-timeline"></div>
-<footer>trip-pin-base 0.5.0</footer>
+<footer>trip-pin-base 0.6.0</footer>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="trip-status.js"></script>
 <script>
 /*
  * Pin schema (itinerary stops / stays / refs; list order = chronological):
@@ -495,6 +536,7 @@ const bounds = [];
 const pinById = {};
 const markerById = {};
 const cardById = {};
+const popupById = {};
 
 function esc(s) {
   return String(s || '').replace(/[&<>"']/g, c =>
@@ -510,9 +552,10 @@ function linkButtons(p, stopProp) {
   return html;
 }
 
-function focusPin(id) {
+function focusPin(id, day) {
   const p = pinById[id];
-  const m = markerById[id];
+  let m = markerById[id];
+  if (typeof routeMarkerFor === 'function') m = routeMarkerFor(id, day) || m;
   const card = cardById[id];
   if (!p || !m) return;
   mapFitted = true; // skip initial fitAll so it can't override the focused view
@@ -526,7 +569,7 @@ function focusPin(id) {
   setTimeout(() => {
     map.invalidateSize();
     map.setView([p.lat, p.lon], 13, { animate: false });
-    m.openPopup();
+    if (m._map) m.openPopup();
   }, 50);
 }
 
@@ -562,7 +605,8 @@ pins.forEach(p => {
     popupExtra +
     '<div class="plink">' + linkButtons(p, false) + '</div></div>';
 
-  const m = L.marker([p.lat, p.lon], { icon }).addTo(map).bindPopup(popup);
+  const m = L.marker([p.lat, p.lon], { icon, title: p.name }).addTo(map).bindPopup(popup);
+  popupById[p.name] = popup;
   bounds.push([p.lat, p.lon]);
   if (p.id) markerById[p.id] = m;
 
@@ -585,8 +629,9 @@ pins.forEach(p => {
   card.onclick = () => {
     document.querySelectorAll('#list .card').forEach(c => c.classList.remove('active'));
     card.classList.add('active');
+    const rm = p.id && routeMarkerFor(p.id);
     map.setView([p.lat, p.lon], 13);
-    m.openPopup();
+    (rm || m).openPopup();
   };
   list.appendChild(card);
 });
@@ -594,8 +639,9 @@ pins.forEach(p => {
 /* Map may start hidden (timeline is default tab): fit bounds on first show */
 let mapFitted = false;
 function fitAll() {
-  if (bounds.length) {
-    map.fitBounds(bounds, { padding: [48, 48], maxZoom: 11 });
+  const b = (typeof routeBounds === 'function') ? routeBounds() : bounds;
+  if (b.length) {
+    map.fitBounds(b, { padding: [48, 48], maxZoom: 11 });
   } else {
     map.setView([36.2, 137.5], 8);
   }
@@ -770,8 +816,10 @@ function renderTimeline() {
   html += dayOpen(2);
 
   html += '<div class="tl-card move">';
-  html += '<div class="tl-time">CO → 移動</div>';
+  html += '<div class="tl-time">8:30頃（仮）CO → 移動</div>';
   html += '<div class="tl-title">グリーンプラザ軽井沢 CO → 高山方面へ移動</div>';
+  html += '<div class="tl-body">出発時刻は未確定（12:30 神明駐車場着なら 8:30〜8:45 出発案）</div>';
+  html += pinLinksHtml(gp, true);
   html += '</div>';
 
   html += '<div class="tl-card stop">';
@@ -902,12 +950,125 @@ function renderTimeline() {
   el.querySelectorAll('[data-focus]').forEach(btn => {
     btn.addEventListener('click', (e) => {
       e.preventDefault();
-      focusPin(btn.getAttribute('data-focus'));
+      const dd = btn.closest('details.tl-day');
+      focusPin(btn.getAttribute('data-focus'), dd ? Number(dd.dataset.day) : null);
     });
   });
 }
 
 renderTimeline();
+
+/* ---- 0.6.0: 地図の時間軸（データは時系列タブの DOM から読む＝二重持ちしない） ---- */
+const dayColors = { 1: '#ea580c', 2: '#7c3aed', 3: '#0369a1' };
+const routeStops = [];
+document.querySelectorAll('#timeline details.tl-day').forEach(d => {
+  const day = Number(d.dataset.day);
+  let no = 0;
+  d.querySelectorAll('.tl-day-body > .tl-card').forEach(card => {
+    const btn = card.querySelector('[data-focus]');
+    const p = btn && pinById[btn.getAttribute('data-focus')];
+    if (!p) return;
+    const timeText = (card.querySelector('.tl-time') || {}).textContent || '';
+    routeStops.push(Object.assign({ day, no: ++no, pin: p, timeText }, TripStatus.parseTime(timeText)));
+  });
+});
+function hhmm(m) { return m == null ? '' : Math.floor(m / 60) + ':' + String(m % 60).padStart(2, '0'); }
+const statusWord = { done: '済', next: '次', todo: 'これから' };
+const dayLines = {};
+routeStops.forEach(s => {
+  s.marker = L.marker([s.pin.lat, s.pin.lon], { keyboard: true }).bindPopup(
+    popupById[s.pin.name].replace('<div class="popup">',
+      '<div class="popup"><div class="extra" style="color:' + dayColors[s.day] + ';font-weight:700">Day' + s.day + ' ' + s.no + '番 ' + esc(s.timeText) + '</div>'));
+  (dayLines[s.day] = dayLines[s.day] || []).push([s.pin.lat, s.pin.lon]);
+  /* 行程ピンは番号付きマーカーに置き換え（目印ピンはそのまま） */
+  if (markerById[s.pin.id] && markerById[s.pin.id]._map) map.removeLayer(markerById[s.pin.id]);
+});
+/* 近接ピン（神明駐車場と古い町並み、龍リゾートDay2/Day3）はラベルを左に出して重なりを減らす */
+routeStops.forEach((s, i) => {
+  s.flip = routeStops.slice(0, i).some(o => !o.flip && L.latLng(o.pin.lat, o.pin.lon).distanceTo([s.pin.lat, s.pin.lon]) < 3000);
+});
+const polylines = {};
+for (const d in dayLines) polylines[d] = L.polyline(dayLines[d], { color: dayColors[d], weight: 4, opacity: .75, interactive: false });
+
+let mapDay = 'all';
+function routeMarkerFor(id, day) {
+  const cands = routeStops.filter(s => s.pin.id === id);
+  if (!cands.length) return null;
+  const s = cands.find(c => c.day === day) || cands.find(c => mapDay === 'all' || c.day === mapDay) || cands[0];
+  if (mapDay !== 'all' && s.day !== mapDay) setMapDay(s.day, true);
+  return s.marker;
+}
+function routeBounds() {
+  const b = routeStops.filter(s => mapDay === 'all' || s.day === mapDay).map(s => [s.pin.lat, s.pin.lon]);
+  return b.length ? b : bounds;
+}
+function tokyoNow() {
+  try {
+    const f = new Intl.DateTimeFormat('sv-SE', { timeZone: 'Asia/Tokyo', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
+    const parts = {};
+    f.formatToParts(new Date()).forEach(x => { parts[x.type] = x.value; });
+    const h = Number(parts.hour), m = Number(parts.minute);
+    return { date: parts.year + '-' + parts.month + '-' + parts.day, min: h * 60 + m, time: h + ':' + parts.minute };
+  } catch (e) { return { date: '', min: 0, time: '' }; }
+}
+const tripDates = {};
+for (const k in tripDays) tripDates[k] = tripDays[k].date;
+function updateRoute() {
+  const now = tokyoNow();
+  const st = TripStatus.computeStatuses(routeStops, tripDates, now.date, now.min);
+  let next = null;
+  routeStops.forEach((s, i) => {
+    s.status = st[i];
+    if (st[i] === 'next') next = s;
+    const show = mapDay === 'all' || s.day === mapDay;
+    const time = s.start != null ? hhmm(s.start) : '';
+    const word = st[i] === 'todo' ? '' : ' ' + statusWord[st[i]];
+    const lb = (time + (s.tentative ? '<span class="tent">仮</span>' : '') + word).trim();
+    s.marker.setIcon(L.divIcon({
+      className: '', iconSize: [26, 26], iconAnchor: [13, 13], popupAnchor: [0, -12],
+      html: '<div class="rp ' + st[i] + (s.flip ? ' flip' : '') + '" style="--c:' + dayColors[s.day] + '"><div class="no">' + s.no + '</div>' +
+        (lb ? '<div class="lb">' + lb + '</div>' : '') + '</div>'
+    }));
+    const title = 'Day' + s.day + ' ' + s.no + '番 ' + (time ? time + (s.tentative ? '（仮）' : '') : '時刻未定') + ' ' + s.pin.name + '（' + statusWord[st[i]] + '）';
+    s.marker.options.title = title;
+    s.marker.setZIndexOffset(st[i] === 'next' ? 1000 : st[i] === 'done' ? -500 : 0);
+    if (show && !s.marker._map) s.marker.addTo(map);
+    if (!show && s.marker._map) map.removeLayer(s.marker);
+    if (s.marker._icon) { s.marker._icon.title = title; s.marker._icon.setAttribute('aria-label', title); }
+  });
+  for (const d in polylines) {
+    const show = mapDay === 'all' || Number(d) === mapDay;
+    if (show && !polylines[d]._map) polylines[d].addTo(map);
+    if (!show && polylines[d]._map) map.removeLayer(polylines[d]);
+  }
+  const isTrip = Object.values(tripDates).includes(now.date);
+  document.getElementById('nowline').innerHTML = '<span class="k">' + esc(now.time) + ' 現在</span>' +
+    (next ? '次: Day' + next.day + ' ' + next.no + '番 ' + esc(next.pin.name) +
+      (next.start != null ? '（' + hhmm(next.start) + (next.tentative ? '・仮' : '') + '）' : '')
+      : isTrip ? '今日の予定はすべて済' : '旅行日外（全部これから）') +
+    '<br><span class="k">薄い＋「済」=済／黄枠＋「次」=次／通常=これから・「仮」=時刻未確定</span>';
+}
+function setMapDay(day, keepView) {
+  mapDay = day;
+  document.querySelectorAll('#dayfilter button').forEach(b => {
+    b.setAttribute('aria-pressed', String(b.dataset.day === String(day)));
+  });
+  updateRoute();
+  if (!keepView && !document.getElementById('wrap').hidden) { map.invalidateSize(); fitAll(); }
+}
+document.querySelectorAll('#dayfilter button').forEach(b => {
+  b.addEventListener('click', () => setMapDay(b.dataset.day === 'all' ? 'all' : Number(b.dataset.day)));
+});
+(function initMapDay() {
+  const q = new URLSearchParams(location.search).get('day');
+  const today = tokyoNow().date;
+  let d = 'all';
+  if (q && tripDays[q]) d = Number(q);
+  else for (const k in tripDays) if (tripDays[k].date === today) d = Number(k);
+  setMapDay(d, true);
+})();
+setInterval(updateRoute, 60000);
+document.addEventListener('visibilitychange', () => { if (!document.hidden) updateRoute(); });
 
 /* ---- Tabs ---- */
 function switchTab(name) {
