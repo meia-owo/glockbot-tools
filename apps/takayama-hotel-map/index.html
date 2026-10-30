@@ -386,7 +386,6 @@ const pins = [
     lon: 138.5415927,
     note: '10/30→10/31・確定宿・2食バイキング・メゾネット',
     when: '10/30 17:30 チェックイン / 10/31 チェックアウト',
-    bookingNo: 'RYa0nf9v36',
     address: '〒377-1612 群馬県吾妻郡嬬恋村大前細原2277',
     gmaps: 'https://www.google.com/maps/search/?api=1&query=%E3%83%9B%E3%83%86%E3%83%AB%E3%82%B0%E3%83%AA%E3%83%BC%E3%83%B3%E3%83%97%E3%83%A9%E3%82%B6%E8%BB%BD%E4%BA%95%E6%B2%A2',
     rakuten: 'https://travel.rakuten.co.jp/HOTEL/11009/11009.html'
@@ -424,7 +423,6 @@ const pins = [
     lon: 136.9619091,
     note: '10/31→11/1・確定宿・会席2食・角部屋75㎡・夕食19:00',
     when: '10/31 16:30 チェックイン / 11/01 チェックアウト・夕食19:00',
-    bookingNo: 'RYa0nfb9sj',
     address: '岐阜県高山市荘川町新渕892-11',
     phone: '05769-2-2611',
     gmaps: 'https://www.google.com/maps/search/?api=1&query=%E9%BE%8D%E3%83%AA%E3%82%BE%E3%83%BC%E3%83%88%EF%BC%86%E3%82%B9%E3%83%91%20%E9%AB%98%E5%B1%B1%E9%BE%8D%E7%A5%9E%E6%B8%A9%E6%B3%89',
@@ -498,17 +496,11 @@ const timelineExtra = {
   greenplaza: {
     room: 'メゾネット禁煙・2食バイキング',
     stayLabel: '10/30→10/31',
-    amountNet: '52,062円',
-    amountGross: '61,248',
-    coupon: '9,186',
     paid: true
   },
   'ryu-resort': {
     room: '角部屋和洋室75㎡禁煙・会席2食・夕食 B 19:00',
     stayLabel: '10/31→11/1',
-    amountNet: '99,296円',
-    amountGross: '113,850',
-    coupon: '14,554',
     paid: true,
     amenity: '女性アメニティ1名分'
   }
@@ -669,15 +661,7 @@ function bookingBlock(extra, bookingNo) {
   if (extra.stayLabel || extra.room) {
     lines.push(esc([extra.stayLabel, extra.room].filter(Boolean).join('・')));
   }
-  if (bookingNo) {
-    const paid = extra.paid ? '決済済' : '';
-    lines.push(
-      '予約 ' + esc(bookingNo) +
-      '／差引 ' + esc(extra.amountNet) +
-      '（税込' + esc(extra.amountGross) + '−クーポン' + esc(extra.coupon) + '）' +
-      (paid ? paid : '')
-    );
-  }
+  if (extra.paid) lines.push('決済済（予約番号・金額は楽天トラベルのアプリで確認）');
   if (extra.amenity) lines.push(esc(extra.amenity));
   if (!lines.length) return '';
   return '<ul>' + lines.map(l => '<li>' + l + '</li>').join('') + '</ul>';
