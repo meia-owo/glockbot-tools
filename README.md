@@ -27,6 +27,7 @@ Pages 有効化後のトップ（例）:
 
 | パス | 内容 |
 |------|------|
+| `apps/board-research-prompt/` | 掲示板リサーチ用プロンプト作成 |
 | `apps/yaskawa-diff-check/` | 安川差分チェック |
 | `apps/quote-unitprice-db/` | 見積単価DB |
 | `apps/teams-heat-ambiguity/` | Teams熱量・曖昧度 |
