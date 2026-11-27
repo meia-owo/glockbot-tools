@@ -47,4 +47,23 @@ assert.strictEqual(parseLimit('3.5').ok, false);
 assert.deepStrictEqual(parseYear('２０２２'), { ok: true, value: 2022 });
 assert.deepStrictEqual(parseLimit('８'), { ok: true, value: 8 });
 
+// type=text 経由を想定: 全角のまま value が渡っても正規化とチェックが効く
+const zYear = parseYear('２０２２');
+const zLimit = parseLimit('８');
+assert.deepStrictEqual(zYear, { ok: true, value: 2022 });
+assert.deepStrictEqual(zLimit, { ok: true, value: 8 });
+const fromZenkaku = buildPrompt({
+  topic: '切り分け',
+  places: [],
+  keywordsJa: [],
+  keywordsEn: [],
+  sinceYear: zYear.value,
+  limit: zLimit.value,
+  fields: [],
+});
+assert.ok(fromZenkaku.includes('2022年以降'));
+assert.ok(fromZenkaku.includes('8件'));
+assert.strictEqual(parseYear('あ').ok, false);
+assert.strictEqual(parseLimit('１２３４５６').ok, false); // 123456 > 200
+
 console.log('build-prompt tests: OK');

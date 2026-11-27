@@ -1,6 +1,6 @@
 # 掲示板リサーチ用プロンプト作成ツール
 
-**GlockBOT 0.1.0**
+**GlockBOT 0.1.1**
 
 探したいこと・探す場所・キーワードなどを入力すると、会社の Copilot Chat や Gemini にそのまま貼れるリサーチ依頼文を組み立てます。
 
@@ -33,6 +33,7 @@ node apps/board-research-prompt/build-prompt.test.js
 
 ## 版
 
-GlockBOT 0.1.0
+GlockBOT 0.1.1
 
+- 0.1.1: 期間・件数を text+inputmode=numeric に。IME確定の誤追加を防止。コピー表示タイマーを張り直し
 - 0.1.0: 初回。依頼文の組み立てとコピー

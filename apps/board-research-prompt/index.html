@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>掲示板リサーチ用プロンプト作成 — GlockBOT 0.1.0</title>
+  <title>掲示板リサーチ用プロンプト作成 — GlockBOT 0.1.1</title>
   <style>
     :root {
       --bg: #0f1419;
@@ -208,12 +208,12 @@
     <div class="num-row">
       <fieldset>
         <legend>期間（〇年以降）</legend>
-        <input type="number" id="sinceYear" inputmode="numeric" min="1990" max="2100" step="1" placeholder="例: 2022" />
+        <input type="text" id="sinceYear" inputmode="numeric" placeholder="例: 2022" />
         <div class="err" id="yearErr"></div>
       </fieldset>
       <fieldset>
         <legend>持ち帰る件数</legend>
-        <input type="number" id="limit" inputmode="numeric" min="1" max="200" step="1" placeholder="例: 8" />
+        <input type="text" id="limit" inputmode="numeric" placeholder="例: 8" />
         <div class="err" id="limitErr"></div>
       </fieldset>
     </div>
@@ -232,7 +232,7 @@
 
     <div class="out-label">依頼文</div>
     <pre id="output" tabindex="0"></pre>
-    <footer>GlockBOT 0.1.0 · このページは外部へ送信しません</footer>
+    <footer>GlockBOT 0.1.1 · このページは外部へ送信しません</footer>
   </div>
 
   <div class="dock">
@@ -256,6 +256,7 @@
       var output = document.getElementById('output');
       var copyBtn = document.getElementById('copyBtn');
       var copyStatus = document.getElementById('copyStatus');
+      var copyTimer;
       var placeList = document.getElementById('placeList');
       var placeExtra = document.getElementById('placeExtra');
       var addPlace = document.getElementById('addPlace');
@@ -322,7 +323,10 @@
 
       addPlace.addEventListener('click', addCustomPlace);
       placeExtra.addEventListener('keydown', function (e) {
-        if (e.key === 'Enter') { e.preventDefault(); addCustomPlace(); }
+        if (e.key === 'Enter' && !e.isComposing) {
+          e.preventDefault();
+          addCustomPlace();
+        }
       });
 
       document.querySelector('.wrap').addEventListener('input', refresh);
@@ -347,7 +351,8 @@
         if (navigator.clipboard && navigator.clipboard.writeText) {
           navigator.clipboard.writeText(text).then(function () {
             copyStatus.textContent = 'コピーしました';
-            setTimeout(function () { copyStatus.textContent = ''; }, 2500);
+            clearTimeout(copyTimer);
+            copyTimer = setTimeout(function () { copyStatus.textContent = ''; }, 2500);
           }).catch(function () {
             fallback('選択したので、手動でコピーしてください');
           });
