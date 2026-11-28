@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>掲示板リサーチ用プロンプト作成 — GlockBOT 0.1.1</title>
+  <style>
+    :root {
+      --bg: #0f1419;
+      --card: #1a2332;
+      --text: #e7ecf3;
+      --muted: #9aa8bc;
+      --acc: #3d8bfd;
+      --acc2: #1f6feb;
+      --border: #2a3648;
+      --ok: #3fb950;
+      --warn-bg: #2a2318;
+      --warn-bd: #8a6d3b;
+      --warn-fg: #f0d9a8;
+      --err: #f85149;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.45;
+      font-size: clamp(15px, 1.15vw, 18px);
+    }
+    .wrap {
+      max-width: min(1100px, 100%);
+      margin: 0 auto;
+      padding: 12px clamp(12px, 2.5vw, 28px) 96px;
+    }
+    header h1 {
+      margin: 0 0 4px;
+      font-size: clamp(1.15rem, 2vw, 1.7rem);
+    }
+    .sub { color: var(--muted); font-size: .9em; margin: 0 0 8px; }
+    .warn {
+      margin: 0 0 12px;
+      padding: 8px 10px;
+      border: 1px solid var(--warn-bd);
+      background: var(--warn-bg);
+      color: var(--warn-fg);
+      border-radius: 8px;
+      font-size: .9em;
+    }
+    fieldset {
+      border: 1px solid var(--border);
+      background: var(--card);
+      border-radius: 10px;
+      margin: 0 0 8px;
+      padding: 8px 10px 10px;
+    }
+    legend { font-weight: 700; font-size: .92em; padding: 0 4px; }
+    label.block { display: block; margin: 0; }
+    textarea, input[type="text"], input[type="number"] {
+      width: 100%;
+      margin-top: 4px;
+      background: #121820;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font: inherit;
+      padding: 8px 10px;
+    }
+    textarea { resize: vertical; min-height: 3.4em; }
+    textarea:focus, input:focus { outline: 2px solid var(--acc); border-color: var(--acc); }
+    .hint { color: var(--muted); font-size: .8em; margin-top: 2px; }
+    .err { color: var(--err); font-size: .85em; margin-top: 2px; min-height: 1.2em; }
+    .checks {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 2px 8px;
+    }
+    @media (min-width: 800px) {
+      .checks.places { grid-template-columns: 1fr 1fr 1fr; }
+    }
+    .checks label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-height: 40px;
+      padding: 2px 4px;
+    }
+    .checks input { width: 18px; height: 18px; flex-shrink: 0; accent-color: var(--acc); }
+    .add-row { display: flex; gap: 8px; margin-top: 6px; }
+    .add-row input { flex: 1; margin-top: 0; }
+    .two {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 8px;
+    }
+    @media (min-width: 700px) {
+      .two { grid-template-columns: 1fr 1fr; }
+    }
+    .num-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+    button {
+      font: inherit;
+      font-weight: 700;
+      border: 0;
+      border-radius: 8px;
+      padding: 8px 12px;
+      cursor: pointer;
+      background: var(--acc);
+      color: #fff;
+    }
+    button.ghost {
+      background: #243044;
+      color: var(--text);
+    }
+    .out-label { font-weight: 700; margin: 6px 0 4px; }
+    pre#output {
+      margin: 0;
+      background: #121820;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px 12px;
+      white-space: pre-wrap;
+      word-break: break-word;
+      max-height: 28vh;
+      overflow: auto;
+      font-size: .95em;
+    }
+    .dock {
+      position: fixed;
+      left: 0; right: 0; bottom: 0;
+      background: rgba(15, 20, 25, .96);
+      border-top: 1px solid var(--border);
+      padding: 8px clamp(12px, 2.5vw, 28px) calc(8px + env(safe-area-inset-bottom));
+    }
+    .dock-inner {
+      max-width: min(1100px, 100%);
+      margin: 0 auto;
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    .dock button { flex: 1; padding: 12px; font-size: 1em; }
+    .dock .status { color: var(--ok); font-size: .9em; min-width: 6em; }
+    footer {
+      color: var(--muted);
+      font-size: .8em;
+      margin-top: 10px;
+    }
+    footer a { color: #8ec7ff; }
+    @media (min-width: 700px) {
+      .wrap { padding-bottom: 28px; }
+      .dock {
+        position: static;
+        background: transparent;
+        border-top: 0;
+        padding: 10px 0 0;
+      }
+      .dock button { flex: none; min-width: 16em; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1>掲示板リサーチ用プロンプト作成</h1>
+      <p class="sub">入力すると、Copilot Chat や Gemini に貼れる依頼文ができます。</p>
+      <div class="warn">社名・品番・実際の数値は入れないでください。一般化した言い方で書きます。</div>
+    </header>
+
+    <fieldset>
+      <legend>探したいこと</legend>
+      <label class="block">
+        <textarea id="topic" rows="3" placeholder="例: ログイン失敗時の切り分け手順で、現場で使われているやり方"></textarea>
+      </label>
+    </fieldset>
+
+    <fieldset>
+      <legend>探す場所</legend>
+      <div class="checks places" id="placeList">
+        <label><input type="checkbox" name="place" value="Qiita">Qiita</label>
+        <label><input type="checkbox" name="place" value="Zenn">Zenn</label>
+        <label><input type="checkbox" name="place" value="teratail">teratail</label>
+        <label><input type="checkbox" name="place" value="Stack Overflow">Stack Overflow</label>
+        <label><input type="checkbox" name="place" value="5ch">5ch</label>
+        <label><input type="checkbox" name="place" value="Reddit">Reddit</label>
+      </div>
+      <div class="add-row">
+        <input type="text" id="placeExtra" placeholder="場所を追加（例: 技術ブログ）" />
+        <button type="button" class="ghost" id="addPlace">追加</button>
+      </div>
+    </fieldset>
+
+    <div class="two">
+      <fieldset>
+        <legend>日本語キーワード</legend>
+        <textarea id="keywordsJa" rows="3" placeholder="改行またはカンマで複数"></textarea>
+        <div class="hint">複合語はそのまま。空白では区切りません。</div>
+      </fieldset>
+      <fieldset>
+        <legend>英語キーワード</legend>
+        <textarea id="keywordsEn" rows="3" placeholder="one per line, or commas"></textarea>
+      </fieldset>
+    </div>
+
+    <div class="num-row">
+      <fieldset>
+        <legend>期間（〇年以降）</legend>
+        <input type="text" id="sinceYear" inputmode="numeric" placeholder="例: 2022" />
+        <div class="err" id="yearErr"></div>
+      </fieldset>
+      <fieldset>
+        <legend>持ち帰る件数</legend>
+        <input type="text" id="limit" inputmode="numeric" placeholder="例: 8" />
+        <div class="err" id="limitErr"></div>
+      </fieldset>
+    </div>
+
+    <fieldset>
+      <legend>持ち帰る項目</legend>
+      <div class="checks" id="fieldList">
+        <label><input type="checkbox" name="field" value="タイトル">タイトル</label>
+        <label><input type="checkbox" name="field" value="URL">URL</label>
+        <label><input type="checkbox" name="field" value="概要1行">概要1行</label>
+        <label><input type="checkbox" name="field" value="使った方法">使った方法</label>
+        <label><input type="checkbox" name="field" value="良かった点">良かった点</label>
+        <label><input type="checkbox" name="field" value="ハマった点">ハマった点</label>
+      </div>
+    </fieldset>
+
+    <div class="out-label">依頼文</div>
+    <pre id="output" tabindex="0"></pre>
+    <footer>GlockBOT 0.1.1 · このページは外部へ送信しません</footer>
+  </div>
+
+  <div class="dock">
+    <div class="dock-inner">
+      <button type="button" id="copyBtn">依頼文をコピー</button>
+      <span class="status" id="copyStatus"></span>
+    </div>
+  </div>
+
+  <script src="build-prompt.js"></script>
+  <script>
+    (function () {
+      var api = window.BoardResearchPrompt;
+      var topic = document.getElementById('topic');
+      var keywordsJa = document.getElementById('keywordsJa');
+      var keywordsEn = document.getElementById('keywordsEn');
+      var sinceYear = document.getElementById('sinceYear');
+      var limit = document.getElementById('limit');
+      var yearErr = document.getElementById('yearErr');
+      var limitErr = document.getElementById('limitErr');
+      var output = document.getElementById('output');
+      var copyBtn = document.getElementById('copyBtn');
+      var copyStatus = document.getElementById('copyStatus');
+      var copyTimer;
+      var placeList = document.getElementById('placeList');
+      var placeExtra = document.getElementById('placeExtra');
+      var addPlace = document.getElementById('addPlace');
+
+      function checkedValues(name) {
+        return Array.prototype.map.call(
+          document.querySelectorAll('input[name="' + name + '"]:checked'),
+          function (el) { return el.value; }
+        );
+      }
+
+      function collect() {
+        var year = api.parseYear(sinceYear.value);
+        var count = api.parseLimit(limit.value);
+        yearErr.textContent = year.ok ? '' : year.error;
+        limitErr.textContent = count.ok ? '' : count.error;
+
+        var places = checkedValues('place');
+        var pending = api.splitList(placeExtra.value);
+        pending.forEach(function (p) {
+          if (places.indexOf(p) === -1) places.push(p);
+        });
+
+        return api.buildPrompt({
+          topic: topic.value,
+          places: places,
+          keywordsJa: api.splitList(keywordsJa.value),
+          keywordsEn: api.splitList(keywordsEn.value),
+          sinceYear: year.ok ? year.value : null,
+          limit: count.ok ? count.value : null,
+          fields: checkedValues('field')
+        });
+      }
+
+      function refresh() {
+        output.textContent = collect();
+      }
+
+      function addCustomPlace() {
+        var names = api.splitList(placeExtra.value);
+        if (!names.length) return;
+        names.forEach(function (name) {
+          var existing = Array.prototype.filter.call(
+            document.querySelectorAll('input[name="place"]'),
+            function (el) { return el.value === name; }
+          )[0];
+          if (existing) {
+            existing.checked = true;
+            return;
+          }
+          var label = document.createElement('label');
+          var input = document.createElement('input');
+          input.type = 'checkbox';
+          input.name = 'place';
+          input.value = name;
+          input.checked = true;
+          label.appendChild(input);
+          label.appendChild(document.createTextNode(name));
+          placeList.appendChild(label);
+        });
+        placeExtra.value = '';
+        refresh();
+      }
+
+      addPlace.addEventListener('click', addCustomPlace);
+      placeExtra.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter' && !e.isComposing) {
+          e.preventDefault();
+          addCustomPlace();
+        }
+      });
+
+      document.querySelector('.wrap').addEventListener('input', refresh);
+      document.querySelector('.wrap').addEventListener('change', refresh);
+      refresh();
+
+      function selectOutput() {
+        var range = document.createRange();
+        range.selectNodeContents(output);
+        var sel = window.getSelection();
+        sel.removeAllRanges();
+        sel.addRange(range);
+      }
+
+      copyBtn.addEventListener('click', function () {
+        var text = output.textContent || '';
+        copyStatus.textContent = '';
+        function fallback(msg) {
+          selectOutput();
+          copyStatus.textContent = msg;
+        }
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(text).then(function () {
+            copyStatus.textContent = 'コピーしました';
+            clearTimeout(copyTimer);
+            copyTimer = setTimeout(function () { copyStatus.textContent = ''; }, 2500);
+          }).catch(function () {
+            fallback('選択したので、手動でコピーしてください');
+          });
+        } else {
+          fallback('選択したので、手動でコピーしてください');
+        }
+      });
+    })();
+  </script>
+</body>
+</html>
